@@ -1,0 +1,2 @@
+make.exe clean
+pause

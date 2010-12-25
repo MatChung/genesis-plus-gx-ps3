@@ -1,0 +1,47 @@
+char *app_path = "/dev_usb000/genplus";
+
+ChangePathAndExt(rom_path,".sav","/state/",sav_path);
+ChangePathAndExt(rom_path,".srm","/sram/",sram_path);
+
+//Crazy !! Yes
+void ChangePathAndExt(char *file,char* ext,char *folder,char *out)
+{
+ int nLen,pos; 
+ char myfiles[256];
+ // Get Size !!! 
+ nLen = strlen (file); 
+ pos = nLen - 1;
+ //
+
+ if ((nLen > 0) && (nLen < 256))
+ { 
+    //extract file name only
+	while (pos >= 0)
+	{
+
+		if (file[pos] == '/')
+		{
+
+			pos++;
+			myfiles = file[pos];
+			printf("file=%s\n", myfiles);
+
+		}
+		pos--;
+	}
+ 
+      while (nLen) { 
+ 
+           // Check for extension character remove extention !!! 
+           if (myfiles [nLen] == '.') { 
+ 
+                myfiles [nLen] = '\0'; 
+                break; 
+           } 
+ 
+           nLen --; 
+ 
+   } 
+	// Create output path 
+  sprintf (out, "%s%s%s%s",app_path,folder,myfiles,ext); 
+  } 
