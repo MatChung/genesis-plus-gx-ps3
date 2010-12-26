@@ -1681,16 +1681,16 @@ void do_path_settings()
 	Graphics->FlushDbgFont();
 
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_path_setting == SETTING_PATH_DEFAULT_ROM_DIRECTORY ? YELLOW : WHITE,	"Startup ROM Directory");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.PS3PathROMDirectory.c_str() == "/" ? GREEN : ORANGE, Settings.PS3PathROMDirectory.c_str());
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathROMDirectory.c_str(),"/")) ? GREEN : ORANGE, Settings.PS3PathROMDirectory.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_path_setting == SETTING_PATH_SAVESTATES_DIRECTORY ? YELLOW : WHITE,	"Savestate Directory");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.PS3PathSaveStates.c_str() == USRDIR ? GREEN : ORANGE, Settings.PS3PathSaveStates.c_str());
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathSaveStates.c_str(),USRDIR)) ? GREEN : ORANGE, Settings.PS3PathSaveStates.c_str());
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_path_setting == SETTING_PATH_SRAM_DIRECTORY ? YELLOW : WHITE,	"SRAM directory");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.PS3PathSRAM.c_str() == USRDIR ? GREEN : ORANGE, Settings.PS3PathSRAM.c_str());
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathSRAM.c_str(),USRDIR)) ? GREEN : ORANGE, Settings.PS3PathSRAM.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPrintf(0.09f, yPos, Emulator_GetFontSize(), currently_selected_path_setting == SETTING_PATH_DEFAULT_ALL ? YELLOW : GREEN, "DEFAULT");
@@ -1896,23 +1896,23 @@ void do_genesis_settings()
 
 	yPos += ySpacing;
 	cellDbgFontPuts(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_ACTIONREPLAY_ROMPATH ? YELLOW : WHITE, "Action Replay ROM Path");
-	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(),Settings.ActionReplayROMPath.c_str() == "/dev_hdd0/game/GENP00001/USRDIR/areplay.bin" ? GREEN : ORANGE, Settings.ActionReplayROMPath.c_str());
+	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(), !(strcmp(Settings.ActionReplayROMPath.c_str(),"/dev_hdd0/game/GENP00001/USRDIR/areplay.bin")) ? GREEN : ORANGE, Settings.ActionReplayROMPath.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPuts(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_GAMEGENIE_ROMPATH ? YELLOW : WHITE, "Game Genie ROM Path");
-	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(),Settings.GameGenieROMPath.c_str() == "/dev_hdd0/game/GENP00001/USRDIR/ggenie.bin" ? GREEN : ORANGE, Settings.GameGenieROMPath.c_str());
+	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(), !(strcmp(Settings.GameGenieROMPath.c_str(),"/dev_hdd0/game/GENP00001/USRDIR/ggenie.bin")) ? GREEN : ORANGE, Settings.GameGenieROMPath.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPuts(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_SK_ROMPATH ? YELLOW : WHITE, "Sonic & Knuckles ROM Path");
-	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(),Settings.SKROMPath.c_str() == "/dev_hdd0/game/GENP00001/USRDIR/sk.bin" ? GREEN : ORANGE, Settings.SKROMPath.c_str());
+	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(), !(strcmp(Settings.SKROMPath.c_str(),"/dev_hdd0/game/GENP00001/USRDIR/sk.bin")) ? GREEN : ORANGE, Settings.SKROMPath.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPuts(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_SK_UPMEM_ROMPATH ? YELLOW : WHITE, "S&K Upmem ROM Path");
-	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(),Settings.SKUpmemROMPath.c_str() == "/dev_hdd0/game/GENP00001/USRDIR/sk2chip.bin" ? GREEN : ORANGE, Settings.SKUpmemROMPath.c_str());
+	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(), !(strcmp(Settings.SKUpmemROMPath.c_str(),"/dev_hdd0/game/GENP00001/USRDIR/sk2chip.bin")) ? GREEN : ORANGE, Settings.SKUpmemROMPath.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPuts(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_BIOS_ROMPATH ? YELLOW : WHITE, "BIOS ROM Path");
-	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(),Settings.BIOS.c_str() == "/dev_hdd0/game/GENP00001/USRDIR/bios.bin" ? GREEN : ORANGE, Settings.BIOS.c_str());
+	cellDbgFontPrintf(0.5f, yPos, Emulator_GetFontSize(), !(strcmp(Settings.BIOS.c_str(),"/dev_hdd0/game/GENP00001/USRDIR/bios.bin")) ? GREEN : ORANGE, Settings.BIOS.c_str());
 
 	yPos += ySpacing;
 	cellDbgFontPrintf(0.09f, yPos, Emulator_GetFontSize(), currently_selected_genesis_setting == SETTING_GENESIS_DEFAULT_ALL ? YELLOW : GREEN, "DEFAULT");
