@@ -170,7 +170,7 @@ void OSKUtil::CreateActivationParameters()
 						CELL_OSKDIALOG_PANELMODE_NUMERAL_FULL_WIDTH |
 						CELL_OSKDIALOG_PANELMODE_ENGLISH;
 	// Panel to display first
-	dialogParam.firstViewPanel = CELL_OSKDIALOG_PANELMODE_ALPHABET;
+	dialogParam.firstViewPanel = CELL_OSKDIALOG_PANELMODE_ENGLISH;
 	// Initial display position of the onscreen keyboard dialog
 	dialogParam.controlPoint = pos;
 	// Prohibited operation flag(s) (ex. CELL_OSKDIALOG_NO_SPACE)

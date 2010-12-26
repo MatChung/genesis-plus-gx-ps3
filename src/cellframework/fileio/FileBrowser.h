@@ -152,6 +152,13 @@ public:
 	bool IsCurrentAFile();
 	bool IsCurrentADirectory();
 
+	// Set wrapping on or off
+	// Wrapping: if the entry that _currentSelected points
+	// to exceeds the maximum amount of entries in that
+	// directory, it will go back to either the first entry
+	// or the last
+	void SetEntryWrap(bool wrapvalue);
+
 	void IncrementEntry();
 	void DecrementEntry();
 	void GotoEntry(uint32_t i);
@@ -172,6 +179,17 @@ private:
 
 	// current file descriptor, used for reading entries
 	int _fd;
+
+	// wrap boolean variable
+	// if true -
+	// IncrementEntry will set _currentSelected to 0 if _currentSelected is bigger than _cur.size()
+	// DecrementEntry will set _currentSelected to _cur.size() - 1 if _currentSelected is bigger than or equal to cur.size()
+	// if false -
+	// IncrementEntry will simply increment the entry without any checks 
+	// DecrementEntry will simply decrement the entry without any checks
+	// It's up to the application to properly safeguard against trying to access an entry that exceeds the bounds
+	// of the entry list
+	bool m_wrap;
 
 	// info of the current directory
 	DirectoryInfo _dir;

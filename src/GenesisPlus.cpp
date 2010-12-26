@@ -1,10 +1,10 @@
-#include "cell.h"
 #include <vector>
-#include "rom_list.h"
 #include <math.h>
 #include <sys/paths.h>
 #include <unistd.h> 
 
+#include "cell.h"
+#include "menu.h"
 #include "cellframework/logger/Logger.h"
 #include "cellframework/input/cellInput.h"
 #include "cellframework/audio/audioport.hpp"
@@ -26,8 +26,6 @@ struct SSettings Settings;
 #define VIDEO_HEIGHT 240
 #define SAMPLERATE_48KHZ 48000
 #define SAMPLERATE_48_3KHZ 48300
-#define SAMPLERATE_47KHZ 47000
-#define SAMPLERATE_52KHZ 52000
 
 // mode the main loop is in
 Emulator_Modes mode_switch = MODE_MENU;
@@ -51,8 +49,6 @@ char* current_rom = NULL;
 SYS_PROCESS_PARAM(1001, 0x10000);
 
 static bool runbios = 0;
-
-
 
 #define SB_SIZE 7680
 unsigned char soundbuffer[7680];
@@ -435,51 +431,51 @@ int ps3_update_input(void)
 
     		if (CellInput->IsButtonPressed(i, CTRL_UP) | CellInput->IsAnalogPressedUp(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= INPUT_UP;
+			input.pad[i] |= Settings.DPad_Up;
 		}
 		else if (CellInput->IsButtonPressed(i,CTRL_DOWN) | CellInput->IsAnalogPressedDown(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= INPUT_DOWN;
+			input.pad[i] |= Settings.DPad_Down;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= INPUT_LEFT;
+			input.pad[i] |= Settings.DPad_Left;
 		}
     		else if (CellInput->IsButtonPressed(i,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= INPUT_RIGHT;
+			input.pad[i] |= Settings.DPad_Right;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_SQUARE))
 		{
-			input.pad[i] |= INPUT_A;
+			input.pad[i] |= Settings.ButtonSquare;
 		}
 		if (CellInput->IsButtonPressed(i,CTRL_CROSS))
 		{
-			input.pad[i] |= INPUT_B;
+			input.pad[i] |= Settings.ButtonCross;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_CIRCLE))
 		{
-			input.pad[i] |= INPUT_C;
+			input.pad[i] |= Settings.ButtonCircle;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_START))
 		{
-			input.pad[i] |= INPUT_START;
+			input.pad[i] |= Settings.ButtonStart;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_TRIANGLE))
 		{
-			input.pad[i] |= INPUT_X;
+			input.pad[i] |= Settings.ButtonTriangle;
 		}
 		if (CellInput->IsButtonPressed(i,CTRL_L1))
 		{
-			input.pad[i] |= INPUT_Y;
+			input.pad[i] |= Settings.ButtonL1;
 		}
 		if (CellInput->IsButtonPressed(i,CTRL_R1))
 		{
-			input.pad[i] |= INPUT_Z;
+			input.pad[i] |= Settings.ButtonR1;
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_SELECT))
 		{
-			input.pad[i] |= INPUT_MODE;
+			input.pad[i] |= Settings.ButtonSelect;
 		}
 		if ((CellInput->IsButtonPressed(i,CTRL_L3) && CellInput->IsButtonPressed(i,CTRL_R3)))
 		{
@@ -499,6 +495,11 @@ int ps3_update_input(void)
 	return 1;
 }
 //end extern C
+}
+
+float Emulator_GetFontSize()
+{
+	return Settings.PS3FontSize/100.0;
 }
 
 bool Emulator_Init()
@@ -557,11 +558,137 @@ void Emulator_SetControllerMode()
 	set_controller(1);
 }
 
+void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
+{
+	switch(map_button_option_enum)
+	{
+		case MAP_BUTTONS_OPTION_SETTER:
+			currentconfig->SetInt("PS3ButtonMappings::DPad_Up",Settings.DPad_Up);
+			currentconfig->SetInt("PS3ButtonMappings::DPad_Down",Settings.DPad_Down);
+			currentconfig->SetInt("PS3ButtonMappings::DPad_Left",Settings.DPad_Left);
+			currentconfig->SetInt("PS3ButtonMappings::DPad_Right",Settings.DPad_Right);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonCircle",Settings.ButtonCircle);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonCross",Settings.ButtonCross);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonTriangle",Settings.ButtonTriangle);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonSquare",Settings.ButtonSquare);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonSelect",Settings.ButtonSelect);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonStart",Settings.ButtonStart);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL1",Settings.ButtonL1);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR1",Settings.ButtonR1);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2",Settings.ButtonL2);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2",Settings.ButtonR2);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_ButtonL3",Settings.ButtonL2_ButtonL3);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_ButtonR3",Settings.ButtonL2_ButtonR3);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR3",Settings.ButtonR3);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL3",Settings.ButtonL3);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_ButtonR2",Settings.ButtonL2_ButtonR2);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_AnalogR_Right",Settings.ButtonL2_AnalogR_Right);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_AnalogR_Left",Settings.ButtonL2_AnalogR_Left);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_AnalogR_Up",Settings.ButtonL2_AnalogR_Up);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonL2_AnalogR_Down",Settings.ButtonL2_AnalogR_Down);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2_AnalogR_Right",Settings.ButtonR2_AnalogR_Right);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2_AnalogR_Left",Settings.ButtonR2_AnalogR_Left);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2_AnalogR_Up",Settings.ButtonR2_AnalogR_Up);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2_AnalogR_Down",Settings.ButtonR2_AnalogR_Down);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR2_ButtonR3",Settings.ButtonR2_ButtonR3);
+			currentconfig->SetInt("PS3ButtonMappings::ButtonR3_ButtonL3",Settings.ButtonR3_ButtonL3);
+			currentconfig->SetInt("PS3ButtonMappings::AnalogR_Up",Settings.AnalogR_Up);
+			currentconfig->SetInt("PS3ButtonMappings::AnalogR_Down",Settings.AnalogR_Down);
+			currentconfig->SetInt("PS3ButtonMappings::AnalogR_Left",Settings.AnalogR_Left);
+			currentconfig->SetInt("PS3ButtonMappings::AnalogR_Right",Settings.AnalogR_Right);
+
+			currentconfig->SetBool("PS3ButtonMappings::AnalogR_Up_Type",Settings.AnalogR_Up_Type);
+			currentconfig->SetBool("PS3ButtonMappings::AnalogR_Down_Type",Settings.AnalogR_Down_Type);
+			currentconfig->SetBool("PS3ButtonMappings::AnalogR_Left_Type",Settings.AnalogR_Left_Type);
+			currentconfig->SetBool("PS3ButtonMappings::AnalogR_Right_Type",Settings.AnalogR_Right_Type);
+			break;
+		case MAP_BUTTONS_OPTION_GETTER:
+			Settings.DPad_Up		= currentconfig->GetInt("PS3ButtonMappings::DPad_Up",INPUT_UP);
+			Settings.DPad_Down		= currentconfig->GetInt("PS3ButtonMappings::DPad_Down",INPUT_DOWN);
+			Settings.DPad_Left		= currentconfig->GetInt("PS3ButtonMappings::DPad_Left",INPUT_LEFT);
+			Settings.DPad_Right		= currentconfig->GetInt("PS3ButtonMappings::DPad_Right",INPUT_RIGHT);
+			Settings.ButtonCircle		= currentconfig->GetInt("PS3ButtonMappings::ButtonCircle",INPUT_C);
+			Settings.ButtonCross		= currentconfig->GetInt("PS3ButtonMappings::ButtonCross",INPUT_B);
+			Settings.ButtonTriangle		= currentconfig->GetInt("PS3ButtonMappings::ButtonTriangle",INPUT_X);
+			Settings.ButtonSquare		= currentconfig->GetInt("PS3ButtonMappings::ButtonSquare",INPUT_A);
+			Settings.ButtonSelect		= currentconfig->GetInt("PS3ButtonMappings::ButtonSelect",INPUT_MODE);
+			Settings.ButtonStart		= currentconfig->GetInt("PS3ButtonMappings::ButtonStart",INPUT_START);
+			Settings.ButtonL1		= currentconfig->GetInt("PS3ButtonMappings::ButtonL1",INPUT_Y);
+			Settings.ButtonR1		= currentconfig->GetInt("PS3ButtonMappings::ButtonR1",INPUT_Z);
+			Settings.ButtonL2		= currentconfig->GetInt("PS3ButtonMappings::ButtonL2",INPUT_NONE);
+			Settings.ButtonR2		= currentconfig->GetInt("PS3ButtonMappings::ButtonR2",INPUT_NONE);
+			Settings.ButtonL2_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonL3",INPUT_NONE);
+			Settings.ButtonL2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR3",INPUT_NONE);
+			Settings.ButtonR3		= currentconfig->GetInt("PS3ButtonMappings::ButtonR3",INPUT_NONE);
+			Settings.ButtonL3		= currentconfig->GetInt("PS3ButtonMappings::ButtonL3",INPUT_NONE);
+			Settings.ButtonL2_ButtonR2	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR2",INPUT_NONE);
+			Settings.ButtonL2_AnalogR_Right = currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Right",INPUT_NONE);
+			Settings.ButtonL2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Left",INPUT_NONE);
+			Settings.ButtonL2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Up",INPUT_NONE);
+			Settings.ButtonL2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Down",INPUT_NONE);
+			Settings.ButtonR2_AnalogR_Right	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Right",INPUT_NONE);
+			Settings.ButtonR2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Left",INPUT_NONE);
+			Settings.ButtonR2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Up",INPUT_NONE);
+			Settings.ButtonR2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Down",INPUT_NONE);
+			Settings.ButtonR2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_ButtonR3",INPUT_NONE);
+			Settings.ButtonR3_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR3_ButtonL3",INPUT_NONE);
+			Settings.AnalogR_Up		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Up",INPUT_NONE);
+			Settings.AnalogR_Down		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Down",INPUT_NONE);
+			Settings.AnalogR_Left		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Left",INPUT_NONE);
+			Settings.AnalogR_Right		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Right",INPUT_NONE);
+
+			Settings.AnalogR_Up_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Up_Type",false);
+			Settings.AnalogR_Down_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Down_Type",false);
+			Settings.AnalogR_Left_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Left_Type",false);
+			Settings.AnalogR_Right_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Right_Type",false);
+			break;
+		case MAP_BUTTONS_OPTION_DEFAULT:
+			Settings.DPad_Up			= INPUT_UP;
+			Settings.DPad_Down			= INPUT_DOWN;
+			Settings.DPad_Left			= INPUT_LEFT;
+			Settings.DPad_Right			= INPUT_RIGHT;
+			Settings.ButtonCircle			= INPUT_C;
+			Settings.ButtonCross			= INPUT_B;
+			Settings.ButtonTriangle			= INPUT_X;
+			Settings.ButtonSquare			= INPUT_A;
+			Settings.ButtonSelect			= INPUT_MODE;
+			Settings.ButtonStart			= INPUT_START;
+			Settings.ButtonL1			= INPUT_Y;
+			Settings.ButtonR1			= INPUT_Z;
+			Settings.ButtonL2			= INPUT_NONE;
+			Settings.ButtonR2			= INPUT_NONE;
+			Settings.ButtonL2_ButtonL3		= INPUT_NONE;
+			Settings.ButtonL2_ButtonR3		= INPUT_NONE;	
+			Settings.ButtonR3			= INPUT_NONE;
+			Settings.ButtonL3			= INPUT_NONE;
+			Settings.ButtonL2_ButtonR2		= INPUT_NONE;
+			Settings.ButtonL2_AnalogR_Right		= INPUT_NONE;
+			Settings.ButtonL2_AnalogR_Left		= INPUT_NONE;
+			Settings.ButtonL2_AnalogR_Up		= INPUT_NONE;
+			Settings.ButtonL2_AnalogR_Down		= INPUT_NONE;
+			Settings.ButtonR2_AnalogR_Right		= INPUT_NONE;
+			Settings.ButtonR2_AnalogR_Left		= INPUT_NONE;
+			Settings.ButtonR2_AnalogR_Up		= INPUT_NONE;
+			Settings.ButtonR2_AnalogR_Down		= INPUT_NONE;
+			Settings.ButtonR2_ButtonR3		= INPUT_NONE;
+			Settings.ButtonR3_ButtonL3		= INPUT_NONE;
+			Settings.AnalogR_Up			= INPUT_NONE;
+			Settings.AnalogR_Down			= INPUT_NONE;
+			Settings.AnalogR_Left			= INPUT_NONE;
+			Settings.AnalogR_Right			= INPUT_NONE;
+			Settings.AnalogR_Up_Type		= false;
+			Settings.AnalogR_Down_Type		= false;
+			Settings.AnalogR_Left_Type		= false;
+			Settings.AnalogR_Right_Type		= false;
+			break;
+	}
+}
+
 bool Emulator_SaveSettings()
 {
 	if (currentconfig != NULL)
 	{
-		currentconfig->SetBool("PS3General::DrawFps",Settings.DrawFps);
+		currentconfig->SetBool("PS3General::DisplayFrameRate",Settings.DisplayFrameRate);
 		currentconfig->SetBool("PS3General::KeepAspect",Settings.PS3KeepAspect);
 		currentconfig->SetBool("PS3General::Smooth", Settings.PS3Smooth);
 		currentconfig->SetBool("PS3General::OverscanEnabled", Settings.PS3OverscanEnabled);
@@ -576,6 +703,7 @@ bool Emulator_SaveSettings()
 		currentconfig->SetBool("RSound::RSoundEnabled",Settings.RSoundEnabled);
 		currentconfig->SetInt("GenesisPlus::SixButtonPad",Settings.SixButtonPad);
 		currentconfig->SetString("GenesisPlus::BIOS",Settings.BIOS);
+		Emulator_Implementation_ButtonMappingSettings(MAP_BUTTONS_OPTION_SETTER);
 		return currentconfig->SaveTo(SYS_CONFIG_FILE);
 	}
 
@@ -677,13 +805,13 @@ bool Emulator_InitSettings()
 		Settings.SixButtonPad = FALSE;
 	}
 
-	if (currentconfig->Exists("PS3General::DrawFps"))
+	if (currentconfig->Exists("PS3General::DisplayFrameRate"))
 	{
-		Settings.DrawFps = currentconfig->GetBool("PS3General::DrawFps");
+		Settings.DisplayFrameRate = currentconfig->GetBool("PS3General::DisplayFrameRate");
 	}
 	else
 	{
-		Settings.DrawFps = false;
+		Settings.DisplayFrameRate = false;
 	}
 
 	if (currentconfig->Exists("PS3General::Shader"))
@@ -815,6 +943,8 @@ bool Emulator_InitSettings()
 	}
 	Emulator_SetExtraCartPaths();
 
+	Emulator_Implementation_ButtonMappingSettings(MAP_BUTTONS_OPTION_GETTER);
+
 	LOG_DBG("SUCCESS - Emulator_InitSettings()\n");
 	return true;
 }
@@ -899,7 +1029,7 @@ void CreateFolder(char* folders)
 {
 	if(mkdir(folders,0777))
 	{
-		gl_dprintf(0.09f,0.05f,FontSize(),"ERROR - Could not create folder: %s \nPlease check your GenesisConf.ini\n",folders);
+		gl_dprintf(0.09f,0.05f,Emulator_GetFontSize(),"ERROR - Could not create folder: %s \nPlease check your GenesisConf.ini\n",folders);
 		sys_timer_sleep(5);
 		sys_process_exit(0);
 	}
@@ -1027,9 +1157,9 @@ int main() {
 	/*
 	if (ini_parse("/dev_hdd0/game/GENP00001/USRDIR/GenesisConf.ini", handler, &Iniconfig) < 0)
 	{
-		gl_dprintf(0.09f,0.05f,FontSize(),"Could not load /dev_hdd0/game/GENP00001/GenesisConf.ini\n");
+		gl_dprintf(0.09f,0.05f,Emulator_GetFontSize(),"Could not load /dev_hdd0/game/GENP00001/GenesisConf.ini\n");
 		sys_timer_sleep(5);
-		gl_dprintf(0.09f,0.05f,FontSize(),"Now exiting to XMB...\n");
+		gl_dprintf(0.09f,0.05f,Emulator_GetFontSize(),"Now exiting to XMB...\n");
 		sys_timer_sleep(5);
 		sys_process_exit(0);
 	}
@@ -1047,14 +1177,14 @@ int main() {
 	//main path - Check if not present - create all folders and exit
 	if(stat(Iniconfig.rompath,&st) != 0)
 	{
-		gl_dprintf(0.09f,0.05f,FontSize(),"Creating generic folder tree for Genesisplus...\n");
+		gl_dprintf(0.09f,0.05f,Emulator_GetFontSize(),"Creating generic folder tree for Genesisplus...\n");
 		sys_timer_sleep(5);
 		CreateFolder(Iniconfig.rompath);
 		CreateFolder(Iniconfig.savpath);
 		CreateFolder(Iniconfig.cartpath);
 		CreateFolder(Iniconfig.sram_path);
 		CreateFolder(Iniconfig.biospath);
-		gl_dprintf(0.09f,0.05f,FontSize(),"Generic folder tree done! Will now exit to XMB...\nPlease put all your ROMs inside %s\n",Iniconfig.rompath);
+		gl_dprintf(0.09f,0.05f,Emulator_GetFontSize(),"Generic folder tree done! Will now exit to XMB...\nPlease put all your ROMs inside %s\n",Iniconfig.rompath);
 		sys_timer_sleep(5);
 		sys_process_exit(0);
 	}

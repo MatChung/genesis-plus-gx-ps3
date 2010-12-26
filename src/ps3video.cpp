@@ -4,12 +4,12 @@
  *  Created on: Nov 14, 2010
  *      Author: Squarepusher2
  */
-#include "cell.h"
-#include "ps3video.h"
-#include "rom_list.h"
-
 #include <vector>
 #include <assert.h>
+
+#include "cell.h"
+#include "ps3video.h"
+//#include "menu.h"
 
 #include "cellframework/logger/Logger.h"
 

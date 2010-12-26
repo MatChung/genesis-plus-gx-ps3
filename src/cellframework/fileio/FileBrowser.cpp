@@ -41,6 +41,7 @@ FileBrowser::FileBrowser(string startDir)
 {
 	_currentSelected = 0;
 	_dir.numEntries = 0;
+	m_wrap = true;
 
 	PushDirectory(startDir, CELL_FS_TYPE_DIRECTORY | CELL_FS_TYPE_REGULAR, "");
 }
@@ -302,11 +303,15 @@ bool FileBrowser::ParseDirectory(string path, int types, string extensions)
 	return true;
 }
 
+void FileBrowser::SetEntryWrap(bool wrapvalue)
+{
+	m_wrap = wrapvalue;
+}
 
 void FileBrowser::IncrementEntry()
 {
 	_currentSelected++;
-	if (_currentSelected >= _cur.size())
+	if (_currentSelected >= _cur.size() && m_wrap)
 	{
 		_currentSelected = 0;
 	}
@@ -316,7 +321,7 @@ void FileBrowser::IncrementEntry()
 void FileBrowser::DecrementEntry()
 {
 	_currentSelected--;
-	if (_currentSelected >= _cur.size())
+	if (_currentSelected >= _cur.size() && m_wrap)
 	{
 		_currentSelected = _cur.size() - 1;
 	}

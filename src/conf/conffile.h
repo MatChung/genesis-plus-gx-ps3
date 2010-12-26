@@ -424,7 +424,7 @@ struct SSettings
 	const char * 	RSoundServerIPAddress;
 
 	//GenesisPlus additions
-	bool		DrawFps;
+	bool		DisplayFrameRate;
 	int		ControlStyle;
 	int		SixButtonPad;
 	bool		ExtraCart;
@@ -433,6 +433,48 @@ struct SSettings
 	std::string	SKUpmemROMPath;
 	std::string	SKROMPath;
 
+	int		ButtonCircle;
+	int		ButtonCross;
+	int		ButtonTriangle;
+	int		ButtonSquare;
+	int		ButtonSelect;
+	int		ButtonStart;
+	int		ButtonL1;
+	int		ButtonR1;
+	int		ButtonL2;
+	int		ButtonR2;
+	int		DPad_Up;
+	int		DPad_Down;
+	int		DPad_Left;
+	int		DPad_Right;
+	int		ButtonR2_ButtonR3;
+	int		ButtonL2_ButtonR3;
+	int		ButtonL2_ButtonR2;
+	int		AnalogR_Right;
+	int		AnalogR_Left;
+	int		AnalogR_Up;
+	int		AnalogR_Down;
+	int		ButtonL2_AnalogR_Right;
+	int		ButtonL2_AnalogR_Left;
+	int		ButtonL2_AnalogR_Up;
+	int		ButtonL2_AnalogR_Down;
+	int		ButtonR2_AnalogR_Right;
+	int		ButtonR2_AnalogR_Left;
+	int		ButtonR2_AnalogR_Up;
+	int		ButtonR2_AnalogR_Down;
+	int		ButtonL2_ButtonL3;
+	int		ButtonR3_ButtonL3;
+	int		ButtonL3;
+	int		ButtonR3;
+	bool		AnalogR_Up_Type;
+	bool		AnalogR_Down_Type;
+	bool		AnalogR_Left_Type;
+	bool		AnalogR_Right_Type;
+//UNUSED RIGHT NOW
+	int		AnalogL_Left;
+	int		AnalogL_Right;
+	int		AnalogL_Up;
+	int		AnalogL_Down;
 };
 
 extern struct SSettings			Settings;

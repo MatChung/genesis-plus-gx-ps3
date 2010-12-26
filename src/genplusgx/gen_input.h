@@ -36,6 +36,9 @@
 #define NO_DEVICE           (0x0F)  /* unconnected */
 
 /* Input bitmasks */
+//BEGINNING OF GENESIS PLUS PS3
+#define INPUT_NONE	(0x00000900)
+//END OF GENESIS PLUS PS3
 #define INPUT_MODE      (0x00000800)
 #define INPUT_Z         (0x00000400)
 #define INPUT_Y         (0x00000200)

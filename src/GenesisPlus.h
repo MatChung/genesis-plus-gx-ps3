@@ -6,6 +6,8 @@
 
 #define USRDIR "/dev_hdd0/game/GENP00001/USRDIR/"
 
+#define EMULATOR_VERSION "1.2"
+
 enum Emulator_Modes
 {
 	MODE_MENU,
@@ -13,9 +15,18 @@ enum Emulator_Modes
 	MODE_EXIT
 };
 
+enum
+{
+	MAP_BUTTONS_OPTION_SETTER,
+	MAP_BUTTONS_OPTION_GETTER,
+	MAP_BUTTONS_OPTION_DEFAULT
+};
+
 extern PS3Graphics* Graphics;
 extern CellInputFacade* CellInput;
 
+float Emulator_GetFontSize();
+void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum);
 bool Emulator_IsROMLoaded();
 void Emulator_SwitchMode(Emulator_Modes);
 void Emulator_Shutdown();

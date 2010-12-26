@@ -19,7 +19,7 @@ PPU_OPTIMIZE_LV		=	-O2
 
 PPU_SRCS := ./src/GenesisPlus.cpp \
 	./src/ps3video.cpp \
-	./src/rom_list.cpp \
+	./src/menu.cpp \
 	./src/cellframework/input/cellInput.cpp \
 	./src/cellframework/graphics/PSGLGraphics.cpp \
 	./src/cellframework/fileio/FileBrowser.cpp\
