@@ -350,9 +350,11 @@ void DisplayHelpMessage(int currentsetting)
 				cellDbgFontPrintf(0.09f, 0.86f, 0.86f, RED, "%s", "WARNING - This setting might not work correctly on 1.92 FW.");
 			#endif
 			break;
+/*
 		case SETTING_PAL60_MODE:
 			cellDbgFontPrintf(0.09f, 0.80f, Emulator_GetFontSize(), WHITE, "%s", Settings.PS3PALTemporalMode60Hz ? "PAL 60Hz mode is enabled - 60Hz NTSC games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly." : "PAL 60Hz mode disabled - 50Hz PAL games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly.");
 			break;
+*/
 		case SETTING_HW_TEXTURE_FILTER:
 			cellDbgFontPrintf(0.09f, 0.80f, Emulator_GetFontSize(), WHITE, "%s", Settings.PS3Smooth ? "Hardware filtering is set to 'Bilinear filtering'." : "Hardware filtering is set to 'Point filtering' - most shaders\nlook much better on this setting.");
 			break;
@@ -1982,7 +1984,7 @@ void do_general_settings()
 					switch(currently_selected_setting)
 					{
 					case SETTING_CHANGE_RESOLUTION:
-						   if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
+						   if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 						   {
 							   Graphics->NextResolution();
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
@@ -1990,7 +1992,7 @@ void do_general_settings()
 								sys_timer_usleep(SETTINGS_DELAY);
 							}
 						   }
-						   if(CellInput->WasButtonPressed(0, CTRL_LEFT) | CellInput->WasAnalogPressedLeft(0,CTRL_LSTICK))
+						   if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 						   {
 							   Graphics->PreviousResolution();
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
@@ -2041,7 +2043,7 @@ void do_general_settings()
 						if(Settings.PS3FontSize > -100)
 						{
 							Settings.PS3FontSize--;
-							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedUp(0,CTRL_LSTICK))
+							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
 							}
@@ -2052,7 +2054,7 @@ void do_general_settings()
 						if((Settings.PS3FontSize < 200))
 						{
 							Settings.PS3FontSize++;
-							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedUp(0,CTRL_LSTICK))
+							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
 							}
