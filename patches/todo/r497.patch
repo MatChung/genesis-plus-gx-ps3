@@ -1,0 +1,35 @@
+Index: source/cart_hw/cart_hw.c
+===================================================================
+--- source/cart_hw/cart_hw.c	(revision 496)
++++ source/cart_hw/cart_hw.c	(revision 497)
+@@ -27,7 +27,7 @@
+ 
+ #include "shared.h"
+ 
+-#define CART_CNT 26
++#define CART_CNT 27
+ 
+ extern int emulate_address_error;
+ 
+@@ -73,6 +73,8 @@
+   {0x4f10,0x0836,0x00,0x00,{{0x00,0x00,0x00,0x00},{0x000000,0x000000,0x000000,0x000000},{0x000000,0x000000,0x000000,0x000000},0,1,radica_mapper_r,NULL,NULL,NULL}},
+ /* RADICA (Volume 1) */
+   {0xf424,0x9f82,0x00,0x00,{{0x00,0x00,0x00,0x00},{0x000000,0x000000,0x000000,0x000000},{0x000000,0x000000,0x000000,0x000000},0,1,radica_mapper_r,NULL,NULL,NULL}},
++/* Mulan */
++  {0x0404,0x1b40,0x60,0x7f,{{0x00,0x00,0x00,0x00},{0x000000,0x000000,0x000000,0x000000},{0x000000,0x000000,0x000000,0x000000},0,1,NULL,NULL,NULL,special_regs_w}},
+ /* Lion King 3 */
+   {0x0000,0x507c,0x60,0x7f,{{0x00,0x00,0x00,0x00},{0xf0000e,0xf0000e,0xf0000e,0x000000},{0x600000,0x600002,0x600004,0x000000},0,1,NULL,NULL,default_regs_r,special_regs_w}},
+ /* Super King Kong 99 */
+Index: source/m68k/m68kcpu.c
+===================================================================
+--- source/m68k/m68kcpu.c	(revision 496)
++++ source/m68k/m68kcpu.c	(revision 497)
+@@ -870,7 +870,7 @@
+         USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
+       }
+ #ifdef LOGVDP
+-      error("[%d(%d)][%d(%d)] IRQ Level = %d(0x%02x) (%x)\n", v_counter, mcycles_68k/3420, mcycles_68k, mcycles_68k%3420,CPU_INT_LEVEL,FLAG_INT_MASK,m68k_get_reg (NULL, M68K_REG_PC));
++      error("[%d(%d)][%d(%d)] IRQ Level = %d(0x%02x) (%x)\n", v_counter, mcycles_68k/3420, mcycles_68k, mcycles_68k%3420,CPU_INT_LEVEL>>8,FLAG_INT_MASK,m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+       /* update internal interrupt level */
+       m68ki_check_interrupts();

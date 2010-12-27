@@ -1,0 +1,44 @@
+Index: source/genesis.c
+===================================================================
+--- source/genesis.c	(revision 495)
++++ source/genesis.c	(revision 496)
+@@ -138,8 +138,8 @@
+     m68k_memory_map[0].base = bios_rom;
+   }
+ 
+-  /* Reset CPU cycles */
+-  mcycles_68k = mcycles_z80 = 0;
++  /* 68k & Z80 could restart anywhere in VDP frame (Bonkers, Eternal Champions, X-Men 2) */
++  mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
+ 
+   /* Z80 bus is released & Z80 is stopped */
+   m68k_memory_map[0xa0].read8   = m68k_read_bus_8;
+@@ -172,7 +172,7 @@
+     if (config.lock_on == TYPE_AR)
+       datel_reset(0);
+ 
+-    /* 68k & Z80 could restart anywhere in VDP frame (fixes Eternal Champions, X-Men 2) */
++    /* 68k & Z80 could restart anywhere in VDP frame (Bonkers, Eternal Champions, X-Men 2) */
+     mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
+ 
+     /* Reset 68k, Z80 & YM2612 */
+Index: source/mem68k.c
+===================================================================
+--- source/mem68k.c	(revision 495)
++++ source/mem68k.c	(revision 496)
+@@ -483,8 +483,13 @@
+ 
+     case 0x40:  /* TMSS */
+     {
+-      gen_tmss_w(address & 3, data);
+-      break;
++      if (config.tmss & 1)
++      {
++        gen_tmss_w(address & 3, data);
++        return;
++      }
++      m68k_unused_16_w(address, data);
++      return;
+     }
+ 
+     case 0x50:  /* SVP REGISTERS */

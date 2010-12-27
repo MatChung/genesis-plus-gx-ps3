@@ -1,0 +1,12 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 500)
++++ HISTORY.txt	(revision 501)
+@@ -57,6 +57,7 @@
+ * added Cartridge "hot swap" feature.
+ * added missing EEPROM support in some games.
+ * added accurate TMSS emulation (VDP lock-out)
++* improved emulation of copy-protection hardware found in some unlicensed cartridge (Mulan, Pocket Monsters II)
+ * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
+ * fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
+ * enabled simultaneous use of multitap & J-CART (Super Skidmarks 6-player mode)

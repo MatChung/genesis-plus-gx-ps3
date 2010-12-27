@@ -1,0 +1,121 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 449)
++++ HISTORY.txt	(revision 450)
+@@ -25,6 +25,7 @@
+ ---------------
+ * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
+ * added support for 2-Cell vertical scrolling in Interlaced 2 mode
++* added proper HV Counter latch support (fixes Sunset Riders intro)
+ * fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
+ * fixed VBLANK transition line checks
+ * improved VDP FIFO timings accuracy: fixes Sol Deace intro
+@@ -32,9 +33,10 @@
+ * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
+ * improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
+ * improved horizontal blanking & HINT/VINT occurence timing accuracy, as measured on real hardware.
+-* improved H-Counter accuracy in 40-cell mode, as measured on real hardware.
++* improved HCounter accuracy in 40-cell mode, as measured on real hardware.
+ * improved color accuracy in VDP highlight mode to match results observed on real hardware.
+ 
++
+ [Core/CPU]
+ ---------------
+ * updated Z80 core to last version (fixes interrupt Mode 0 timing and some BIT instructions).
+Index: source/vdp.c
+===================================================================
+--- source/vdp.c	(revision 449)
++++ source/vdp.c	(revision 450)
+@@ -66,8 +66,8 @@
+ uint8 playfield_shift;            /* Width of planes A, B (in bits) */
+ uint8 playfield_col_mask;         /* Vertical scroll mask */
+ uint16 playfield_row_mask;        /* Horizontal scroll mask */
+-uint16 hc_latch;                  /* latched HCounter (INT2) */
+ uint16 v_counter;                 /* VDP scanline counter */
++uint32 hvc_latch;                 /* latched HVCounter (INT2) */
+ uint32 dma_length;                /* Current DMA remaining bytes */
+ int32 fifo_write_cnt;             /* VDP writes fifo count */
+ uint32 fifo_lastwrite;            /* last VDP write cycle */
+@@ -161,7 +161,7 @@
+   hint_pending    = 0;
+   vint_pending    = 0;
+   irq_status      = 0;
+-  hc_latch        = 0;
++  hvc_latch       = 0;
+   v_counter       = 0;
+   dmafill         = 0;
+   dma_length      = 0;
+@@ -455,8 +455,12 @@
+ 
+ unsigned int vdp_hvc_r(void)
+ {
++  /* HVC is frozen (Lightgun games + Sunset Riders) */
++  if (hvc_latch)
++    return (hvc_latch & 0xffff);
++
+   /* Horizontal Counter (Striker, Mickey Mania, Skitchin, Road Rash I,II,III, ...) */
+-  uint8 hc = (hc_latch & 0x100) ? (hc_latch & 0xFF) : hctab[mcycles_68k%MCYCLES_PER_LINE];
++  uint8 hc = hctab[mcycles_68k%MCYCLES_PER_LINE];
+ 
+   /* Vertical Counter */
+   uint8 vc = vctab[v_counter];
+@@ -780,6 +784,16 @@
+         for (i = 1; i < 0x40; i += 1)
+           color_update (i, *(uint16 *) & cram[i << 1]);
+       }
++
++      /* HVC latch bit */
++      if (r & 0x02)
++      {
++        if (reg[0] & 2) /* latch current HVC */
++          hvc_latch = 0x10000 | (vctab[v_counter] << 8) | hctab[mcycles_68k%MCYCLES_PER_LINE];
++        else            /* free-running HVC */
++          hvc_latch = 0;
++      }
++
+       break;
+ 
+     case 1: /* CTRL #2 */
+Index: source/vdp.h
+===================================================================
+--- source/vdp.h	(revision 449)
++++ source/vdp.h	(revision 450)
+@@ -54,8 +54,8 @@
+ extern uint8 playfield_shift;
+ extern uint8 playfield_col_mask;
+ extern uint16 playfield_row_mask;
+-extern uint16 hc_latch;
+ extern uint16 v_counter;
++extern uint32 hvc_latch;
+ extern uint32 dma_length;
+ extern int32 fifo_write_cnt;
+ extern uint32 fifo_lastwrite;
+Index: source/gen_input.c
+===================================================================
+--- source/gen_input.c	(revision 449)
++++ source/gen_input.c	(revision 450)
+@@ -90,16 +90,17 @@
+       if (reg[11] & 0x08) 
+         irq_status = (irq_status & ~0x40) | 0x12;
+ 
+-      /* Horizontal Counter Latch:
+-        1) some games does not set HVC latch but instead use bigger X offset 
+-        2) for games using H40 mode, the gun routine scales up the Hcounter value,
+-           H-Counter range is approx. 292 pixel clocks
++      /* HV Counter Latch:
++        1) some games does not enable HVC latch but instead use bigger X offset 
++            --> we force the HV counter value read by the gun routine 
++        2) for games using H40 mode, the gun routine scales up the Hcounter value
++            --> H-Counter range is approx. 290 dot clocks
+       */
+-      hc_latch = 0x100;
++      hvc_latch = 0x10000 | (vctab[v_counter] << 8);
+       if (reg[12] & 1) 
+-        hc_latch |= hc_320[((input.analog[num][0] * 290) / (2 * 320) + input.x_offset) % 210];
++        hvc_latch |= hc_320[((input.analog[num][0] * 290) / (2 * 320) + input.x_offset) % 210];
+       else
+-        hc_latch |= hc_256[(input.analog[num][0] / 2 + input.x_offset)%171];
++        hvc_latch |= hc_256[(input.analog[num][0] / 2 + input.x_offset)%171];
+     }
+   }
+ }

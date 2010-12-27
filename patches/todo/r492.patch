@@ -1,0 +1,12 @@
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 491)
++++ source/system.c	(revision 492)
+@@ -478,6 +478,7 @@
+ 
+         /* Z80 interrupt */
+         z80_set_irq_line(0, ASSERT_LINE);
++        zirq = 1;
+       }
+       else
+       {

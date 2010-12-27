@@ -1,0 +1,552 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 460)
++++ HISTORY.txt	(revision 461)
+@@ -26,7 +26,6 @@
+ * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
+ * added support for 2-Cell vertical scrolling in Interlaced 2 mode
+ * added proper HV Counter latch support (fixes Sunset Riders intro)
+-* fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
+ * improved VDP FIFO timings accuracy: fixes Sol Deace intro
+ * improved sprite masking accuracy (thanks to Nemesis for his sprite test program)
+ * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
+@@ -52,7 +51,8 @@
+ * added Action Replay hardware emulation (Action replay ROM is now fully supported).
+ * added S&K "Lock-On" hardware emulation (you can "lock" any games to Sonic & Knuckles).
+ * added Cartridge "hot swap" feature.
+-* added EEPROM support in some games requiring it.
++* added missing EEPROM support in some games.
++* added accurate TMSS emulation (VDP lock-out)
+ * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
+ * fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
+ * lots of code cleanup, bugfixes & optimization.
+Index: source/membnk.c
+===================================================================
+--- source/membnk.c	(revision 460)
++++ source/membnk.c	(revision 461)
+@@ -27,7 +27,7 @@
+   machine lock up.
+ */
+ 
+-uint32 zbank_unused_r(uint32 address)
++unsigned int zbank_unused_r(unsigned int address)
+ {
+ #ifdef LOGERROR
+   error("Z80 bank unused read %06X\n", address);
+@@ -35,14 +35,14 @@
+   return (address & 1) ? 0x00 : 0xff;
+ }
+ 
+-void zbank_unused_w(uint32 address, uint32 data)
++void zbank_unused_w(unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error("Z80 bank unused write %06X = %02X\n", address, data);
+ #endif
+ }
+ 
+-uint32 zbank_lockup_r(uint32 address)
++unsigned int zbank_lockup_r(unsigned int address)
+ {
+ #ifdef LOGERROR
+   error("Z80 bank lockup read %06X\n", address);
+@@ -55,7 +55,7 @@
+   return 0xff;
+ }
+ 
+-void zbank_lockup_w(uint32 address, uint32 data)
++void zbank_lockup_w(unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error("Z80 bank lockup write %06X = %02X\n", address, data);
+@@ -68,7 +68,7 @@
+ }
+ 
+ /* I/O & Control registers */
+-uint32 zbank_read_ctrl_io(uint32 address)
++unsigned int zbank_read_ctrl_io(unsigned int address)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -130,7 +130,7 @@
+   }
+ }
+ 
+-void zbank_write_ctrl_io(uint32 address, uint32 data)
++void zbank_write_ctrl_io(unsigned int address, unsigned int data)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -205,7 +205,7 @@
+ 
+ 
+ /* VDP */
+-uint32 zbank_read_vdp(uint32 address)
++unsigned int zbank_read_vdp(unsigned int address)
+ {
+   switch (address & 0xfd)
+   {
+@@ -256,7 +256,7 @@
+   }
+ }
+ 
+-void zbank_write_vdp(uint32 address, uint32 data)
++void zbank_write_vdp(unsigned int address, unsigned int data)
+ {
+   switch (address & 0xfc)
+   {
+Index: source/membnk.h
+===================================================================
+--- source/membnk.h	(revision 460)
++++ source/membnk.h	(revision 461)
+@@ -23,14 +23,14 @@
+ #ifndef _MEMBNK_H_
+ #define _MEMBNK_H_
+ 
+-extern uint32 zbank_unused_r(uint32 address);
+-extern void zbank_unused_w(uint32 address, uint32 data);
+-extern uint32 zbank_lockup_r(uint32 address);
+-extern void zbank_lockup_w(uint32 address, uint32 data);
+-extern uint32 zbank_read_ctrl_io(uint32 address);
+-extern void zbank_write_ctrl_io(uint32 address, uint32 data);
+-extern uint32 zbank_read_vdp(uint32 address);
+-extern void zbank_write_vdp(uint32 address, uint32 data);
++extern unsigned int zbank_unused_r(unsigned int address);
++extern void zbank_unused_w(unsigned int address, unsigned int data);
++extern unsigned int zbank_lockup_r(unsigned int address);
++extern void zbank_lockup_w(unsigned int address, unsigned int data);
++extern unsigned int zbank_read_ctrl_io(unsigned int address);
++extern void zbank_write_ctrl_io(unsigned int address, unsigned int data);
++extern unsigned int zbank_read_vdp(unsigned int address);
++extern void zbank_write_vdp(unsigned int address, unsigned int data);
+ 
+ struct _zbank_memory_map
+ {
+Index: source/mem68k.c
+===================================================================
+--- source/mem68k.c	(revision 460)
++++ source/mem68k.c	(revision 461)
+@@ -28,7 +28,7 @@
+ /*--------------------------------------------------------------------------*/
+ /* Unused area (return open bus data, i.e prefetched instruction word)      */
+ /*--------------------------------------------------------------------------*/
+-uint32 m68k_read_bus_8(uint32 address)
++unsigned int m68k_read_bus_8(unsigned int address)
+ {
+ #ifdef LOGERROR
+   error("Unused read8 %08X (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -36,7 +36,7 @@
+   return m68k_read_pcrelative_8(REG_PC | (address & 1));
+ }
+ 
+-uint32 m68k_read_bus_16(uint32 address)
++unsigned int m68k_read_bus_16(unsigned int address)
+ {
+ #ifdef LOGERROR
+   error("Unused read16 %08X (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -45,14 +45,14 @@
+ }
+ 
+ 
+-void m68k_unused_8_w (uint32 address, uint32 data)
++void m68k_unused_8_w (unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error("Unused write8 %08X = %02X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+ }
+ 
+-void m68k_unused_16_w (uint32 address, uint32 data)
++void m68k_unused_16_w (unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error("Unused write16 %08X = %04X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -63,7 +63,7 @@
+ /*--------------------------------------------------------------------------*/
+ /* Illegal area (cause system to lock-up since !DTACK is not returned)      */
+ /*--------------------------------------------------------------------------*/
+-void m68k_lockup_w_8 (uint32 address, uint32 data)
++void m68k_lockup_w_8 (unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error ("Lockup %08X = %02X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -74,7 +74,7 @@
+   }
+ }
+ 
+-void m68k_lockup_w_16 (uint32 address, uint32 data)
++void m68k_lockup_w_16 (unsigned int address, unsigned int data)
+ {
+ #ifdef LOGERROR
+   error ("Lockup %08X = %04X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -85,7 +85,7 @@
+   }
+ }
+ 
+-uint32 m68k_lockup_r_8 (uint32 address)
++unsigned int m68k_lockup_r_8 (unsigned int address)
+ { 
+ #ifdef LOGERROR
+   error ("Lockup %08X.b (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -97,7 +97,7 @@
+   return m68k_read_pcrelative_8(REG_PC | (address & 1));
+ }
+ 
+-uint32 m68k_lockup_r_16 (uint32 address)
++unsigned int m68k_lockup_r_16 (unsigned int address)
+ {
+ #ifdef LOGERROR
+   error ("Lockup %08X.w (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -113,7 +113,7 @@
+ /*--------------------------------------------------------------------------*/
+ /* cartridge EEPROM                                                         */
+ /*--------------------------------------------------------------------------*/
+-uint32 eeprom_read_byte(uint32 address)
++unsigned int eeprom_read_byte(unsigned int address)
+ {
+   if (address != eeprom.type.sda_out_adr)
+   {
+@@ -122,7 +122,7 @@
+   return eeprom_read(address, 0);
+ }
+ 
+-uint32 eeprom_read_word(uint32 address)
++unsigned int eeprom_read_word(unsigned int address)
+ {
+   if (address != (eeprom.type.sda_out_adr & 0xfffffe))
+   {
+@@ -131,7 +131,7 @@
+   return eeprom_read(address, 1);
+ }
+ 
+-void eeprom_write_byte(uint32 address, uint32 data)
++void eeprom_write_byte(unsigned int address, unsigned int data)
+ {
+   if ((address != eeprom.type.sda_in_adr) && (address != eeprom.type.scl_adr))
+   {
+@@ -141,7 +141,7 @@
+   eeprom_write(address, data, 0);
+ }
+ 
+-void eeprom_write_word(uint32 address, uint32 data)
++void eeprom_write_word(unsigned int address, unsigned int data)
+ {
+   if ((address != (eeprom.type.sda_in_adr & 0xfffffe)) && (address != (eeprom.type.scl_adr & 0xfffffe)))
+   {
+@@ -155,7 +155,7 @@
+ /*--------------------------------------------------------------------------*/
+ /* Z80 bus (accessed through I/O chip)                                      */
+ /*--------------------------------------------------------------------------*/
+-uint32 z80_read_byte(uint32 address)
++unsigned int z80_read_byte(unsigned int address)
+ {
+   switch ((address >> 13) & 3)
+   {
+@@ -181,35 +181,13 @@
+   }
+ }
+ 
+-uint32 z80_read_word(uint32 address)
++unsigned int z80_read_word(unsigned int address)
+ {
+-  switch ((address >> 13) & 3)
+-  {
+-    case 2:   /* YM2612 */
+-    {
+-      unsigned int data = fm_read(mcycles_68k, address & 3);
+-      return (data << 8 | data);
+-    }
+-
+-    case 3:   /* Misc */
+-    {
+-      if ((address & 0xff00) == 0x7f00)
+-      {
+-        /* VDP (through 68k bus) */
+-        return m68k_lockup_r_16(address);
+-      }
+-      return (m68k_read_bus_16(address) | 0xffff);
+-    }
+-
+-    default:  /* ZRAM */
+-    {
+-      unsigned int data = zram[address & 0x1fff];
+-      return (data << 8 | data);
+-    }
+-  }
++  unsigned int data = z80_read_byte(address);
++  return (data | (data << 8));
+ }
+ 
+-void z80_write_byte(uint32 address, uint32 data)
++void z80_write_byte(unsigned int address, unsigned int data)
+ {
+   switch ((address >> 13) & 3)
+   {
+@@ -224,75 +202,44 @@
+       switch ((address >> 8) & 0x7f)
+       {
+         case 0x60:  /* Bank register */
++        {
+           gen_zbank_w(data & 1);
+           return;
++        }
+ 
+         case 0x7f:  /* VDP */
++        {
+           m68k_lockup_w_8(address, data);
+           return;
++        }
+       
+         default:
++        {
+           m68k_unused_8_w(address, data);
+           return;
++        }
+       }
+     }
+       
+     default: /* ZRAM */
+     {
+       zram[address & 0x1fff] = data;
+-      mcycles_68k += 8; /* Z80 bus latency (fixes Pacman 2: New Adventures) */
++      mcycles_68k += 8; /* ZRAM access latency (fixes Pacman 2: New Adventures) */
+       return;
+     }
+   }
+ }
+ 
+-void z80_write_word(uint32 address, uint32 data)
++void z80_write_word(unsigned int address, unsigned int data)
+ {
+-  switch ((address >> 13) & 3)
+-  {
+-    case 2: /* YM2612 */
+-    {
+-      fm_write(mcycles_68k, address & 3, data >> 8);
+-      return;
+-    }
+-
+-    case 3:
+-    {
+-      switch ((address >> 8) & 0x7f)
+-      {
+-        case 0x60:  /* Bank register */
+-        {
+-          gen_zbank_w((data >> 8) & 1);
+-          return;
+-        }
+-
+-        case 0x7f:  /* VDP */
+-        {
+-          m68k_lockup_w_16(address, data);
+-          return;
+-        }
+-
+-        default:
+-        {
+-          m68k_unused_16_w(address, data);
+-          return;
+-        }
+-      }
+-    }
+-
+-    default: /* ZRAM */
+-    {
+-      zram[address & 0x1fff] = data >> 8;
+-      return;
+-    }
+-  }
++  z80_write_byte(address, data >> 8);
+ }
+ 
+ 
+ /*--------------------------------------------------------------------------*/
+ /* I/O Control                                                              */
+ /*--------------------------------------------------------------------------*/
+-uint32 ctrl_io_read_byte(uint32 address)
++unsigned int ctrl_io_read_byte(unsigned int address)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -360,7 +307,7 @@
+   }
+ }
+ 
+-uint32 ctrl_io_read_word(uint32 address)
++unsigned int ctrl_io_read_word(unsigned int address)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -405,7 +352,7 @@
+ 
+         case 4:
+         {
+-          uint32 temp = svp->ssp1601.gr[SSP_PM0].h;
++          unsigned int temp = svp->ssp1601.gr[SSP_PM0].h;
+           svp->ssp1601.gr[SSP_PM0].h &= ~1;
+           return temp;
+         }
+@@ -434,7 +381,7 @@
+   }
+ }
+ 
+-void ctrl_io_write_byte(uint32 address, uint32 data)
++void ctrl_io_write_byte(unsigned int address, unsigned int data)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -507,7 +454,7 @@
+   }
+ }
+ 
+-void ctrl_io_write_word(uint32 address, uint32 data)
++void ctrl_io_write_word(unsigned int address, unsigned int data)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+@@ -581,7 +528,7 @@
+ /*--------------------------------------------------------------------------*/
+ /* VDP                                                                      */
+ /*--------------------------------------------------------------------------*/
+-uint32 vdp_read_byte(uint32 address)
++unsigned int vdp_read_byte(unsigned int address)
+ {
+   switch (address & 0xfd)
+   {
+@@ -632,7 +579,7 @@
+   }
+ }
+ 
+-uint32 vdp_read_word(uint32 address)
++unsigned int vdp_read_word(unsigned int address)
+ {
+   switch (address & 0xfc)
+   {
+@@ -643,7 +590,7 @@
+ 
+     case 0x04:  /* CTRL */
+     {
+-     return ((vdp_ctrl_r(mcycles_68k) & 0x3FF) | (m68k_read_pcrelative_16(REG_PC) & 0xFC00));
++      return ((vdp_ctrl_r(mcycles_68k) & 0x3FF) | (m68k_read_pcrelative_16(REG_PC) & 0xFC00));
+     }
+ 
+     case 0x08:  /* HVC */
+@@ -665,7 +612,7 @@
+   }
+ }
+ 
+-void vdp_write_byte(uint32 address, uint32 data)
++void vdp_write_byte(unsigned int address, unsigned int data)
+ {
+   switch (address & 0xfc)
+   {
+@@ -713,7 +660,7 @@
+   }
+ }
+ 
+-void vdp_write_word(uint32 address, uint32 data)
++void vdp_write_word(unsigned int address, unsigned int data)
+ {
+   switch (address & 0xfc)
+   {
+@@ -759,7 +706,7 @@
+ 
+ /******* PICO ************************************************/
+ 
+-uint32 pico_read_byte(uint32 address)
++unsigned int pico_read_byte(unsigned int address)
+ {
+   /* PICO */
+   switch (address & 0xff)
+@@ -771,7 +718,7 @@
+ 
+     case 0x03:  /* IO register */
+     {
+-      uint8 retval = 0xff;
++      unsigned int retval = 0xff;
+       if (input.pad[0] & INPUT_B)     retval &= ~0x10;
+       if (input.pad[0] & INPUT_A)     retval &= ~0x80;
+       if (input.pad[0] & INPUT_UP)    retval &= ~0x01;
+@@ -820,7 +767,7 @@
+   }
+ }
+ 
+-uint32 pico_read_word(uint32 address)
++unsigned int pico_read_word(unsigned int address)
+ {
+   return (pico_read_byte(address | 1) | (m68k_read_bus_8(address) << 8));
+ }
+Index: source/mem68k.h
+===================================================================
+--- source/mem68k.h	(revision 460)
++++ source/mem68k.h	(revision 461)
+@@ -25,43 +25,43 @@
+ #define _MEM68K_H_
+ 
+ /* unused areas */
+-extern uint32 m68k_read_bus_8(uint32 address);
+-extern uint32 m68k_read_bus_16(uint32 address);
+-extern void m68k_unused_8_w (uint32 address, uint32 data);
+-extern void m68k_unused_16_w (uint32 address, uint32 data);
++extern unsigned int m68k_read_bus_8(unsigned int address);
++extern unsigned int m68k_read_bus_16(unsigned int address);
++extern void m68k_unused_8_w(unsigned int address, unsigned int data);
++extern void m68k_unused_16_w(unsigned int address, unsigned int data);
+ 
+ /* illegal areas */
+-extern uint32 m68k_lockup_r_8 (uint32 address);
+-extern uint32 m68k_lockup_r_16 (uint32 address);
+-extern void m68k_lockup_w_8 (uint32 address, uint32 data);
+-extern void m68k_lockup_w_16 (uint32 address, uint32 data);
++extern unsigned int m68k_lockup_r_8(unsigned int address);
++extern unsigned int m68k_lockup_r_16(unsigned int address);
++extern void m68k_lockup_w_8(unsigned int address, unsigned int data);
++extern void m68k_lockup_w_16(unsigned int address, unsigned int data);
+ 
+ /* eeprom */
+-extern uint32 eeprom_read_byte(uint32 address);
+-extern uint32 eeprom_read_word(uint32 address);
+-extern void eeprom_write_byte(uint32 address, uint32 data);
+-extern void eeprom_write_word(uint32 address, uint32 data);
++extern unsigned int eeprom_read_byte(unsigned int address);
++extern unsigned int eeprom_read_word(unsigned int address);
++extern void eeprom_write_byte(unsigned int address, unsigned int data);
++extern void eeprom_write_word(unsigned int address, unsigned int data);
+ 
+ /* Z80 bus */
+-extern uint32 z80_read_byte(uint32 address);
+-extern uint32 z80_read_word(uint32 address);
+-extern void z80_write_byte(uint32 address, uint32 data);
+-extern void z80_write_word(uint32 address, uint32 data);
++extern unsigned int z80_read_byte(unsigned int address);
++extern unsigned int z80_read_word(unsigned int address);
++extern void z80_write_byte(unsigned int address, unsigned int data);
++extern void z80_write_word(unsigned int address, unsigned int data);
+ 
+ /* I/O & Control registers */
+-extern uint32 ctrl_io_read_byte(uint32 address);
+-extern uint32 ctrl_io_read_word(uint32 address);
+-extern void ctrl_io_write_byte(uint32 address, uint32 data);
+-extern void ctrl_io_write_word(uint32 address, uint32 data);
++extern unsigned int ctrl_io_read_byte(unsigned int address);
++extern unsigned int ctrl_io_read_word(unsigned int address);
++extern void ctrl_io_write_byte(unsigned int address, unsigned int data);
++extern void ctrl_io_write_word(unsigned int address, unsigned int data);
+ 
+ /* VDP */
+-extern uint32 vdp_read_byte(uint32 address);
+-extern uint32 vdp_read_word(uint32 address);
+-extern void vdp_write_byte(uint32 address, uint32 data);
+-extern void vdp_write_word(uint32 address, uint32 data);
++extern unsigned int vdp_read_byte(unsigned int address);
++extern unsigned int vdp_read_word(unsigned int address);
++extern void vdp_write_byte(unsigned int address, unsigned int data);
++extern void vdp_write_word(unsigned int address, unsigned int data);
+ 
+ /* PICO */
+-extern uint32 pico_read_byte(uint32 address);
+-extern uint32 pico_read_word(uint32 address);
++extern unsigned int pico_read_byte(unsigned int address);
++extern unsigned int pico_read_word(unsigned int address);
+ 
+ #endif /* _MEM68K_H_ */

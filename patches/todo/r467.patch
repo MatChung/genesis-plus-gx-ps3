@@ -1,0 +1,745 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 466)
++++ HISTORY.txt	(revision 467)
+@@ -15,26 +15,27 @@
+ * fixed YM2612 state on reset.
+ * removed outdated & less accurate Gens YM2612 core
+ * added configurable YM2612 DAC resolution emulation.
+-* added configurable & faster FIR resampler (thanks to Blargg & AamirM), dropped libsamplerate support.
++* added configurable & faster FIR resampler (thanks to Blargg & AamirM), removed libsamplerate support.
+ * added configurable Low-Pass filtering
+ * added configurable 3-Band Equalizer (thanks to Neil C).
+-* added support for SN76489 Noise Channel boost (optional).
+-* modified SN76489 cut-off frequency.
++* added an option to boost SN76489 Noise Channel.
++* adjusted SN76489 cut-off frequency.
+ 
+ [Core/VDP]
+ ---------------
+ * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
+ * added support for 2-Cell vertical scrolling in Interlaced 2 mode
+-* added proper HV Counter latch support (fixes Sunset Riders intro)
+-* improved VDP FIFO timings accuracy: fixes Sol Deace intro
+-* improved sprite masking accuracy (thanks to Nemesis for his sprite test program)
++* added support for some undocumented mode register bits
++* added proper emulation of HV Counter latch: fixes Sunset Riders intro
++* added pixel-accurate emulation of mid-line display on/off (Nigel Mansell World Championship PAL, Ren & Stimpy's Invention PAL,...)
++* improved FIFO timings accuracy: fixes Sol Deace intro
++* improved sprite masking accuracy (thanks to Nemesis for his test program)
++* improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
+ * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
+-* improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
+ * improved horizontal blanking & HINT/VINT occurence timing accuracy, as measured on real hardware.
+ * improved HCounter accuracy in 40-cell mode, as measured on real hardware.
+-* improved color accuracy in VDP highlight mode to match results observed on real hardware.
++* improved color accuracy in VDP highlight mode to match results observed on real hardware
+ 
+-
+ [Core/CPU]
+ ---------------
+ * updated Z80 core to last version (fixes interrupt Mode 0 timing and some BIT instructions).
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 466)
++++ source/system.c	(revision 467)
+@@ -31,7 +31,6 @@
+ uint32 mcycles_vdp;
+ uint32 mcycles_z80;
+ uint32 mcycles_68k;
+-uint32 hint_68k;
+ uint8 system_hw;
+ 
+ /****************************************************************
+@@ -338,7 +337,7 @@
+       bitmap.viewport.changed = 1;
+     }
+ 
+-    /* screen height */
++    /* active screen height */
+     if (reg[1] & 8)
+     { 
+       bitmap.viewport.h = 240;
+@@ -350,7 +349,7 @@
+       bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 32 : 8) : 0;
+     }
+ 
+-    /* screen width */
++    /* active screen width */
+     if (reg[12] & 1)
+     {
+       bitmap.viewport.w = 320;
+@@ -374,8 +373,7 @@
+ 
+   /* even/odd field flag (interlaced modes only) */
+   odd_frame ^= 1;
+-  if (interlaced)
+-    status |= (odd_frame << 4);
++  if (interlaced) status |= (odd_frame << 4);
+ 
+   /* reload HCounter */
+   int h_counter = reg[10];
+@@ -387,6 +385,10 @@
+   /* reset line cycle count */
+   mcycles_vdp = 0;
+ 
++  /* parse sprites on line zero */
++  object_which = 1;
++  if (reg[1] & 0x40) parse_satb(0x80);
++
+   /* process scanlines */
+   for (line = 0; line < lines_per_frame; line ++)
+   {
+@@ -396,12 +398,8 @@
+     /* update 6-Buttons or Menacer */
+     input_update();
+ 
+-    /* 68k line cycle count */
+-    hint_68k = mcycles_68k;
+-
+     /* update VDP DMA */
+-    if (dma_length)
+-      vdp_update_dma();
++    if (dma_length) vdp_update_dma();
+ 
+     /* vertical blanking */
+     if (status & 8)
+@@ -413,8 +411,8 @@
+       /* clear pending Z80 interrupt */
+       if (zirq)
+       {
+-        zirq = 0;
+         z80_set_irq_line(0, CLEAR_LINE);
++        zirq = 0;
+       }
+     }
+ 
+@@ -453,15 +451,15 @@
+         status |= 0x08;
+ 
+         /* render overscan */
+-        if (!do_skip && bitmap.viewport.y)
++        if (!do_skip && (line < end))
+           render_line(line);
+ 
+         /* update inputs (doing this here fix Warriors of Eternal Sun) */
+         osd_input_Update();
+ 
+         /* Z80 interrupt is 16ms period (one frame) and 64us length (one scanline) */
+-        zirq = 1;
+         z80_set_irq_line(0, ASSERT_LINE);
++        zirq = 1;
+ 
+         /* delay between VINT flag & V Interrupt (Ex-Mutants, Tyrant) */
+         m68k_run(mcycles_vdp + 588);
+@@ -469,37 +467,38 @@
+ 
+         /* delay between VBLANK flag & V Interrupt (Dracula, OutRunners, VR Troopers) */
+         m68k_run(mcycles_vdp + 788);
+-        if (zstate == 1)
+-          z80_run(mcycles_vdp + 788);
+-        else
+-          mcycles_z80 = mcycles_vdp + 788;
++        if (zstate == 1) z80_run(mcycles_vdp + 788);
++        else mcycles_z80 = mcycles_vdp + 788;
+ 
+         /* V Interrupt */
+         vint_pending = 0x20;
+         if (reg[1] & 0x20)
+           irq_status = (irq_status & ~0x40) | 0x36;
+       }
+-      else if (!do_skip) 
++      else
+       {
+-        /* sprites are processed during horizontal blanking */
+-        if (reg[1] & 0x40)
+-          parse_satb(0x80 + line);
++        /* swap sprite line buffers */
++        object_which ^= 1;
+ 
+         /* render scanline */
+-        render_line(line);
++        if (!do_skip)
++        {
++          render_line(line);
++
++          /* parse sprites on next line */
++          if ((reg[1] & 0x40) && (line < (bitmap.viewport.h - 1)))
++            parse_satb(0x81 + line);
++        }
+       }
+     }
+ 
+     /* process line */
+     m68k_run(mcycles_vdp + MCYCLES_PER_LINE);
+-    if (zstate == 1)
+-      z80_run(mcycles_vdp + MCYCLES_PER_LINE);
+-    else 
+-      mcycles_z80 = mcycles_vdp + MCYCLES_PER_LINE;
++    if (zstate == 1) z80_run(mcycles_vdp + MCYCLES_PER_LINE);
++    else mcycles_z80 = mcycles_vdp + MCYCLES_PER_LINE;
+     
+     /* SVP chip */
+-    if (svp)
+-      ssp1601_run(SVP_cycles);
++    if (svp) ssp1601_run(SVP_cycles);
+ 
+     /* update line cycle count */
+     mcycles_vdp += MCYCLES_PER_LINE;
+Index: source/vdp.c
+===================================================================
+--- source/vdp.c	(revision 466)
++++ source/vdp.c	(revision 467)
+@@ -700,7 +700,7 @@
+         if (!(status & 8) && (reg[1]& 0x40) && (mcycles_68k <= (mcycles_vdp + 860)))
+         {
+           /* remap current line */
+-          remap_buffer(v_counter,bitmap.viewport.w + 2*bitmap.viewport.x);
++          remap_buffer(v_counter);
+ #ifdef LOGVDP
+           error("Line remapped\n");
+ #endif
+@@ -829,34 +829,56 @@
+         }
+       }
+ 
+-      /* Display status modified during HBLANK (Legend of Galahad, Lemmings 2, Formula 1 Championship,  */
+-      /* Nigel Mansell's World Championship Racing,  ...)                                               */
+-      /*                                                                                                */
+-      /* Note that this is not entirely correct since we are cheating with the HBLANK period limits and */
+-      /* still redrawing the whole line. This is done because some games (forexample, the PAL version   */
+-      /* of Nigel Mansell's World Championship Racing) appear to disable display outside HBLANK.        */
+-      /* On  real hardware, the raster line would appear partially blanked.                             */
++      /* Display status modified during active display (Legend of Galahad, Lemmings 2,  */
++      /* Formula One Championship,  Nigel Mansell's World Championship Racing, ...)     */
+       if ((r & 0x40) && !(status & 8))
+       {
+-        if (mcycles_68k <= (hint_68k + 860))
++        int offset = mcycles_68k - mcycles_vdp - 860;
++        if (offset <= 0)
+         {
+-          /* If display was disabled during HBLANK (Mickey Mania 3D level), sprite processing is limited  */
++          /* redraw entire line */
++          render_line(v_counter);
++
++#ifdef LOGVDP
++          error("Line redrawn (%d sprites) \n",object_count[object_which^1]);
++#endif
++
++          /* If display is was disabled during HBLANK (Mickey Mania 3D level), sprite processing is limited  */
+           /* Below values have been deducted from testing on this game, accurate emulation would require  */
+           /* to know exact sprite (pre)processing timings. Hopefully, they don't seem to break any other  */
+           /* games, so they might not be so much inaccurate.                                              */
+-          if ((d&0x40) && (object_index_count > 5) && (mcycles_68k % MCYCLES_PER_LINE >= 360))
+-              object_index_count = 5;
++          if (d & 0x40)
++          {
++            parse_satb(0x81 + v_counter);
++            if ((object_count[object_which^1] > 5) && (mcycles_68k % MCYCLES_PER_LINE >= 360))
++              object_count[object_which^1] = 5;
++          }
++        }
++        else
++        {
++          /* pixel offset */
++          if (reg[12] & 1) offset = offset / 8;
++          else offset = (offset / 10) + 16;
++
+ #ifdef LOGVDP
+-          error("Line redrawn (%d sprites) \n",object_index_count);
++          error("Line %d redrawn from pixel %d\n",v_counter,offset);
+ #endif
+-          /* redraw entire line */
+-          render_line(v_counter);
++
++          /* line is partially blanked */
++          if (offset < bitmap.viewport.w)
++          {
++            if (d & 0x40)
++            {
++              render_line(v_counter);
++              blank_line(v_counter, 0, offset);
++            }
++            else
++            {
++              blank_line(v_counter, offset, bitmap.viewport.w - offset);
++            }
++          }
+         }
+-#ifdef LOGVDP
+-        else
+-          error("Line NOT redrawn\n");
+-#endif
+-      }
++      } 
+       break;
+ 
+     case 2: /* NTAB */
+@@ -896,7 +918,7 @@
+         if (!(status & 8) && (mcycles_68k <= (mcycles_vdp + 860)))
+         {
+           /* remap colors */
+-          remap_buffer(v_counter,bitmap.viewport.w + 2*bitmap.viewport.x);
++          remap_buffer(v_counter);
+ #ifdef LOGVDP
+           error("--> Line remapped\n");
+ #endif
+Index: source/system.h
+===================================================================
+--- source/system.h	(revision 466)
++++ source/system.h	(revision 467)
+@@ -77,7 +77,6 @@
+ extern uint32 mcycles_vdp;
+ extern uint32 mcycles_z80;
+ extern uint32 mcycles_68k;
+-extern uint32 hint_68k;
+ extern uint8 system_hw;
+ 
+ /* Function prototypes */
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 466)
++++ source/render.c	(revision 467)
+@@ -302,7 +302,7 @@
+ #define DRAW_SPRITE_TILE \
+   for(i=0; i<8; i++) \
+   { \
+-    if ((lb[i] & 0x80) && (lb[i] & 0x0F) && (src[i] & 0x0F)) status |= 0x20; \
++    if (((lb[i] & 0x8F) > 0x80) && src[i]) status |= 0x20; \
+     lb[i] = table[(lb[i] << 8) |(src[i] | palette)]; \
+   }
+ 
+@@ -348,15 +348,17 @@
+ /* Sprite name look-up table */
+ static uint8 name_lut[0x400];
+ 
+-struct
++typedef struct
+ {
+   uint16 ypos;
+   uint16 xpos;
+   uint16 attr;
+   uint8 size;
+   uint8 index; // unused
+-} object_info[20];
++} object;
+ 
++static object object_info[2][20];
++
+ /* Pixel look-up tables and table base address */
+ static uint8 *lut[5];
+ static uint8 *lut_base = NULL;
+@@ -387,7 +389,8 @@
+ static uint8 obj_buf[0x200];  /* Object layer line buffer */
+ 
+ /* Sprite line buffer data */
+-uint32 object_index_count;
++uint8 object_count[2];
++uint8 object_which;
+ 
+ /*--------------------------------------------------------------------------*/
+ /* Look-up table functions (handles priority between layers pixels)         */
+@@ -904,7 +907,7 @@
+   }
+ }
+ 
+-static inline uint32 get_hscroll(int line)
++static uint32 get_hscroll(int line)
+ {
+   switch(reg[11] & 3)
+   {
+@@ -1455,33 +1458,25 @@
+ 
+ static void render_obj(int line, uint8 *buf, uint8 *table)
+ {
+-  uint16 ypos;
+-  uint16 attr;
+-  uint16 xpos;
+   uint8 sizetab[] = {8, 16, 24, 32};
+-  uint8 size;
+-  uint8 *src;
+ 
+-  int count,i;
++  int i, count, column;
++  int xpos;
++  int v_line;
++  int pixelmax = bitmap.viewport.w;
+   int pixelcount = 0;
+-  int width;
+-  int height;
+-  int v_line;
+-  int column;
+-  int max = bitmap.viewport.w;
+-  int left = 0x80;
+-  int right = 0x80 + max;
++  int masked = 0;
+ 
+-  uint8 *s, *lb;
+-  uint16 name, index;
+-  uint8 palette;
++  uint8 *src, *s, *lb;
++  uint32 size, width;
++  uint32 attr, attr_mask, name, palette, index;
+ 
+-  int attr_mask, nt_row;
+-  int mask = 0;
++  object *obj_info = object_info[object_which];
+ 
+-  for(count = 0; count < object_index_count; count += 1)
++  for(count = 0; count < object_count[object_which]; count ++)
+   {
+-    xpos = object_info[count].xpos & 0x1ff;
++    /* sprite horizontal position */
++    xpos = obj_info[count].xpos;
+ 
+     /* sprite masking (requires at least one sprite with xpos > 0) */
+     if (xpos)
+@@ -1491,43 +1486,47 @@
+     else if (spr_over)
+     {
+       spr_over = 0;
+-      mask = 1;
++      masked = 1;
+     }
+ 
+-    size = object_info[count].size & 0x0f;
++    /* sprite horizontal ofsfet */
++    xpos = xpos - 0x80;
++
++    /* sprite size */
++    size = obj_info[count].size;
+     width = sizetab[(size >> 2) & 3];
+ 
+-    /* update pixel count (off-screen sprites included) */
++    /* update pixel count (off-screen sprites are included) */
+     pixelcount += width;
+ 
+-    if(((xpos + width) >= left) && (xpos < right) && !mask)
++    /* draw visible sprites */
++    if (((xpos + width) >= 0) && (xpos < pixelmax) && !masked)
+     {
+-      ypos = object_info[count].ypos;
+-      attr = object_info[count].attr;
+-      attr_mask = (attr & 0x1800);
+-
+-      height = sizetab[size & 3];
++      /* sprite attributes + pattern index */
++      attr = obj_info[count].attr;
++      attr_mask = attr & 0x1800;
+       palette = (attr >> 9) & 0x70;
++      name = attr & 0x07FF;
+ 
+-      v_line = (line - ypos);
+-      nt_row = (v_line >> 3) & 3;
++      /* sprite vertical offset */
++      v_line = line - obj_info[count].ypos;
++      s = &name_lut[((attr >> 3) & 0x300) | (size << 4) | ((v_line & 0x18) >> 1)];
+       v_line = (v_line & 7) << 3;
+ 
+-      name = (attr & 0x07FF);
+-      s = &name_lut[((attr >> 3) & 0x300) | (size << 4) | (nt_row << 2)];
++      /* pointer into line buffer */
++      lb = &buf[0x20 + xpos];
+ 
+-      lb = (uint8 *)&buf[0x20 + (xpos - 0x80)];
+-
+-      /* number of tiles to draw */
+-      /* adjusted for sprite limit */
+-      if (pixelcount > max)
++      /* adjust width for sprite limit */
++      if (pixelcount > pixelmax)
+       {
+-        width -= (pixelcount - max);
++        width = width - pixelcount + pixelmax;
+       }
+ 
+-      width >>= 3;
++      /* number of tiles to draw */
++      width = width >> 3;
+ 
+-      for(column = 0; column < width; column += 1, lb+=8)
++      /* render sprite cells (8-pixels column) */
++      for(column = 0; column < width; column++, lb+=8)
+       {
+         index = attr_mask | ((name + s[column]) & 0x07FF);
+         src = &bg_pattern_cache[(index << 6) | (v_line)];
+@@ -1536,7 +1535,7 @@
+     }
+ 
+     /* sprite limit (256 or 320 pixels) */
+-    if (pixelcount >= max)
++    if (pixelcount >= pixelmax)
+     {
+       spr_over = 1;
+       return;
+@@ -1548,34 +1547,26 @@
+ 
+ static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
+ {
+-  uint16 ypos;
+-  uint16 attr;
+-  uint16 xpos;
+   uint8 sizetab[] = {8, 16, 24, 32};
+-  uint8 size;
+-  uint8 *src;
+ 
+-  int count,i;
++  int i, count, column;
++  int xpos;
++  int v_line;
++  int pixelmax = bitmap.viewport.w;
+   int pixelcount = 0;
+-  int width;
+-  int height;
+-  int v_line;
+-  int column;
+-  int max = bitmap.viewport.w;
+-  int left = 0x80;
+-  int right = 0x80 + max;
++  int masked = 0;
+ 
+-  uint8 *s, *lb;
+-  uint16 name, index;
+-  uint8 palette;
++  uint8 *src, *s, *lb;
++  uint32 size, width;
++  uint32 attr, attr_mask, name, palette, index;
+   uint32 offs;
+ 
+-  int attr_mask, nt_row;
+-  int mask = 0;
++  object *obj_info = object_info[object_which];
+ 
+-  for(count = 0; count < object_index_count; count += 1)
++  for(count = 0; count < object_count[object_which]; count ++)
+   {
+-    xpos = object_info[count].xpos & 0x1ff;
++    /* sprite horizontal position */
++    xpos = obj_info[count].xpos;
+ 
+     /* sprite masking (requires at least one sprite with xpos > 0) */
+     if (xpos)
+@@ -1585,52 +1576,58 @@
+     else if(spr_over)
+     {
+       spr_over = 0;
+-      mask = 1;
++      masked = 1;
+     }
+ 
+-    size = object_info[count].size & 0x0f;
++    /* sprite horizontal ofsfet */
++    xpos = xpos - 0x80;
++
++    /* sprite size */
++    size = obj_info[count].size;
+     width = sizetab[(size >> 2) & 3];
+ 
+-    /* update pixel count (off-screen sprites included) */
++    /* update pixel count (off-screen sprites are included) */
+     pixelcount += width;
+ 
+-    if(((xpos + width) >= left) && (xpos < right) && !mask)
++    /* draw visible sprites */
++    if (((xpos + width) >= 0) && (xpos < pixelmax) && !masked)
+     {
+-      ypos = object_info[count].ypos;
+-      attr = object_info[count].attr;
++      /* sprite attributes + pattern index */
++      attr = obj_info[count].attr;
+       attr_mask = (attr & 0x1800);
+-
+-      height = sizetab[size & 3];
+       palette = (attr >> 9) & 0x70;
++      name = (attr & 0x03FF);
+ 
+-      v_line = (line - ypos);
+-      nt_row = (v_line >> 3) & 3;
++      /* sprite vertical offset */
++      v_line = line - obj_info[count].ypos;
++      s = &name_lut[((attr >> 3) & 0x300) | (size << 4) | ((v_line & 0x18) >> 1)];
+       v_line = (((v_line & 7) << 1) | odd) << 3;      
+ 
+-      name = (attr & 0x03FF);
+-      s = &name_lut[((attr >> 3) & 0x300) | (size << 4) | (nt_row << 2)];
++      /* pointer into line buffer */
++      lb = &buf[0x20 + xpos];
+ 
+-      lb = (uint8 *)&buf[0x20 + (xpos - 0x80)];
++      /* adjust width for sprite limit */
++      if (pixelcount > pixelmax)
++      {
++        width = width - pixelcount + pixelmax;
++      }
+ 
+       /* number of tiles to draw */
+-      /* adjusted for sprite limit */
+-      if (pixelcount > max)
+-        width -= (pixelcount - max);
+-      width >>= 3;
++      width = width >> 3;
+ 
++      /* render sprite cells (8-pixels column) */
+       for(column = 0; column < width; column += 1, lb+=8)
+       {
+         index = (name + s[column]) & 0x3ff;
+         offs = index << 7 | attr_mask << 6 | v_line;
+-        if(attr & 0x1000)
+-          offs ^= 0x40;
++        if(attr & 0x1000) offs ^= 0x40;
+         src = &bg_pattern_cache[offs];
+         DRAW_SPRITE_TILE;
+       }
+     }
+ 
+     /* sprite limit (256 or 320 pixels) */
+-    if (pixelcount >= max)
++    if (pixelcount >= pixelmax)
+     {
+       spr_over = 1;
+       return;
+@@ -1719,12 +1716,14 @@
+ /*--------------------------------------------------------------------------*/
+ /* Line render function                                                     */
+ /*--------------------------------------------------------------------------*/
++void blank_line(int line, int offset, int width)
++{
++  memset(&tmp_buf[0x20 + offset], 0x40, width);
++  remap_buffer(line);
++}
+ 
+ void render_line(int line)
+ {
+-  /* display disabled */
+-  if (reg[0] & 0x01) return;
+-
+   uint8 *lb     = tmp_buf;
+   int width     = bitmap.viewport.w;
+   int x_offset  = bitmap.viewport.x;
+@@ -1732,8 +1731,7 @@
+   /* background color (blanked display or vertical borders) */
+   if (!(reg[1] & 0x40) || (status & 8))
+   {
+-    width += 2 * x_offset;
+-    memset(&lb[0x20 - x_offset], 0x40, width);
++    memset(&lb[0x20 - x_offset], 0x40, width + 2*x_offset);
+   }
+   else
+   {
+@@ -1793,24 +1791,27 @@
+     }
+ 
+     /* left-most column blanking */
+-    if(reg[0] & 0x20)
+-      memset(&lb[0x20], 0x40, 0x08);
++    if(reg[0] & 0x20) memset(&lb[0x20], 0x40, 0x08);
+ 
+     /* horizontal borders */
+     if (x_offset)
+     {
+-        memset(&lb[0x20 - x_offset], 0x40, x_offset);
+-        memset(&lb[0x20 + width], 0x40, x_offset);
+-        width += 2 * x_offset;
++      memset(&lb[0x20 - x_offset], 0x40, x_offset);
++      memset(&lb[0x20 + width], 0x40, x_offset);
+     }
+   }
+ 
+   /* pixel color remapping */
+-  remap_buffer(line,width);
++  remap_buffer(line);
+ }
+ 
+-void remap_buffer(int line, int width)
++void remap_buffer(int line)
+ {
++  /* display disabled */
++  if (reg[0] & 0x01) return;
++  
++  int width = bitmap.viewport.w + 2*bitmap.viewport.x;
++
+   /* get line offset from framebuffer */
+   line = (line + bitmap.viewport.y) % lines_per_frame;
+ 
+@@ -1913,38 +1914,41 @@
+ 
+   uint16 *p = (uint16 *) &vram[satb];
+   uint16 *q = (uint16 *) &sat[0];
++  
++  uint32 count = 0;
++  object *obj_info = object_info[object_which^1];
+ 
+-  object_index_count = 0;
+-
+   do
+   {
++    /* Read ypos & size from internal SAT */ 
+     ypos = (q[link] >> im2_flag) & 0x1FF;
+     size = q[link + 1] >> 8;
+     height = sizetab[size & 3];
+ 
+     if((line >= ypos) && (line < (ypos + height)))
+     {
+-      /* sprite limit (max. 16 or 20 sprites displayed per line) */
+-      if(object_index_count == limit)
++      /* Sprite limit (max. 16 or 20 sprites displayed per line) */
++      if(count == limit)
+       {
+-        if(vint_pending == 0)
+-          status |= 0x40;
+-        return;
++        status |= 0x40;
++        break;
+       }
+ 
+-      // using xpos from internal satb stops sprite x
+-      // scrolling in bloodlin.bin,
+-      // but this seems to go against the test prog
+-      object_info[object_index_count].attr  = p[link + 2];
+-      object_info[object_index_count].xpos  = p[link + 3];
+-      object_info[object_index_count].ypos  = ypos;
+-      object_info[object_index_count].size = size;
+-      ++object_index_count;
++      /* Update sprite list */
++      /* name, attribute & xpos are parsed from VRAM */ 
++      obj_info[count].attr  = p[link + 2];
++      obj_info[count].xpos  = p[link + 3] & 0x1ff;
++      obj_info[count].ypos  = ypos;
++      obj_info[count].size  = size & 0x0f;
++      ++count;
+     }
+ 
++    /* Read link data from internal SAT */ 
+     link = (q[link + 1] & 0x7F) << 2;
+-    if(link == 0)
+-      break;
++    if(link == 0) break;
+   }
+   while (--total);
++
++  /* Update sprite count for next line */
++  object_count[object_which^1] = count;
+ }
+Index: source/render.h
+===================================================================
+--- source/render.h	(revision 466)
++++ source/render.h	(revision 467)
+@@ -25,14 +25,16 @@
+ #define _RENDER_H_
+ 
+ /* Global variables */
+-extern uint32 object_index_count;
++extern uint8 object_count[2];
++extern uint8 object_which;
+ 
+ /* Function prototypes */
+ extern void render_init(void);
+ extern void render_reset(void);
+ extern void render_shutdown(void);
+ extern void render_line(int line);
+-extern void remap_buffer(int line,int width);
++extern void remap_buffer(int line);
++extern void blank_line(int line, int offset, int width);
+ extern void window_clip(void);
+ extern void parse_satb(int line);
+ 

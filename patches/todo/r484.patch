@@ -1,0 +1,497 @@
+Index: source/sound/sn76489.c
+===================================================================
+--- source/sound/sn76489.c	(revision 483)
++++ source/sound/sn76489.c	(revision 484)
+@@ -114,7 +114,6 @@
+     SN76489_Context *p = &SN76489;
+     p->dClock=PSGClockValue/16.0/SamplingRate;
+     SN76489_Config(MUTE_ALLON, VOL_FULL, FB_SEGAVDP, SRW_SEGAVDP, config.psgBoostNoise);
+-    SN76489_Reset();
+ }
+ 
+ void SN76489_Reset(void)
+Index: source/sound/sound.c
+===================================================================
+--- source/sound/sound.c	(revision 483)
++++ source/sound/sound.c	(revision 484)
+@@ -178,17 +178,20 @@
+     int avail = Fir_Resampler_avail();
+ 
+     /* resynchronize FM & PSG chips */
+-    if (avail < size)
++    if (avail > size)
+     {
+-      /* FM chip is late for one sample */
+-      YM2612Update(Fir_Resampler_buffer(), 1);
+-      Fir_Resampler_write(2);
+-      fm_cycles_count += fm_cycles_ratio;
++      /* FM chip is ahead */
++      fm_cycles_count += (avail - size) * psg_cycles_ratio;
+     }
+     else
+     {
+-      /* FM chip is ahead */
+-      fm_cycles_count += (avail - size) * psg_cycles_ratio;
++      while (avail < size)
++      {
++        /* FM chip is late for one sample */
++        YM2612Update(Fir_Resampler_buffer(), 1);
++        Fir_Resampler_write(2);
++        avail = Fir_Resampler_avail();
++      }
+     }
+   }
+ 
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 483)
++++ source/system.c	(revision 484)
+@@ -334,7 +334,7 @@
+     {
+       im2_flag = ((reg[12] & 6) == 6);
+       odd_frame = 1;
+-      bitmap.viewport.changed = 1;
++      bitmap.viewport.changed = 5;
+     }
+ 
+     /* active screen height */
+Index: source/gx/gx_audio.c
+===================================================================
+--- source/gx/gx_audio.c	(revision 483)
++++ source/gx/gx_audio.c	(revision 484)
+@@ -71,7 +71,10 @@
+     stat(fname, &filestat);
+     Bg_music_ogg_size = filestat.st_size;
+     Bg_music_ogg = memalign(32,Bg_music_ogg_size);
+-    if (Bg_music_ogg) fread(Bg_music_ogg,1,Bg_music_ogg_size,f);
++    if (Bg_music_ogg)
++    {
++      fread(Bg_music_ogg,1,Bg_music_ogg_size,f);
++    }
+     fclose(f);
+   }
+ }
+@@ -84,7 +87,9 @@
+   ASND_Pause(1);
+   ASND_End();
+   if (Bg_music_ogg)
++  {
+     free(Bg_music_ogg);
++  }
+ }
+ 
+ /*** 
+@@ -111,24 +116,19 @@
+   /* Therefore we need to make sure frame emulation is completed before current DMA is  */
+   /* completed, either by synchronizing frame emulation with DMA start or by syncing it */
+   /* with Vertical Interrupt and outputing a suitable number of samples per frame.      */
+-  /* In 60hz mode, VSYNC period is actually 16715 ms which is 802.32 samples at 48kHz.  */
+   /*                                                                                    */
+   /* In both cases, audio DMA need to be synchronized with VSYNC and therefore need to  */
+   /* be resynchronized (restarted) every time video settings are changed (hopefully,    */
+   /* this generally happens while no music is played.                                   */                    
+   if (!audioStarted)
+   {
+-    audioStarted = 1;
+-
+-    /* when not using 60hz mode, frame emulation is synchronized with Audio Interface DMA */
+-    if (gc_pal | vdp_pal)
+-      AUDIO_RegisterDMACallback(ai_callback);
+-
+     /* restart audio DMA */
+     AUDIO_StopDMA();
+     AUDIO_StartDMA();
+-    if (frameticker > 1)
+-      frameticker = 1;
++    audioStarted = 1;
++
++    /* resynchronize emulation */
++    frameticker = 1;
+   }
+ }
+ 
+@@ -150,6 +150,12 @@
+   AUDIO_RegisterDMACallback(NULL);
+   DSP_Halt();
+ 
++  /* when not using 60hz mode, frame emulation is synchronized with Audio Interface DMA */
++  if (gc_pal | vdp_pal)
++  {
++    AUDIO_RegisterDMACallback(ai_callback);
++  }
++
+   /* reset emulation audio processing */
+   memset(soundbuffer, 0, 2 * 3840);
+   audioStarted = 0;
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 483)
++++ source/gx/gui/menu.c	(revision 484)
+@@ -988,7 +988,7 @@
+ 
+     switch (ret)
+     {
+-      case 0:  /*** Region Force ***/
++      case 0:  /*** Force Region ***/
+         config.region_detect = (config.region_detect + 1) % 4;
+         if (config.region_detect == 0)
+           sprintf (items[0].text, "Console Region: AUTO");
+@@ -1004,18 +1004,13 @@
+           /* reset console region */
+           region_autodetect();
+ 
+-          /* update framerate */
+-          if (vdp_pal)
+-            framerate = 50.0;
+-          else
+-            framerate = ((config.tv_mode == 0) || (config.tv_mode == 2)) ? (1000000.0/16715.0) : 60.0;
+-
+           /* save YM2612 context */
+           temp = memalign(32,YM2612GetContextSize());
+           if (temp)
+             memcpy(temp, YM2612GetContextPtr(), YM2612GetContextSize());
+ 
+           /* reinitialize all timings */
++          framerate = vdp_pal ? 50.0 : ((config.tv_mode == 1) ? 60.0 : ((config.render || interlaced) ? 59.94 : (1000000.0/16715.0)));
+           audio_init(snd.sample_rate, framerate);
+           system_init();
+ 
+@@ -1212,31 +1207,16 @@
+             config.render = 0;
+           }
+         }
+-        if (config.render == 1)
+-          sprintf (items[0].text,"Display: INTERLACED");
+-        else if (config.render == 2)
+-          sprintf (items[0].text, "Display: PROGRESSIVE");
+-        else
+-          sprintf (items[0].text, "Display: ORIGINAL");
+-        break;
+ 
+-      case 1: /*** tv mode ***/
+-        if (config.render != 2)
++        if (!vdp_pal && cart.romsize)
+         {
+-          config.tv_mode = (config.tv_mode + 1) % 3;
+-
+-          /* update framerate */
+-          if (vdp_pal)
+-            framerate = 50.0;
+-          else
+-            framerate = ((config.tv_mode == 0) || (config.tv_mode == 2)) ? (1000000.0/16715.0) : 60.0;
+-
+           /* save YM2612 context */
+           temp = memalign(32,YM2612GetContextSize());
+           if (temp)
+             memcpy(temp, YM2612GetContextPtr(), YM2612GetContextSize());
+ 
+           /* reinitialize audio timings */
++          framerate = (config.tv_mode == 1) ? 60.0 : ((config.render || interlaced) ? 59.94 : (1000000.0/16715.0));
+           audio_init(snd.sample_rate, framerate);
+           sound_init();
+ 
+@@ -1246,7 +1226,41 @@
+             YM2612Restore(temp);
+             free(temp);
+           }
++        }
+ 
++        if (config.render == 1)
++          sprintf (items[0].text,"Display: INTERLACED");
++        else if (config.render == 2)
++          sprintf (items[0].text, "Display: PROGRESSIVE");
++        else
++          sprintf (items[0].text, "Display: ORIGINAL");
++        break;
++
++      case 1: /*** tv mode ***/
++        if (config.render != 2)
++        {
++          config.tv_mode = (config.tv_mode + 1) % 3;
++
++          if (!vdp_pal && cart.romsize)
++          {
++            /* save YM2612 context */
++            temp = memalign(32,YM2612GetContextSize());
++            if (temp)
++              memcpy(temp, YM2612GetContextPtr(), YM2612GetContextSize());
++
++            /* reinitialize audio timings */
++            framerate = (config.tv_mode == 1) ? 60.0 : ((config.render || interlaced) ? 59.94 : (1000000.0/16715.0));
++            audio_init(snd.sample_rate, framerate);
++            sound_init();
++
++            /* restore YM2612 context */
++            if (temp)
++            {
++              YM2612Restore(temp);
++              free(temp);
++            }
++          }
++
+           if (config.tv_mode == 0)
+             sprintf (items[1].text, "TV Mode: 60HZ");
+           else if (config.tv_mode == 1)
+Index: source/gx/gx_video.c
+===================================================================
+--- source/gx/gx_video.c	(revision 483)
++++ source/gx/gx_video.c	(revision 484)
+@@ -1306,9 +1306,13 @@
+ {
+   /* 50Hz/60Hz mode */
+   if ((config.tv_mode == 1) || ((config.tv_mode == 2) && vdp_pal))
++  {
+     gc_pal = 1;
++  }
+   else
++  {
+     gc_pal = 0;
++  }
+ 
+ #ifdef HW_RVL
+   VIDEO_SetTrapFilter(config.trap);
+@@ -1318,7 +1322,9 @@
+   /* VSYNC callbacks */
+   /* in 60hz mode, frame emulation is synchronized with Video Interrupt */
+   if (!gc_pal && !vdp_pal)
++  {
+     VIDEO_SetPreRetraceCallback(vi_callback);
++  }
+   VIDEO_SetPostRetraceCallback(NULL);
+   VIDEO_Flush();
+ 
+@@ -1342,9 +1348,13 @@
+   {
+     /* allocate filters */
+     if (!sms_ntsc)
++    {
+       sms_ntsc = (sms_ntsc_t *)memalign(32,sizeof(sms_ntsc_t));
++    }
+     if (!md_ntsc)
++    {
+       md_ntsc = (md_ntsc_t *)memalign(32,sizeof(md_ntsc_t));
++    }
+ 
+     /* setup filters default configuration */
+     switch (config.ntsc)
+@@ -1366,9 +1376,13 @@
+ 
+   /* lightgun textures */
+   if (config.gun_cursor[0] && (input.dev[4] == DEVICE_LIGHTGUN))
++  {
+     crosshair[0] = gxTextureOpenPNG(Crosshair_p1_png,0);
++  }
+   if (config.gun_cursor[1] && (input.dev[5] == DEVICE_LIGHTGUN))
++  {
+     crosshair[1] = gxTextureOpenPNG(Crosshair_p2_png,0);
++  }
+ 
+   /* GX emulation rendering */
+   gxResetRendering(0);
+@@ -1382,7 +1396,7 @@
+ {
+   int update = bitmap.viewport.changed & 1;
+ 
+-  /* check if display has changed */
++  /* check if display has changed during frame */
+   if (update)
+   {
+     /* update texture size */
+@@ -1391,11 +1405,15 @@
+ 
+     /* interlaced mode */
+     if (config.render && interlaced)
++    {
+       vheight = vheight << 1;
++    }
+ 
+     /* ntsc filter */
+     if (config.ntsc)
++    {
+       vwidth = (reg[12] & 1) ? MD_NTSC_OUT_WIDTH(vwidth) : SMS_NTSC_OUT_WIDTH(vwidth);
++    }
+ 
+     /* texels size must be multiple of 4 */
+     vwidth  = (vwidth  >> 2) << 2;
+@@ -1407,16 +1425,22 @@
+ 
+     /* configure texture filtering */
+     if (!config.bilinear)
++    {
+       GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,0.0,10.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1);
++    }
+ 
+     /* load texture object */
+     GX_LoadTexObj(&texobj, GX_TEXMAP0);
+ 
+-    /* update TV mode */
++    /* update rendering mode */
+     if (config.render)
++    {
+       rmode = tvmodes[gc_pal*3 + 2];
++    }
+     else
++    {
+       rmode = tvmodes[gc_pal*3 + interlaced];
++    }
+ 
+     /* update aspect ratio */
+     gxResetScaler(vwidth);
+@@ -1426,7 +1450,6 @@
+ 
+     /* update VI mode */
+     VIDEO_Configure(rmode);
+-    VIDEO_Flush();
+   }
+ 
+   /* texture is now directly mapped by the line renderer */
+@@ -1438,37 +1461,46 @@
+   /* render textured quad */
+   draw_square();
+ 
+-  /* LightGun marks */
++  /* Lightgun marks */
+   if (crosshair[0])
++  {
+     gxDrawCrosshair(crosshair[0], input.analog[0][0],input.analog[0][1]);
++  }
+   if (crosshair[1])
++  {
+     gxDrawCrosshair(crosshair[1], input.analog[1][0],input.analog[1][1]);
++  }
+ 
+-  /* swap XFB */
++  /* swap XFB */ 
+   whichfb ^= 1;
+ 
+   /* copy EFB to XFB */
+   GX_DrawDone();
+   GX_CopyDisp(xfb[whichfb], GX_TRUE);
+   GX_Flush();
++
++  /* XFB is ready to be displayed */
+   VIDEO_SetNextFramebuffer(xfb[whichfb]);
+   VIDEO_Flush();
+ 
+   if (update)
+   {
++    /* Clear update flags */
++    bitmap.viewport.changed &= ~1;
++
+     /* field synchronization */
+     VIDEO_WaitVSync();
+     if (rmode->viTVMode & VI_NON_INTERLACE)
++    {
+       VIDEO_WaitVSync();
++    }
+     else while (VIDEO_GetNextField() != odd_frame)
++    {
+       VIDEO_WaitVSync();
+-    if (frameticker > 1)
+-      frameticker = 1;
++    }
+ 
+-    /* force audio DMA resynchronization */
++    /* audio & video resynchronization */
+     audioStarted = 0;
+-
+-    bitmap.viewport.changed &= ~1;
+   }
+ }
+ 
+Index: source/gx/main.c
+===================================================================
+--- source/gx/main.c	(revision 483)
++++ source/gx/main.c	(revision 484)
+@@ -105,7 +105,7 @@
+  ***************************************************************************/
+ static void load_bios(void)
+ {
+-  /* reset BIOS flag */
++  /* clear BIOS detection flag */
+   config.tmss &= ~2;
+ 
+   /* open BIOS file */
+@@ -116,8 +116,12 @@
+   fread(bios_rom, 1, 0x800, fp);
+   fclose(fp);
+ 
+-  /* update BIOS flags */
+-  config.tmss |= 2;
++  /* check ROM file */
++  if (!strncmp((char *)(bios_rom + 0x120),"GENESIS OS", 10))
++  {
++    /* valid BIOS detected */
++    config.tmss |= 2;
++  }
+ }
+ 
+ static void init_machine(void)
+@@ -173,8 +177,8 @@
+       ConfigRequested = 0;
+ 
+       /* start video & audio */
++      gx_video_Start();
+       gx_audio_Start();
+-      gx_video_Start();
+       frameticker = 1;
+     }
+ 
+@@ -182,8 +186,8 @@
+     if (frameticker > 1)
+     {
+       /* skip frame */
+-      frameticker = 0;
+       system_frame(1);
++      frameticker = 1;
+     }
+     else
+     {
+@@ -198,6 +202,32 @@
+     /* update audio */
+     gx_audio_Update();
+ 
++    /* check interlaced mode change */
++    if (bitmap.viewport.changed & 4)
++    {
++      /* in original 60hz modes, audio is synced with framerate */
++      if (!config.render && !vdp_pal && (config.tv_mode != 1))
++      {
++        u8 *temp = memalign(32,YM2612GetContextSize());
++        if (temp)
++        {
++          /* save YM2612 context */
++          memcpy(temp, YM2612GetContextPtr(), YM2612GetContextSize());
++
++          /* framerate has changed, reinitialize audio timings */
++          audio_init(48000, interlaced ? 59.94 : (1000000.0/16715.0));
++          sound_init();
++
++          /* restore YM2612 context */
++          YM2612Restore(temp);
++          free(temp);
++        }
++      }
++
++      /* clear flag */
++      bitmap.viewport.changed &= ~4;
++    }
++
+     /* wait for next frame */
+     while (frameticker < 1)
+       usleep(1);
+@@ -227,12 +257,8 @@
+   {
+     /* initialize audio back-end */
+     /* 60hz video mode requires synchronization with Video Interrupt.    */
+-    /* VSYNC period is 16715 us on Wii/Gamecube (approx. 802.32 samples per frame) */
+-    float framerate;
+-    if (vdp_pal)
+-      framerate = 50.0;
+-    else
+-      framerate = ((config.tv_mode == 0) || (config.tv_mode == 2)) ? (1000000.0/16715.0) : 60.0;
++    /* Framerate is 59.94 fps in interlaced/progressive modes, ~59.825 fps in non-interlaced mode */
++    float framerate = vdp_pal ? 50.0 : ((config.tv_mode == 1) ? 60.0 : (config.render ? 59.94 : (1000000.0/16715.0)));
+     audio_init(48000, framerate);
+ 
+     /* System Power ON */

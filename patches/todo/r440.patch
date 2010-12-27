@@ -1,0 +1,120 @@
+Index: source/sound/Fir_Resampler.h
+===================================================================
+--- source/sound/Fir_Resampler.h	(revision 439)
++++ source/sound/Fir_Resampler.h	(revision 440)
+@@ -10,7 +10,7 @@
+ #define WRITE_OFFSET  (WIDTH * STEREO) - STEREO
+ #define GAIN          1.0
+ 
+-typedef short int sample_t;
++typedef signed long int sample_t;
+ 
+ extern int Fir_Resampler_initialize( int new_size );
+ extern void Fir_Resampler_shutdown( void );
+Index: source/sound/ym2612.c
+===================================================================
+--- source/sound/ym2612.c	(revision 439)
++++ source/sound/ym2612.c	(revision 440)
+@@ -2028,7 +2028,7 @@
+ }
+ 
+ /* Generate 16 bits samples for ym2612 */
+-void YM2612Update(short int *buffer, int length)
++void YM2612Update(INT32 *buffer, int length)
+ {
+   int i;
+   long int lt,rt;
+Index: source/sound/ym2612.h
+===================================================================
+--- source/sound/ym2612.h	(revision 439)
++++ source/sound/ym2612.h	(revision 440)
+@@ -21,7 +21,7 @@
+ 
+ extern int YM2612Init(float clock, int rate);
+ extern int YM2612ResetChip(void);
+-extern void YM2612Update(short int *buffer, int length);
++extern void YM2612Update(INT32 *buffer, int length);
+ extern void YM2612Write(unsigned int a, unsigned int v);
+ extern unsigned int YM2612Read(void);
+ extern unsigned char *YM2612GetContextPtr(void);
+Index: source/sound/sound.c
+===================================================================
+--- source/sound/sound.c	(revision 439)
++++ source/sound/sound.c	(revision 440)
+@@ -54,7 +54,7 @@
+     }
+ 
+     /* select input sample buffer */
+-    int16 *buffer = Fir_Resampler_buffer();
++    int32 *buffer = Fir_Resampler_buffer();
+     if (buffer)
+     {
+       Fir_Resampler_write(cnt << 1);
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 439)
++++ source/system.c	(revision 440)
+@@ -64,7 +64,7 @@
+   uint32 factora  = (config.lp_range << 16) / 100;
+   uint32 factorb  = 0x10000 - factora;
+ 
+-  int16 *fm       = snd.fm.buffer;
++  int32 *fm       = snd.fm.buffer;
+   int16 *psg      = snd.psg.buffer;
+ 
+ #ifdef NGC
+@@ -154,7 +154,7 @@
+   rrp = rr;
+ 
+   /* keep remaining samples for next frame */
+-  memcpy(snd.fm.buffer, fm, (snd.fm.pos - snd.fm.buffer) << 1);
++  memcpy(snd.fm.buffer, fm, (snd.fm.pos - snd.fm.buffer) << 2);
+   memcpy(snd.psg.buffer, psg, (snd.psg.pos - snd.psg.buffer) << 1);
+ 
+ #ifdef LOGSOUND
+@@ -191,12 +191,20 @@
+ #endif
+ 
+   /* SN76489 stream buffers */
++#ifndef NGC
+   snd.psg.buffer = (int16 *) malloc(snd.buffer_size * sizeof(int16));
++#else
++  snd.psg.buffer = (int16 *) memalign(32, snd.buffer_size * sizeof(int16));
++#endif
+   if (!snd.psg.buffer)
+     return (-1);
+ 
+   /* YM2612 stream buffers */
+-  snd.fm.buffer = (int32 *) malloc(snd.buffer_size * sizeof(int16) * 2);
++#ifndef NGC
++  snd.fm.buffer = (int32 *) malloc(snd.buffer_size * sizeof(int32) * 2);
++#else
++  snd.fm.buffer = (int32 *) memalign(32,snd.buffer_size * sizeof(int32) * 2);
++#endif
+   if (!snd.fm.buffer)
+     return (-1);
+ 
+@@ -241,7 +249,7 @@
+   if (snd.psg.buffer)
+     memset (snd.psg.buffer, 0, snd.buffer_size * sizeof(int16));
+   if (snd.fm.buffer)
+-    memset (snd.fm.buffer, 0, snd.buffer_size * sizeof(int16) * 2);
++    memset (snd.fm.buffer, 0, snd.buffer_size * sizeof(int32) * 2);
+ }
+ 
+ /****************************************************************
+Index: source/system.h
+===================================================================
+--- source/system.h	(revision 439)
++++ source/system.h	(revision 440)
+@@ -61,8 +61,8 @@
+   int16 *buffer[2]; /* Signed 16-bit stereo sound data */
+   struct
+   {
+-    int16 *pos;
+-    int16 *buffer;
++    int32 *pos;
++    int32 *buffer;
+   } fm;
+   struct
+   {

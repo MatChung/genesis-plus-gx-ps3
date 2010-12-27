@@ -1,0 +1,365 @@
+Index: source/cart_hw/eeprom.c
+===================================================================
+--- source/cart_hw/eeprom.c	(revision 471)
++++ source/cart_hw/eeprom.c	(revision 472)
+@@ -152,26 +152,26 @@
+   }
+ }
+ 
+-void eeprom_write(uint32 address, uint32 value, uint32 word_access)
++void eeprom_write(unsigned int address, unsigned int data, int word_access)
+ {
+   /* decode SCL and SDA value */
+   if (word_access)
+   {
+     /* 16-bits access */
+-    if (eeprom.type.sda_in_adr == address) eeprom.sda = (value >> (8 + eeprom.type.sda_in_bit)) & 1;      /* MSB */
+-    else if (eeprom.type.sda_in_adr == (address | 1)) eeprom.sda = (value >> eeprom.type.sda_in_bit) & 1; /* LSB */
++    if (eeprom.type.sda_in_adr == address) eeprom.sda = (data >> (8 + eeprom.type.sda_in_bit)) & 1;      /* MSB */
++    else if (eeprom.type.sda_in_adr == (address | 1)) eeprom.sda = (data >> eeprom.type.sda_in_bit) & 1; /* LSB */
+     else eeprom.sda = eeprom.old_sda;
+ 
+-    if (eeprom.type.scl_adr == address) eeprom.scl = (value >> (8 + eeprom.type.scl_bit)) & 1;      /* MSB */
+-    else if (eeprom.type.scl_adr == (address | 1)) eeprom.scl = (value >> eeprom.type.scl_bit) & 1; /* LSB */
++    if (eeprom.type.scl_adr == address) eeprom.scl = (data >> (8 + eeprom.type.scl_bit)) & 1;      /* MSB */
++    else if (eeprom.type.scl_adr == (address | 1)) eeprom.scl = (data >> eeprom.type.scl_bit) & 1; /* LSB */
+     else eeprom.scl = eeprom.old_scl;
+   }
+   else
+   {
+-    if (eeprom.type.sda_in_adr == address) eeprom.sda = (value >> eeprom.type.sda_in_bit) & 1;
++    if (eeprom.type.sda_in_adr == address) eeprom.sda = (data >> eeprom.type.sda_in_bit) & 1;
+     else eeprom.sda = eeprom.old_sda;
+ 
+-    if (eeprom.type.scl_adr == address) eeprom.scl = (value >> eeprom.type.scl_bit) & 1;
++    if (eeprom.type.scl_adr == address) eeprom.scl = (data >> eeprom.type.scl_bit) & 1;
+     else eeprom.scl = eeprom.old_scl;
+   }
+ 
+@@ -416,7 +416,7 @@
+   eeprom.old_sda = eeprom.sda;
+ }
+ 
+-uint32 eeprom_read(uint32 address, uint32 word_access)
++unsigned int eeprom_read(int word_access)
+ {
+   uint8 sda_out = eeprom.sda;
+ 
+Index: source/cart_hw/cart_hw.c
+===================================================================
+--- source/cart_hw/cart_hw.c	(revision 471)
++++ source/cart_hw/cart_hw.c	(revision 472)
+@@ -171,7 +171,7 @@
+   ******************************************************************************************************************/
+   
+   /* calculate nearest size with factor of 2 */
+-  int size = 0x10000;
++  unsigned int size = 0x10000;
+   while (cart.romsize > size)
+     size <<= 1;
+ 
+Index: source/cart_hw/eeprom.h
+===================================================================
+--- source/cart_hw/eeprom.h	(revision 471)
++++ source/cart_hw/eeprom.h	(revision 472)
+@@ -86,7 +86,7 @@
+ 
+ /* Function prototypes */
+ extern void eeprom_init();
+-extern void eeprom_write(uint32 address, uint32 value, uint32 word_access);
+-extern uint32 eeprom_read(uint32 address, uint32 word_access);
++extern void eeprom_write(unsigned int address, unsigned int data, int word_access);
++extern unsigned int eeprom_read(int word_access);
+ 
+ #endif
+Index: source/sound/ym2612.c
+===================================================================
+--- source/sound/ym2612.c	(revision 471)
++++ source/sound/ym2612.c	(revision 472)
+@@ -955,7 +955,7 @@
+ }
+ 
+ /* set total level */
+-INLINE void set_tl(FM_CH *CH,FM_SLOT *SLOT , int v)
++INLINE void set_tl(FM_SLOT *SLOT , int v)
+ {
+   SLOT->tl = (v&0x7f)<<(ENV_BITS-7); /* 7bit TL */
+ 
+@@ -1564,7 +1564,7 @@
+       break;
+ 
+     case 0x40:  /* TL */
+-      set_tl(CH,SLOT,v);
++      set_tl(SLOT,v);
+       break;
+ 
+     case 0x50:  /* KS, AR */
+Index: source/vdp.c
+===================================================================
+--- source/vdp.c	(revision 471)
++++ source/vdp.c	(revision 472)
+@@ -280,7 +280,7 @@
+   if (left_cycles < 0) left_cycles = 0;
+ 
+   /* DMA bytes left */
+-  int dma_bytes = (left_cycles * rate) / MCYCLES_PER_LINE;
++  unsigned int dma_bytes = (left_cycles * rate) / MCYCLES_PER_LINE;
+ 
+ #ifdef LOGVDP
+   error("[%d(%d)][%d(%d)] DMA type %d (%d access/line)-> %d access (%d remaining) (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE,dma_type/4, rate, dma_length, dma_bytes, m68k_get_reg (NULL, M68K_REG_PC));
+@@ -449,8 +449,7 @@
+ unsigned int vdp_hvc_r(unsigned int cycles)
+ {
+   /* HVC is frozen (Lightgun games, Sunset Riders) */
+-  if (hvc_latch)
+-    return (hvc_latch & 0xffff);
++  if (hvc_latch) return (hvc_latch & 0xffff);
+ 
+   /* Horizontal Counter (Striker, Mickey Mania, Skitchin, Road Rash I,II,III, Sonic 3D Blast...) */
+   uint8 hc = hctab[cycles%MCYCLES_PER_LINE];
+@@ -468,10 +467,10 @@
+   return ((vc << 8) | hc);
+ }
+ 
+-void vdp_test_w(unsigned int value)
++void vdp_test_w(unsigned int data)
+ {
+ #ifdef LOGERROR
+-  error("Unused VDP Write 0x%x (%08x)\n", value, m68k_get_reg (NULL, M68K_REG_PC));
++  error("Unused VDP Write 0x%x (%08x)\n", data, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+ }
+ 
+@@ -917,15 +916,14 @@
+         /* background color modified during Horizontal Blanking (Road Rash 1,2,3)*/
+         if (!(status & 8) && (mcycles_68k <= (mcycles_vdp + 860)))
+         {
+-          /* remap colors */
++          /* remap entire line */
+           remap_buffer(v_counter);
+ #ifdef LOGVDP
+-          error("--> Line remapped\n");
++          error("Line remapped\n");
+ #endif
+         }
+ #ifdef LOGVDP
+-        else
+-          error("--> Line NOT remapped\n");
++        else error("Line NOT remapped\n");
+ #endif
+       }
+       break;
+Index: source/genesis.c
+===================================================================
+--- source/genesis.c	(revision 471)
++++ source/genesis.c	(revision 472)
+@@ -45,7 +45,7 @@
+   /* initialize CPUs */
+   m68k_set_cpu_type(M68K_CPU_TYPE_68000);
+   m68k_init();
+-  z80_init(0,0,0,z80_irq_callback);
++  z80_init(0,z80_irq_callback);
+ 
+   /* initialize 68k mapped memory */
+   /* $000000-$7fffff is affected to cartridge area (see cart_hw.c) */
+Index: source/vdp.h
+===================================================================
+--- source/vdp.h	(revision 471)
++++ source/vdp.h	(revision 472)
+@@ -84,7 +84,7 @@
+ extern void vdp_data_w(unsigned int data);
+ extern unsigned int vdp_data_r(void);
+ extern unsigned int vdp_hvc_r(unsigned int cycles);
+-extern void vdp_test_w(unsigned int value);
++extern void vdp_test_w(unsigned int data);
+ extern int vdp_int_ack_callback(int int_level);
+ 
+ #endif /* _VDP_H_ */
+Index: source/z80/z80.c
+===================================================================
+--- source/z80/z80.c	(revision 471)
++++ source/z80/z80.c	(revision 472)
+@@ -3270,7 +3270,7 @@
+ /****************************************************************************
+  * Processor initialization
+  ****************************************************************************/
+-void z80_init(int index, int clock, const void *config, int (*irqcallback)(int))
++void z80_init(const void *config, int (*irqcallback)(int))
+ {
+   int i, p;
+ 
+@@ -3407,7 +3407,7 @@
+ /****************************************************************************
+  * Run until given cycle count 
+  ****************************************************************************/
+-void z80_run(int cycles)
++void z80_run(unsigned int cycles)
+ {
+   /* check for NMIs on the way in; they can only be set externally */
+   /* via timers, and can't be dynamically enabled, so it is safe */
+@@ -3443,7 +3443,7 @@
+ /****************************************************************************
+  * Burn 'cycles' T-states. Adjust R register for the lost time
+  ****************************************************************************/
+-void z80_burn(int cycles)
++void z80_burn(unsigned int cycles)
+ {
+   if( cycles > 0 )
+   {
+Index: source/z80/z80.h
+===================================================================
+--- source/z80/z80.h	(revision 471)
++++ source/z80/z80.h	(revision 472)
+@@ -43,11 +43,11 @@
+ 
+ extern Z80_Regs Z80;
+ 
+-void z80_init(int index, int clock, const void *config, int (*irqcallback)(int));
++void z80_init(const void *config, int (*irqcallback)(int));
+ void z80_reset (void);
+ void z80_exit (void);
+-void z80_run(int cycles);
+-void z80_burn(int cycles);
++void z80_run(unsigned int cycles);
++void z80_burn(unsigned int cycles);
+ void z80_get_context (void *dst);
+ void z80_set_context (void *src);
+ void z80_set_irq_line(int irqline, int state);
+Index: source/m68k/m68kcpu.c
+===================================================================
+--- source/m68k/m68kcpu.c	(revision 471)
++++ source/m68k/m68kcpu.c	(revision 472)
+@@ -72,7 +72,7 @@
+ #endif /* M68K_LOG_ENABLE */
+ 
+ /* The CPU core */
+-m68ki_cpu_core m68ki_cpu = {0};
++m68ki_cpu_core m68ki_cpu;
+ 
+ #if M68K_EMULATE_ADDRESS_ERROR
+ #include <setjmp.h>
+Index: source/mem68k.c
+===================================================================
+--- source/mem68k.c	(revision 471)
++++ source/mem68k.c	(revision 472)
+@@ -117,7 +117,7 @@
+ {
+   if (address == eeprom.type.sda_out_adr)
+   {
+-    return eeprom_read(address, 0);
++    return eeprom_read(0);
+   }
+   return READ_BYTE(cart.rom, address);
+ }
+@@ -126,7 +126,7 @@
+ {
+   if (address == (eeprom.type.sda_out_adr & 0xfffffe))
+   {
+-    return eeprom_read(address, 1);
++    return eeprom_read(1);
+   }
+   return *(uint16 *)(cart.rom + address);
+ }
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 471)
++++ source/render.c	(revision 472)
+@@ -907,7 +907,7 @@
+   }
+ }
+ 
+-static uint32 get_hscroll(int line)
++static inline uint32 get_hscroll(int line)
+ {
+   switch(reg[11] & 3)
+   {
+@@ -1544,7 +1544,7 @@
+   spr_over = 0;
+ }
+ 
+-static void render_obj_im2(int odd, uint8 *buf, uint8 *table)
++static void render_obj_im2(uint8 *buf, uint8 *table, int odd)
+ {
+   uint8 sizetab[] = {8, 16, 24, 32};
+ 
+@@ -1756,13 +1756,13 @@
+         /* Shadow & Highlight */
+         merge(&nta_buf[0x20], &ntb_buf[0x20], &bg_buf[0x20], lut[2], width);
+         memset(&obj_buf[0x20], 0, width);
+-        render_obj_im2(odd, obj_buf, lut[3]);
++        render_obj_im2(obj_buf, lut[3], odd);
+         merge(&obj_buf[0x20], &bg_buf[0x20], &lb[0x20], lut[4], width);
+       }
+       else
+       {
+         merge(&nta_buf[0x20], &ntb_buf[0x20], &lb[0x20], lut[0], width);
+-        render_obj_im2(odd, lb, lut[1]);
++        render_obj_im2(lb, lut[1], odd);
+       }
+     }
+     else
+@@ -1904,17 +1904,16 @@
+ void parse_satb(int line)
+ {
+   uint8 sizetab[] = {8, 16, 24, 32};
+-  uint32 link = 0;
+-  uint32 size, height;
+-  int ypos;
+-
++  uint32 size, link = 0;
++  int ypos, height;
++  
++  uint32 count = 0;
+   uint32 limit = (reg[12] & 1) ? 20 : 16;
+   uint32 total = limit << 2;
+-
++  
+   uint16 *p = (uint16 *) &vram[satb];
+   uint16 *q = (uint16 *) &sat[0];
+   
+-  uint32 count = 0;
+   object *obj_info = object_info[object_which^1];
+ 
+   do
+Index: source/gen_input.c
+===================================================================
+--- source/gen_input.c	(revision 471)
++++ source/gen_input.c	(revision 472)
+@@ -77,13 +77,13 @@
+ static int x_offset;
+ static int y_offset;
+ 
+-static inline void lightgun_reset(int num)
++static void lightgun_reset(int num)
+ {
+   input.analog[num][0] = bitmap.viewport.w >> 1;
+   input.analog[num][1] = bitmap.viewport.h >> 1;
+ }
+ 
+-static inline void lightgun_update(int num)
++static void lightgun_update(int num)
+ {
+   if ((input.analog[num][1] == v_counter + y_offset))
+   {
+Index: source/gx/gx_video.c
+===================================================================
+--- source/gx/gx_video.c	(revision 471)
++++ source/gx/gx_video.c	(revision 472)
+@@ -499,7 +499,7 @@
+ }
+ 
+ /* Reset GX/VI hardware scaler */
+-static void gxResetScaler(u32 width, u32 height)
++static void gxResetScaler(u32 width)
+ {
+   int xscale  = 0;
+   int yscale  = 0;
+@@ -1419,7 +1419,7 @@
+       rmode = tvmodes[gc_pal*3 + interlaced];
+ 
+     /* update aspect ratio */
+-    gxResetScaler(vwidth,vheight);
++    gxResetScaler(vwidth);
+ 
+     /* update GX rendering mode */
+     gxResetMode(rmode);

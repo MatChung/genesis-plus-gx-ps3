@@ -1,0 +1,233 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 477)
++++ HISTORY.txt	(revision 478)
+@@ -56,6 +56,7 @@
+ * added accurate TMSS emulation (VDP lock-out)
+ * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
+ * fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
++* enabled simultaneous use of multitap & J-CART (Super Skidmarks 6-player mode)
+ * lots of code cleanup, bugfixes & optimization.
+ 
+ 
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 477)
++++ source/system.c	(revision 478)
+@@ -395,8 +395,8 @@
+     /* update VCounter */
+     v_counter = line;
+ 
+-    /* update 6-Buttons or Menacer */
+-    input_update();
++    /* update 6-Buttons & Lightguns */
++    input_refresh();
+ 
+     /* update VDP DMA */
+     if (dma_length) vdp_update_dma();
+Index: source/gen_input.c
+===================================================================
+--- source/gen_input.c	(revision 477)
++++ source/gen_input.c	(revision 478)
+@@ -609,8 +609,8 @@
+ 
+ void jcart_write(unsigned int address, unsigned int data)
+ {
+-  gamepad_write(5, (data&1) << 6);
+-  gamepad_write(6, (data&1) << 6);
++  gamepad_write(5, (data & 1) << 6);
++  gamepad_write(6, (data & 1) << 6);
+   return;
+ }
+ 
+@@ -706,8 +706,12 @@
+   /* J-CART: add two gamepad inputs */
+   if (cart.jcart)
+   {
+-    input.dev[5] = config.input[2].padtype;
+-    input.dev[6] = config.input[3].padtype;
++    if (player == MAX_INPUTS) return;
++    input.dev[5] = config.input[player].padtype;
++    player ++;
++    if (player == MAX_INPUTS) return;
++    input.dev[6] = config.input[player].padtype;
++    player ++;
+   }
+ }
+ 
+@@ -715,7 +719,7 @@
+ {
+   /* Reset Controller device */
+   int i;
+-  for (i=0; i<MAX_INPUTS; i++)
++  for (i=0; i<MAX_DEVICES; i++)
+   {
+     switch (input.dev[i])
+     {
+@@ -746,10 +750,10 @@
+   wayplay.current = 0;
+ }
+ 
+-void input_update(void)
++void input_refresh(void)
+ {
+   int i;
+-  for (i=0; i<MAX_INPUTS; i++)
++  for (i=0; i<MAX_DEVICES; i++)
+   {
+     switch (input.dev[i])
+     {
+@@ -870,15 +874,12 @@
+     {
+       cart.jcart = 1;
+ 
+-      /* save current setting */
+-      if (old_system[0] == -1)
+-        old_system[0] = input.system[0];
+-      if (old_system[1] == -1)
++      /* set default port 1 setting */
++      if (input.system[1] != SYSTEM_WAYPLAY)
++      {
+         old_system[1] = input.system[1];
+-
+-      /* set default settings */
+-      input.system[0] = SYSTEM_GAMEPAD;
+-      input.system[1] = SYSTEM_GAMEPAD;
++        input.system[1] = SYSTEM_GAMEPAD;
++      }
+     }
+   }
+ }
+Index: source/gen_input.h
+===================================================================
+--- source/gen_input.h	(revision 477)
++++ source/gen_input.h	(revision 478)
+@@ -72,8 +72,7 @@
+ /* Function prototypes */
+ extern void input_init(void);
+ extern void input_reset(void);
+-extern void input_update(void);
+-extern void input_raz(void);
++extern void input_refresh(void);
+ extern void input_autodetect(void);
+ 
+ /* Peripherals specific */
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 477)
++++ source/gx/gui/menu.c	(revision 478)
+@@ -1472,53 +1472,70 @@
+   }
+ 
+   /* update buttons navigation */
++
+   if (input.dev[0] != NO_DEVICE)
+     m->buttons[0].shift[3] = 2;
+   else if (input.dev[4] != NO_DEVICE)
+     m->buttons[0].shift[3] = 6;
++  else if (input.dev[5] != NO_DEVICE)
++    m->buttons[0].shift[3] = 7;
+   else
+     m->buttons[0].shift[3] = 0;
+   if (input.dev[4] != NO_DEVICE)
+     m->buttons[1].shift[3] = 5;
++  else if (input.dev[5] != NO_DEVICE)
++    m->buttons[1].shift[3] = 6;
+   else if (input.dev[0] != NO_DEVICE)
+     m->buttons[1].shift[3] = 1;
+   else
+     m->buttons[1].shift[3] = 0;
++
+   if (input.dev[1] != NO_DEVICE)
+     m->buttons[2].shift[1] = 1;
+   else if (input.dev[4] != NO_DEVICE)
+     m->buttons[2].shift[1] = 4;
++  else if (input.dev[5] != NO_DEVICE)
++    m->buttons[2].shift[1] = 5;
+   else
+     m->buttons[2].shift[1] = 0;
++
++  if (input.dev[4] != NO_DEVICE)
++    m->buttons[5].shift[1] = 1;
++  else if (input.dev[5] != NO_DEVICE)
++    m->buttons[5].shift[1] = 2;
++  else
++    m->buttons[5].shift[1] = 0;
++
+   if (input.dev[3] != NO_DEVICE)
+     m->buttons[6].shift[0] = 1;
+   else if (input.dev[0] != NO_DEVICE)
+     m->buttons[6].shift[0] = 4;
+   else
+     m->buttons[6].shift[0] = 0;
+-  if (input.dev[4] != NO_DEVICE)
+-    m->buttons[5].shift[1] = 1;
+-  else
+-    m->buttons[5].shift[1] = 0;
+ 
+   if (input.dev[5] != NO_DEVICE)
+-  {
+     m->buttons[6].shift[1] = 1;
+-    if (input.dev[6] != NO_DEVICE)
+-    {
+-      m->buttons[7].shift[1] = 1;
+-      if (input.dev[7] != NO_DEVICE) m->buttons[8].shift[1] = 1;
+-      else m->buttons[8].shift[1] = 0;
+-    }
+-    else
+-    {
+-      m->buttons[7].shift[1] = 0;
+-    }
+-  }
+   else
+-  {
+     m->buttons[6].shift[1] = 0;
+-  }
++
++  if (input.dev[6] != NO_DEVICE)
++    m->buttons[7].shift[1] = 1;
++  else
++    m->buttons[7].shift[1] = 0;
++
++  if (input.dev[7] != NO_DEVICE)
++    m->buttons[8].shift[1] = 1;
++  else
++    m->buttons[8].shift[1] = 0;
++
++  if (input.dev[4] != NO_DEVICE)
++    m->buttons[7].shift[0] = 1;
++  else if (input.dev[3] != NO_DEVICE)
++    m->buttons[7].shift[0] = 2;
++  else if (input.dev[0] != NO_DEVICE)
++    m->buttons[7].shift[0] = 5;
++  else
++    m->buttons[7].shift[0] = 0;
+ }
+ 
+ static void ctrlmenu(void)
+@@ -1643,7 +1660,6 @@
+       switch (m->selected)
+       {
+         case 0:   /* update port 1 system */
+-          if (cart.jcart) break;
+           if (input.system[0] == SYSTEM_MOUSE)
+             input.system[0] +=3; /* lightguns are never used on Port 1 */
+           else
+@@ -1658,7 +1674,7 @@
+             input.system[1] = SYSTEM_GAMEPAD;
+           }
+           io_init();
+-          io_reset();
++          input_reset();
+           old_system[0] = input.system[0];
+           old_system[1] = input.system[1];
+ 
+@@ -1708,7 +1724,7 @@
+             input.system[0] = SYSTEM_GAMEPAD;
+           }
+           io_init();
+-          io_reset();
++          input_reset();
+           old_system[0] = input.system[0];
+           old_system[1] = input.system[1];
+ 

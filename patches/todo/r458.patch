@@ -1,0 +1,764 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 457)
++++ HISTORY.txt	(revision 458)
+@@ -27,7 +27,6 @@
+ * added support for 2-Cell vertical scrolling in Interlaced 2 mode
+ * added proper HV Counter latch support (fixes Sunset Riders intro)
+ * fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
+-* fixed VBLANK transition line checks
+ * improved VDP FIFO timings accuracy: fixes Sol Deace intro
+ * improved sprite masking accuracy (thanks to Nemesis for his sprite test program)
+ * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
+@@ -41,6 +40,7 @@
+ ---------------
+ * updated Z80 core to last version (fixes interrupt Mode 0 timing and some BIT instructions).
+ * fixed some Z80 instructions timing.
++* improved Z80 interrupt accuracy
+ * improved 68k accuracy (initial Reset timing + auto-vectored interrupts handling).
+ * improved 68k timing accuracy for DIVU/DVIS (thanks to Jorge Cwik) & MULU/MULS instructions.
+ * improved Z80 & 68k cpu execution/synchronization accuracy by using Master Clock as common reference (now run exactly 3420 M-Cycles per line).
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 457)
++++ source/system.c	(revision 458)
+@@ -327,19 +327,52 @@
+  ****************************************************************/
+ void system_frame (int do_skip)
+ {
+-  /* update display settings */
+-  int line;
+-  int vdp_height  = bitmap.viewport.h;
+-  int end_line    = vdp_height + bitmap.viewport.y;
+-  int start_line  = lines_per_frame - bitmap.viewport.y;
+-  int old_interlaced = interlaced;
+-  interlaced = (reg[12] & 2) >> 1;
+-  if (old_interlaced != interlaced)
++  int start   = 0;
++  int end     = 0;
++  int line    = 0;
++
++  /* display changed during VBLANK */
++  if (bitmap.viewport.changed & 2)
+   {
+-    bitmap.viewport.changed = 1;
+-    im2_flag = ((reg[12] & 6) == 6);
+-    odd_frame = 1;
++    bitmap.viewport.changed &= ~2;
++
++    /* interlaced mode */
++    int old_interlaced  = interlaced;
++    interlaced = (reg[12] & 2) >> 1;
++    if (old_interlaced != interlaced)
++    {
++      im2_flag = ((reg[12] & 6) == 6);
++      odd_frame = 1;
++      bitmap.viewport.changed = 1;
++    }
++
++    /* screen height */
++    if (reg[1] & 8)
++    { 
++      bitmap.viewport.h = 240;
++      bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 24 : 0) : 0;
++    }
++    else
++    {
++      bitmap.viewport.h = 224;
++      bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 32 : 8) : 0;
++    }
++
++    /* screen width */
++    if (reg[12] & 1)
++    {
++      bitmap.viewport.w = 320;
++      bitmap.viewport.x = (config.overscan & 2) ? 16 : 0;
++    }
++    else
++    {
++      bitmap.viewport.w = 256;
++      bitmap.viewport.x = (config.overscan & 2) ? 12 : 0;
++    }
+   }
++
++  /* Z80 interrupt flag */
++  int zirq = 0;
+   
+   /* clear VBLANK, DMA, FIFO FULL & field flags */
+   status &= 0xFEE5;
+@@ -349,8 +382,8 @@
+ 
+   /* even/odd field flag (interlaced modes only) */
+   odd_frame ^= 1;
+-  if (odd_frame && interlaced)
+-    status |= 0x0010;
++  if (interlaced)
++    status |= (odd_frame << 4);
+ 
+   /* reload HCounter */
+   int h_counter = reg[10];
+@@ -382,10 +415,10 @@
+     if (status & 8)
+     {
+       /* render overscan */
+-      if (!do_skip && ((line < end_line) || (line >= start_line)))
+-        render_line(line, 1);
++      if (!do_skip && ((line < end) || (line >= start)))
++        render_line(line);
+ 
+-      /* clear any pending Z80 interrupt */
++      /* clear pending Z80 interrupt */
+       if (zirq)
+       {
+         zirq = 0;
+@@ -406,18 +439,34 @@
+       }
+ 
+       /* end of active display */
+-      if (line == vdp_height)
++      if (line == bitmap.viewport.h)
+       {
++        /* set border area */
++        start = lines_per_frame - bitmap.viewport.y;
++        end   = bitmap.viewport.h + bitmap.viewport.y;
++
++        /* check viewport changes */
++        if (bitmap.viewport.h != bitmap.viewport.oh)
++        {
++          bitmap.viewport.oh = bitmap.viewport.h;
++          bitmap.viewport.changed |= 1;
++        }
++        if (bitmap.viewport.w != bitmap.viewport.ow)
++        {
++          bitmap.viewport.ow = bitmap.viewport.w;
++          bitmap.viewport.changed |= 1;
++        }
++
++        /* set VBLANK flag */
++        status |= 0x08;
++
+         /* render overscan */
+-        if (!do_skip && (line < end_line))
+-          render_line(line, 1);
++        if (!do_skip && bitmap.viewport.y)
++          render_line(line);
+ 
+         /* update inputs (doing this here fix Warriors of Eternal Sun) */
+         osd_input_Update();
+ 
+-        /* set VBLANK flag */
+-        status |= 0x08;
+-
+         /* Z80 interrupt is 16ms period (one frame) and 64us length (one scanline) */
+         zirq = 1;
+         z80_set_irq_line(0, ASSERT_LINE);
+@@ -445,7 +494,7 @@
+           parse_satb(0x80 + line);
+ 
+         /* render scanline */
+-        render_line(line, 0);
++        render_line(line);
+       }
+     }
+ 
+Index: source/vdp.c
+===================================================================
+--- source/vdp.c	(revision 457)
++++ source/vdp.c	(revision 458)
+@@ -50,7 +50,6 @@
+ uint8 dmafill;        /* next VDP Write is DMA Fill */
+ uint8 hint_pending;   /* 0= Line interrupt is pending */
+ uint8 vint_pending;   /* 1= Frame interrupt is pending */
+-uint8 zirq;           /* Z80 IRQ status */
+ uint8 irq_status;     /* 68K IRQ status */
+ 
+ /* Global variables */
+@@ -161,7 +160,6 @@
+   pending         = 0;
+   hint_pending    = 0;
+   vint_pending    = 0;
+-  zirq            = 0;
+   irq_status      = 0;
+   hvc_latch       = 0;
+   v_counter       = 0;
+@@ -204,21 +202,21 @@
+   hctab = cycle2hc32;
+ 
+   /* reset display area */
+-  bitmap.viewport.w = 256;
+-  bitmap.viewport.h = 224;
+-  bitmap.viewport.changed = 1;
++  bitmap.viewport.w   = 256;
++  bitmap.viewport.h   = 224;
++  bitmap.viewport.ow  = 256;
++  bitmap.viewport.oh  = 224;
+ 
+   /* reset overscan area */
+   bitmap.viewport.x = 0;
+   bitmap.viewport.y = 0;
+-  if (config.overscan)
+-  {
++  if (config.overscan & 1)
++    bitmap.viewport.y = vdp_pal ? 32 : 8;
++  if (config.overscan & 2)
+     bitmap.viewport.x = 12;
+-    bitmap.viewport.y = vdp_pal ? 32 : 8;
+-  }
+ 
+-  /* initialize some registers (normally set by BIOS) */
+-  if (config.bios_enabled != 3)
++  /* reset some registers normally set by BIOS */
++  if (config.bios_enabled == 1)
+   {
+     reg_w(0 , 0x04);  /* Palette bit set */
+     reg_w(1 , 0x04);  /* Mode 5 enabled */
+@@ -244,11 +242,6 @@
+   vctab = (vdp_pal) ? ((reg[1] & 8) ? vc_pal_240 : vc_pal_224) : vc_ntsc_224;
+   hctab = (reg[12] & 1) ? cycle2hc40 : cycle2hc32;
+ 
+-  /* reinitialize overscan area */
+-  bitmap.viewport.x = config.overscan ? ((reg[12] & 1) ? 16 : 12) : 0;
+-  bitmap.viewport.y = config.overscan ? (((reg[1] & 8) ? 0 : 8) + (vdp_pal ? 24 : 0)) : 0;
+-  bitmap.viewport.changed = 1;
+-
+   /* restore FIFO timings */
+   fifo_latency = (reg[12] & 1) ? 190 : 214;
+   if ((code & 0x0F) == 0x01) 
+@@ -501,18 +494,12 @@
+     /* update VDP FIFO */
+     fifo_update(mcycles_68k);
+ 
+-    if (fifo_write_cnt == 0)
+-    {
+-      /* reset cycle counter */
+-      fifo_lastwrite = mcycles_68k;
+-
+-      /* FIFO is not empty anymore */
+-      status &= 0xFDFF;
+-    }
+-
+     /* increase FIFO word count */
+     fifo_write_cnt ++;
+ 
++    /* FIFO is not empty anymore */
++    status &= 0xFDFF;
++
+     /* FIFO full ? */
+     if (fifo_write_cnt >= 4)
+     {
+@@ -818,26 +805,29 @@
+       /* See if the viewport height has actually been changed */
+       if (r & 0x08)
+       {
+-        /* PAL mode only ! */
++        /* Update V Counter table */
+         if (vdp_pal)
++          vctab = (d & 8) ? vc_pal_240 : vc_pal_224;
++  
++        /* Update viewport */
++        if (status & 8)
+         {
++          /* changes should be applied on next frame */
++          bitmap.viewport.changed |= 2;
++        }
++        else
++        {
++          /* Update active display */
+           if (d & 8)
+           {
+             bitmap.viewport.h = 240;
+-            if (config.overscan)
+-              bitmap.viewport.y = 24;
+-            vctab = vc_pal_240;
++            bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 24 : 0) : 0;
+           }
+           else
+           {
+             bitmap.viewport.h = 224;
+-            if (config.overscan)
+-              bitmap.viewport.y = 32;
+-            vctab = vc_pal_224;
++            bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 32 : 8) : 0;
+           }
+-
+-          /* update viewport */
+-          bitmap.viewport.changed = 1;
+         }
+       }
+ 
+@@ -861,8 +851,8 @@
+ #ifdef LOGVDP
+           error("Line redrawn (%d sprites) \n",object_index_count);
+ #endif
+-          /* re-render line */
+-          render_line(v_counter, 0);
++          /* redraw entire line */
++          render_line(v_counter);
+         }
+ #ifdef LOGVDP
+         else
+@@ -939,12 +929,7 @@
+ 
+           /* Update HC table */
+           hctab = cycle2hc40;
+-
+-          /* Update viewport width */
+-          bitmap.viewport.w = 320;
+-          if (config.overscan)
+-            bitmap.viewport.x = 16;
+-
++            
+           /* Update fifo timings */
+           fifo_latency = 190;
+         }
+@@ -959,25 +944,52 @@
+           /* Update HC table */
+           hctab = cycle2hc32;
+ 
+-          /* Update viewport width */
+-          bitmap.viewport.w = 256;
+-          if (config.overscan)
+-            bitmap.viewport.x = 12;
+-
+           /* Update fifo timings */
+           fifo_latency = 214;
+         }
+-		
+-	    if ((code & 0x0F) == 0x01)
+-		  fifo_latency *= 2;
+ 
+-        /* Update viewport */
+-        bitmap.viewport.changed = 1;
++        if ((code & 0x0F) == 0x01)
++          fifo_latency = fifo_latency * 2;
+ 
+         /* Update clipping */
+         window_clip();
++        
++        /* Update viewport */
++        if (status & 8)
++        {
++          /* changes should be applied on next frame */
++          bitmap.viewport.changed |= 2;
++        }
++        else
++        {
++          /* Update active display */
++          if (d & 1)
++          {
++            bitmap.viewport.w = 320;
++            bitmap.viewport.x = (config.overscan & 2) ? 16 : 0;
++          }
++          else
++          {
++            bitmap.viewport.w = 256;
++            bitmap.viewport.x = (config.overscan & 2) ? 12 : 0;
++          }
++
++          /* display width changed during HBLANK (Bugs Bunny Double Trouble) */
++          if (mcycles_68k <= (mcycles_vdp + 860))
++          {
++            /* redraw entire line */
++            render_line(v_counter);
++          }
++        }
+       }
+ 
++      /* Interlaced modes */
++      if (r & 0x06)
++      {
++        /* changes should be applied on next frame */
++        bitmap.viewport.changed |= 2;
++      }
++
+       /* See if the S/TE mode bit has changed */
+       if (r & 0x08)
+       {
+Index: source/genesis.c
+===================================================================
+--- source/genesis.c	(revision 457)
++++ source/genesis.c	(revision 458)
+@@ -125,13 +125,15 @@
+   if (config.bios_enabled == 3)
+     m68k_memory_map[0].base = bios_rom;
+ 
+-  /* Reset CPU cycle counts */
+-  mcycles_68k = 0;
+-  mcycles_z80 = 0;
++  /* Reset CPU cycles (check EA logo corruption, no glitches for Skitchin/Budokan on PAL 60hz MD2 with TMSS) */
++  mcycles_68k = mcycles_z80 = (rand() % lines_per_frame) * MCYCLES_PER_LINE;
+ 
+-  zstate  = 0;  /* Z80 is resetted & has control of the bus */
+-  zbank   = 0;  /* Assume default bank is $000000-$007FFF */
++  /* Z80 bus is released & Z80 reset is asserted */
++  zstate = 0;
+ 
++  /* Assume default bank is $000000-$007FFF */
++  zbank = 0;  
++
+   /* Reset 68k, Z80 & YM2612 */
+   m68k_pulse_reset();
+   z80_reset();
+@@ -149,11 +151,11 @@
+   }
+   else
+   {
+-    /* Reset Action Replay */
++    /* Reset Pro Action Replay (required in Trainer mode) */
+     if (config.lock_on == TYPE_AR)
+       datel_reset(0);
+ 
+-    /* VDP is not reseted so 68k & Z80 could restart anywhere in the emulated frame */
++    /* 68k & Z80 could restart anywhere in VDP frame (fixes Eternal Champions, X-Men 2) */
+     mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
+ 
+     /* Reset 68k, Z80 & YM2612 */
+@@ -199,7 +201,7 @@
+   if (state == (zstate & 1))
+     return;
+ 
+-  if (state)  /* !ZRESET released */
++  if (state)  /* !ZRESET inactive */
+   {
+     /* if z80 is restarted, resynchronize with 68k */
+     if (zstate == 0)
+@@ -208,16 +210,16 @@
+     /* reset Z80 */
+     z80_reset();
+ 
+-    /* release Z80 reset */
++    /* negate Z80 reset */
+     zstate |= 1;
+   }
+-  else  /* !ZRESET enabled */
++  else  /* !ZRESET active */
+   {
+     /* if z80 was running, resynchronize with 68k */
+     if (zstate == 1)
+       z80_run(cycles);
+ 
+-    /* hold Z80 reset */
++    /* assert Z80 reset */
+     zstate &= 2;
+   }
+ 
+@@ -232,7 +234,5 @@
+ 
+ int z80_irq_callback (int param)
+ {
+-  zirq = 0;
+-  z80_set_irq_line (0, CLEAR_LINE);
+   return 0xFF;
+ }
+Index: source/vdp.h
+===================================================================
+--- source/vdp.h	(revision 457)
++++ source/vdp.h	(revision 458)
+@@ -38,7 +38,6 @@
+ extern uint8 dmafill;
+ extern uint8 hint_pending;
+ extern uint8 vint_pending;
+-extern uint8 zirq;
+ extern uint8 irq_status;
+ 
+ /* Global variables */
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 457)
++++ source/render.c	(revision 458)
+@@ -1490,8 +1490,9 @@
+   int height;
+   int v_line;
+   int column;
++  int max = bitmap.viewport.w;
+   int left = 0x80;
+-  int right = 0x80 + bitmap.viewport.w;
++  int right = 0x80 + max;
+ 
+   uint8 *s, *lb;
+   uint16 name, index;
+@@ -1506,7 +1507,9 @@
+ 
+     /* sprite masking (requires at least one sprite with xpos > 0) */
+     if (xpos)
++    {
+       spr_over = 1;
++    }
+     else if (spr_over)
+     {
+       spr_over = 0;
+@@ -1539,9 +1542,9 @@
+ 
+       /* number of tiles to draw */
+       /* adjusted for sprite limit */
+-      if (pixelcount > bitmap.viewport.w)
++      if (pixelcount > max)
+       {
+-        width -= (pixelcount - bitmap.viewport.w);
++        width -= (pixelcount - max);
+       }
+ 
+       width >>= 3;
+@@ -1555,7 +1558,7 @@
+     }
+ 
+     /* sprite limit (256 or 320 pixels) */
+-    if (pixelcount >= bitmap.viewport.w)
++    if (pixelcount >= max)
+     {
+       spr_over = 1;
+       return;
+@@ -1580,8 +1583,9 @@
+   int height;
+   int v_line;
+   int column;
++  int max = bitmap.viewport.w;
+   int left = 0x80;
+-  int right = 0x80 + bitmap.viewport.w;
++  int right = 0x80 + max;
+ 
+   uint8 *s, *lb;
+   uint16 name, index;
+@@ -1597,7 +1601,9 @@
+ 
+     /* sprite masking (requires at least one sprite with xpos > 0) */
+     if (xpos)
++    {
+       spr_over = 1;
++    }
+     else if(spr_over)
+     {
+       spr_over = 0;
+@@ -1630,8 +1636,8 @@
+ 
+       /* number of tiles to draw */
+       /* adjusted for sprite limit */
+-      if (pixelcount > bitmap.viewport.w)
+-        width -= (pixelcount - bitmap.viewport.w);
++      if (pixelcount > max)
++        width -= (pixelcount - max);
+       width >>= 3;
+ 
+       for(column = 0; column < width; column += 1, lb+=8)
+@@ -1646,7 +1652,7 @@
+     }
+ 
+     /* sprite limit (256 or 320 pixels) */
+-    if (pixelcount >= bitmap.viewport.w)
++    if (pixelcount >= max)
+     {
+       spr_over = 1;
+       return;
+@@ -1736,25 +1742,24 @@
+ /* Line render function                                                     */
+ /*--------------------------------------------------------------------------*/
+ 
+-void render_line(int line, int overscan)
++void render_line(int line)
+ {
+-  int width    = bitmap.viewport.w;
+-  int x_offset = bitmap.viewport.x;
+-
+   /* display OFF */
+   if (reg[0] & 0x01)
+     return;
+ 
++  uint8 *lb     = tmp_buf;
++  int width     = bitmap.viewport.w;
++  int x_offset  = bitmap.viewport.x;
++
+   /* background color (blanked display or vertical borders) */
+-  if (!(reg[1] & 0x40) || overscan)
++  if (!(reg[1] & 0x40) || (status & 8))
+   {
+     width += 2 * x_offset;
+-    memset(&tmp_buf[0x20 - x_offset], 0x40, width);
++    memset(&lb[0x20 - x_offset], 0x40, width);
+   }
+   else
+   {
+-    uint8 *lb = tmp_buf;
+-
+     /* update pattern generator */
+     if (bg_list_index)
+     {
+@@ -1810,7 +1815,11 @@
+       }
+     }
+ 
+-    /* borders */
++    /* left-most column blanking */
++    if(reg[0] & 0x20)
++      memset(&lb[0x20], 0x40, 0x08);
++
++    /* horizontal borders */
+     if (x_offset)
+     {
+         memset(&lb[0x20 - x_offset], 0x40, x_offset);
+@@ -1877,7 +1886,7 @@
+   int hf = (reg[17] >> 7) & 1;
+ 
+   /* Display size  */
+-  int sw =  bitmap.viewport.w >> 4;
++  int sw = (reg[12] & 1) ? 20 : 16;
+ 
+   /* Clear clipping data */
+   memset(&clip, 0, sizeof(clip));
+Index: source/render.h
+===================================================================
+--- source/render.h	(revision 457)
++++ source/render.h	(revision 458)
+@@ -31,7 +31,7 @@
+ extern void render_init(void);
+ extern void render_reset(void);
+ extern void render_shutdown(void);
+-extern void render_line(int line, int overscan);
++extern void render_line(int line);
+ extern void remap_buffer(int line,int width);
+ extern void window_clip(void);
+ extern void parse_satb(int line);
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 457)
++++ source/gx/gui/menu.c	(revision 458)
+@@ -1050,7 +1050,7 @@
+         else if (config.region_detect == 2)
+           sprintf (items[0].text, "Console Region:  EUR");
+         else if (config.region_detect == 3)
+-          sprintf (items[0].text, "Console Region:  JAP");
++          sprintf (items[0].text, "Console Region:  JPN");
+ 
+         if (cart.romsize)
+         {
+@@ -1211,7 +1211,14 @@
+   else
+     sprintf (items[VI_OFFSET].text, "NTSC Filter: OFF");
+ 
+-  sprintf (items[VI_OFFSET+1].text, "Borders: %s", config.overscan ? "ON" : "OFF");
++  if (config.overscan == 3)
++    sprintf (items[VI_OFFSET+1].text, "Borders: ALL");
++  else if (config.overscan == 2)
++    sprintf (items[VI_OFFSET+1].text, "Borders: H ONLY");
++  else if (config.overscan == 1)
++    sprintf (items[VI_OFFSET+1].text, "Borders: V ONLY");
++  else
++    sprintf (items[VI_OFFSET+1].text, "Borders: NONE");
+ 
+   if (config.aspect == 1)
+     sprintf (items[VI_OFFSET+2].text,"Aspect: ORIGINAL (4:3)");
+@@ -1360,8 +1367,15 @@
+         break;
+ 
+       case VI_OFFSET+1: /*** overscan emulation ***/
+-        config.overscan ^= 1;
+-        sprintf (items[VI_OFFSET+1].text, "Borders: %s", config.overscan ? "ON" : "OFF");
++        config.overscan = (config.overscan + 1) % 4;
++        if (config.overscan == 3)
++          sprintf (items[VI_OFFSET+1].text, "Borders: ALL");
++        else if (config.overscan == 2)
++          sprintf (items[VI_OFFSET+1].text, "Borders: H ONLY");
++        else if (config.overscan == 1)
++          sprintf (items[VI_OFFSET+1].text, "Borders: V ONLY");
++        else
++          sprintf (items[VI_OFFSET+1].text, "Borders: NONE");
+         break;
+ 
+       case VI_OFFSET+2: /*** aspect ratio ***/
+Index: source/gx/gx_video.c
+===================================================================
+--- source/gx/gx_video.c	(revision 457)
++++ source/gx/gx_video.c	(revision 458)
+@@ -1332,25 +1332,9 @@
+     tvmodes[2]->xfbMode = VI_XFBMODE_DF;
+   }
+ 
+-  /* overscan emulation */
+-  if (config.overscan)
+-  {
+-    bitmap.viewport.x = (reg[12] & 1) ? 16 : 12;
+-    bitmap.viewport.y = (reg[1] & 8) ? 0 : 8;
+-    if (vdp_pal)
+-      bitmap.viewport.y  += 24;
+-  }
+-  else
+-  {
+-    bitmap.viewport.x = 0;
+-    bitmap.viewport.y = 0;
+-  }
++  /* force video update */
++  bitmap.viewport.changed = 3;
+ 
+-  /* reinitialize video size */
+-  vwidth  = bitmap.viewport.w + (2 * bitmap.viewport.x);
+-  vheight = bitmap.viewport.h + (2 * bitmap.viewport.y);
+-  bitmap.viewport.changed = 1;
+-
+   /* NTSC filter */
+   if (config.ntsc)
+   {
+@@ -1394,28 +1378,22 @@
+ /* GX render update */
+ void gx_video_Update(void)
+ {
+-  int update = bitmap.viewport.changed;
++  int update = bitmap.viewport.changed & 1;
+ 
+   /* check if display has changed */
+   if (update)
+   {
+     /* update texture size */
+-    int old_vwidth = vwidth;
+     vwidth = bitmap.viewport.w + (2 * bitmap.viewport.x);
+     vheight = bitmap.viewport.h + (2 * bitmap.viewport.y);
+ 
+-    /* if width has been changed, do no render this frame           */
+-    /* this fixes texture glitches when changing width middle-frame */
+-    if (vwidth != old_vwidth)
+-      return;
+-
+     /* interlaced mode */
+     if (config.render && interlaced)
+       vheight = vheight << 1;
+ 
+     /* ntsc filter */
+     if (config.ntsc)
+-      vwidth = (reg[12]&1) ? MD_NTSC_OUT_WIDTH(vwidth) : SMS_NTSC_OUT_WIDTH(vwidth);
++      vwidth = (reg[12] & 1) ? MD_NTSC_OUT_WIDTH(vwidth) : SMS_NTSC_OUT_WIDTH(vwidth);
+ 
+     /* texels size must be multiple of 4 */
+     vwidth  = (vwidth  >> 2) << 2;
+@@ -1488,7 +1466,7 @@
+     /* force audio DMA resynchronization */
+     audioStarted = 0;
+ 
+-    bitmap.viewport.changed = 0;
++    bitmap.viewport.changed &= ~1;
+   }
+ }
+ 
+Index: source/gx/config.c
+===================================================================
+--- source/gx/config.c	(revision 457)
++++ source/gx/config.c	(revision 458)
+@@ -96,7 +96,7 @@
+   config.xscale   = 0;
+   config.yscale   = 0;
+   config.aspect   = 1;
+-  config.overscan = 1;
++  config.overscan = 3;
+   if (VIDEO_HaveComponentCable())
+     config.render = 2;
+   else
+Index: source/gx/fileio/file_slot.c
+===================================================================
+--- source/gx/fileio/file_slot.c	(revision 457)
++++ source/gx/fileio/file_slot.c	(revision 458)
+@@ -437,7 +437,7 @@
+       return 0;
+     }
+ 
+-    /* Read into buffer (2k blocks) */
++    /* Write from buffer (2k blocks) */
+     while (filesize > FATCHUNK)
+     {
+       fwrite(savebuffer + done, FATCHUNK, 1, fp);

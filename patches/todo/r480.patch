@@ -1,0 +1,89 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 479)
++++ HISTORY.txt	(revision 480)
+@@ -28,6 +28,7 @@
+ * added support for some undocumented mode register bits
+ * added proper emulation of HV Counter latch: fixes Sunset Riders intro
+ * added pixel-accurate emulation of mid-line display on/off (Nigel Mansell World Championship PAL, Ren & Stimpy's Invention PAL,...)
++* improved 2-cell vscroll emulation accuracy (left-most column in Gynoug, Cutie Suzuki no Ringside Angel, Formula One, Kawasaki Superbike Challenge)
+ * improved FIFO timings accuracy: fixes Sol Deace intro
+ * improved sprite masking accuracy (thanks to Nemesis for his test program)
+ * improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 479)
++++ source/render.c	(revision 480)
+@@ -1083,9 +1083,16 @@
+   if(shift)
+   {
+     dst   = (uint32 *)&buf[0x10 + shift];
+-    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
+-    v_line = (line & 7) << 3;
+ 
++#ifdef LSB_FIRST
++    v_line = (line + (vs[19] & 0x3FF)) & pf_row_mask;
++#else
++    v_line = (line + ((vs[19] >> 16) & 0x3FF)) & pf_row_mask;
++#endif
++
++    nt = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
++    v_line = (v_line & 7) << 3;
++
+     atbuf = nt[(index-1) & pf_col_mask];
+     DRAW_COLUMN(atbuf, v_line)
+   }
+@@ -1145,9 +1152,15 @@
+     if(shift)
+     {
+       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
+-      nt = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
+-      v_line = (line & 7) << 3;
+ 
++#ifdef LSB_FIRST
++      v_line = (line + ((vs[19] >> 16) & 0x3FF)) & pf_row_mask;
++#else
++      v_line = (line + (vs[19] & 0x3FF)) & pf_row_mask;
++#endif
++      nt = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
++      v_line = (v_line & 7) << 3;
++
+       /* Window bug */
+       if (start) atbuf = nt[index & pf_col_mask];
+       else atbuf = nt[(index-1) & pf_col_mask];
+@@ -1343,9 +1356,15 @@
+   if(shift)
+   {
+     dst   = (uint32 *)&buf[0x10 + shift];
+-    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
+-    v_line = (((line & 7) << 1) | odd) << 3;
+ 
++#ifdef LSB_FIRST
++    v_line  = (line + ((vs[19] >> 1) & 0x3FF)) & pf_row_mask;
++#else
++    v_line  = (line + ((vs[19] >> 17) & 0x3FF)) & pf_row_mask;
++#endif
++    nt      = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
++    v_line  = (((v_line & 7) << 1) | odd) << 3;
++
+     atbuf = nt[(index-1) & pf_col_mask];
+     DRAW_COLUMN_IM2(atbuf, v_line)
+   }
+@@ -1403,9 +1422,15 @@
+     if(shift)
+     {
+       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
+-      nt      = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
+-      v_line  = (((line & 7) << 1) | odd) << 3;
+ 
++#ifdef LSB_FIRST
++      v_line  = (line + ((vs[19] >> 17) & 0x3FF)) & pf_row_mask;
++#else
++      v_line  = (line + ((vs[19] >> 1) & 0x3FF)) & pf_row_mask;
++#endif
++      nt = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
++      v_line  = (((v_line & 7) << 1) | odd) << 3;
++
+       /* Window bug */
+       if (start) atbuf = nt[index & pf_col_mask];
+       else atbuf = nt[(index-1) & pf_col_mask];

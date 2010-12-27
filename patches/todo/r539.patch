@@ -1,0 +1,70 @@
+Index: source/sound/ym2612.c
+===================================================================
+--- source/sound/ym2612.c	(revision 538)
++++ source/sound/ym2612.c	(revision 539)
+@@ -1868,10 +1868,6 @@
+     }
+   }
+ 
+-#ifdef NGC
+-  IRQ_Restore(level);
+-#endif
+-
+   /* build Logarithmic Sinus table */
+   for (i=0; i<SIN_LEN; i++)
+   {
+@@ -1896,6 +1892,10 @@
+     sin_tab[ i ] = n*2 + (m>=0.0? 0: 1 );
+   }
+ 
++#ifdef NGC
++  IRQ_Restore(level);
++#endif
++
+   /* build LFO PM modulation table */
+   for(i = 0; i < 8; i++) /* 8 PM depths */
+   {
+Index: source/sound/Fir_Resampler.c
+===================================================================
+--- source/sound/Fir_Resampler.c	(revision 538)
++++ source/sound/Fir_Resampler.c	(revision 539)
+@@ -3,8 +3,8 @@
+ /* C Conversion by Eke-Eke for use in Genesis Plus (2009). */
+ 
+ #include "Fir_Resampler.h"
++#include "shared.h"
+ 
+-//#include <assert.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+@@ -149,6 +149,10 @@
+   double pos = 0.0;
+   res = -1;
+ 
++#ifdef NGC
++  u32 level = IRQ_Disable();
++#endif
++
+   for ( r = 1; r <= MAX_RES; r++ )
+   {
+     pos += ratio;
+@@ -191,6 +195,10 @@
+     }
+   }
+ 
++#ifdef NGC
++  IRQ_Restore(level);
++#endif
++
+   Fir_Resampler_clear();
+ 
+   return ratio;
+@@ -229,7 +237,6 @@
+ void Fir_Resampler_write( long count )
+ {
+   write_pos += count;
+- // assert( write_pos <= ( buffer + buffer_size ) );
+ }
+ 
+ int Fir_Resampler_read( sample_t* out, long count )

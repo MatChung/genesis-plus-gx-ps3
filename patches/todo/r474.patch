@@ -1,0 +1,452 @@
+Index: source/system.h
+===================================================================
+--- source/system.h	(revision 473)
++++ source/system.h	(revision 474)
+@@ -80,14 +80,14 @@
+ extern uint8 system_hw;
+ 
+ /* Function prototypes */
+-extern int audio_init (int samplerate,float framerate);
+-extern void audio_reset (void);
+-extern void audio_shutdown (void);
+-extern int audio_update (void);
++extern int audio_init(int samplerate,float framerate);
++extern void audio_reset(void);
++extern void audio_shutdown(void);
++extern int audio_update(void);
+ extern void audio_set_equalizer(void);
+-extern void system_init (void);
+-extern void system_reset (void);
+-extern void system_shutdown (void);
++extern void system_init(void);
++extern void system_reset(void);
++extern void system_shutdown(void);
+ extern void system_frame(int do_skip);
+ 
+ #endif /* _SYSTEM_H_ */
+Index: source/z80/z80.c
+===================================================================
+--- source/z80/z80.c	(revision 473)
++++ source/z80/z80.c	(revision 474)
+@@ -131,16 +131,12 @@
+ #define LOG(x)
+ #endif
+ 
+-#define cpu_readop(a)           cpu_readmem16(a)
+-#define cpu_readop_arg(a)       cpu_readmem16(a)
+-
+ /* execute main opcodes inside a big switch statement */
+-#ifndef BIG_SWITCH
+-#define BIG_SWITCH      1
+-#endif
++#define BIG_SWITCH 1
+ 
++#define cpu_readop(a)     zram[(a) & 0x1fff]
++#define cpu_readop_arg(a) zram[(a) & 0x1fff]
+ 
+-
+ #define CF  0x01
+ #define NF  0x02
+ #define PF  0x04
+@@ -3409,37 +3405,21 @@
+  ****************************************************************************/
+ void z80_run(unsigned int cycles)
+ {
+-  /* check for NMIs on the way in; they can only be set externally */
+-  /* via timers, and can't be dynamically enabled, so it is safe */
+-  /* to just check here */
+-  if (Z80.nmi_pending)
+-  {
+-    LOG(("Z80 #%d take NMI\n", cpu_getactivecpu()));
+-    LEAVE_HALT;      /* Check if processor was halted */
+-
+-    IFF1 = 0;
+-    PUSH( pc );
+-    PCD = 0x0066;
+-    WZ=PCD;
+-    mcycles_z80 += 11*15;
+-    Z80.nmi_pending = FALSE;
+-  }
+-
+   while( mcycles_z80 < cycles )
+   {
+     /* check for IRQs before each instruction */
+     if (Z80.irq_state != CLEAR_LINE && IFF1 && !Z80.after_ei)
+-      take_interrupt();
+-    Z80.after_ei = FALSE;
+-
+-    if (mcycles_z80 < cycles)
+     {
+-      R++;
+-      EXEC_INLINE(op,ROP());
++      take_interrupt();
++      if (mcycles_z80 >= cycles) return;
+     }
+-  } 
+-}
+ 
++    Z80.after_ei = FALSE;
++    R++;
++    EXEC_INLINE(op,ROP());
++  }
++} 
++
+ /****************************************************************************
+  * Burn 'cycles' T-states. Adjust R register for the lost time
+  ****************************************************************************/
+@@ -3477,19 +3457,29 @@
+  ****************************************************************************/
+ void z80_set_irq_line(int irqline, int state)
+ {
+-  if (irqline == INPUT_LINE_NMI)
++  if (irqline != INPUT_LINE_NMI)
+   {
+-    /* mark an NMI pending on the rising edge */
+-    if (Z80.nmi_state == CLEAR_LINE && state != CLEAR_LINE)
+-      Z80.nmi_pending = TRUE;
+-    Z80.nmi_state = state;
+-  }
+-  else
+-  {
+     /* update the IRQ state via the daisy chain */
+     Z80.irq_state = state;
+ 
+     /* the main execute loop will take the interrupt */
+   }
++  else
++  {
++    /* mark an NMI pending on the rising edge */
++    if (Z80.nmi_state == CLEAR_LINE && state != CLEAR_LINE)
++    {
++      LOG(("Z80 #%d take NMI\n", cpu_getactivecpu()));
++      LEAVE_HALT;      /* Check if processor was halted */
++
++      IFF1 = 0;
++      PUSH( pc );
++      PCD = 0x0066;
++      WZ=PCD;
++
++      mcycles_z80 += 11*15;
++    }
++    Z80.nmi_state = state;
++  }
+ }
+ 
+Index: source/m68k/m68kcpu.h
+===================================================================
+--- source/m68k/m68kcpu.h	(revision 473)
++++ source/m68k/m68kcpu.h	(revision 474)
+@@ -917,13 +917,19 @@
+ extern unsigned int mcycles_68k;
+ 
+ extern m68ki_cpu_core m68ki_cpu;
+-//extern sint           m68ki_remaining_cycles;
++#if 0
++extern sint           m68ki_remaining_cycles;
++#endif
++#if M68K_EMULATE_TRACE
+ extern uint           m68ki_tracing;
++#endif
+ extern const uint8    m68ki_shift_8_table[];
+ extern const uint16   m68ki_shift_16_table[];
+ extern const uint     m68ki_shift_32_table[];
+ extern uint16         m68ki_exception_cycle_table[][256];
++#if M68K_EMULATE_FC
+ extern uint           m68ki_address_space;
++#endif
+ extern const uint8    m68ki_ea_idx_cycle_table[];
+ 
+ extern uint           m68ki_aerr_address;
+@@ -1124,7 +1130,6 @@
+   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
+ 
+   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
+-
+   if (temp->read8) return (*temp->read8)(ADDRESS_68K(address));
+   else return READ_BYTE(temp->base, (address) & 0xffff);
+ }
+@@ -1152,6 +1157,7 @@
+ INLINE void m68ki_write_8_fc(uint address, uint fc, uint value)
+ {
+   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
++
+   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
+   if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);
+   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
+@@ -1161,6 +1167,7 @@
+ {
+   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
+   m68ki_check_address_error_010_less(address, MODE_WRITE, fc); /* auto-disable (see m68kcpu.h) */
++
+   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
+   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
+   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
+@@ -1170,9 +1177,11 @@
+ {
+   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
+   m68ki_check_address_error_010_less(address, MODE_WRITE, fc); /* auto-disable (see m68kcpu.h) */
++
+   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
+   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);
+   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;
++
+   temp = &m68k_memory_map[((address + 2)>>16)&0xff];
+   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
+   else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
+@@ -1612,7 +1621,7 @@
+  */
+ INLINE void m68ki_stack_frame_0010(uint sr, uint vector)
+ {
+-  m68ki_push_32(REG_PPC);
++  m68ki_push_32(REG_PC-2);
+   m68ki_push_16(0x2000 | (vector<<2));
+   m68ki_push_32(REG_PC);
+   m68ki_push_16(sr);
+@@ -1875,7 +1884,7 @@
+   }
+   #endif /* M68K_EMULATE_ADDRESS_ERROR */
+ 
+-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_PRIVILEGE_VIOLATION);
++  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_PRIVILEGE_VIOLATION);
+   m68ki_jump_vector(EXCEPTION_PRIVILEGE_VIOLATION);
+ 
+   /* Use up some clock cycles and undo the instruction's cycles */
+@@ -1888,12 +1897,12 @@
+   uint sr;
+ #if M68K_LOG_1010_1111 == OPT_ON
+   M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1010 instruction %04x (%s)\n",
+-           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
+-           m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
++           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
++           m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
+ #endif
+ 
+   sr = m68ki_init_exception();
+-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1010);
++  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_1010);
+   m68ki_jump_vector(EXCEPTION_1010);
+ 
+   /* Use up some clock cycles and undo the instruction's cycles */
+@@ -1907,12 +1916,12 @@
+ 
+ #if M68K_LOG_1010_1111 == OPT_ON
+   M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1111 instruction %04x (%s)\n",
+-           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
+-           m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
++           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
++           m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
+ #endif
+ 
+   sr = m68ki_init_exception();
+-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1111);
++  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_1111);
+   m68ki_jump_vector(EXCEPTION_1111);
+ 
+   /* Use up some clock cycles and undo the instruction's cycles */
+@@ -1925,8 +1934,8 @@
+   uint sr;
+ 
+   M68K_DO_LOG((M68K_LOG_FILEHANDLE "%s at %08x: illegal instruction %04x (%s)\n",
+-         m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
+-         m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
++         m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
++         m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
+ 
+   sr = m68ki_init_exception();
+ 
+@@ -1937,7 +1946,7 @@
+   }
+   #endif /* M68K_EMULATE_ADDRESS_ERROR */
+ 
+-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_ILLEGAL_INSTRUCTION);
++  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_ILLEGAL_INSTRUCTION);
+   m68ki_jump_vector(EXCEPTION_ILLEGAL_INSTRUCTION);
+ 
+   /* Use up some clock cycles and undo the instruction's cycles */
+Index: source/m68k/m68k.h
+===================================================================
+--- source/m68k/m68k.h	(revision 473)
++++ source/m68k/m68k.h	(revision 474)
+@@ -180,7 +180,7 @@
+ 
+ /* Read data immediately following the PC */
+ #define m68k_read_immediate_16(address) *(uint16 *)(m68k_memory_map[((address)>>16)&0xff].base + ((address) & 0xffff))
+-#define m68k_read_immediate_32(address) (m68k_read_immediate_16(address) << 16) |  (m68k_read_immediate_16(address+2))
++#define m68k_read_immediate_32(address) (m68k_read_immediate_16(address) << 16) | (m68k_read_immediate_16(address+2))
+ 
+ /* Read data relative to the PC */
+ #define m68k_read_pcrelative_8(address)  READ_BYTE(m68k_memory_map[((address)>>16)&0xff].base, (address) & 0xffff)
+Index: source/m68k/m68kcpu.c
+===================================================================
+--- source/m68k/m68kcpu.c	(revision 473)
++++ source/m68k/m68kcpu.c	(revision 474)
+@@ -32,21 +32,31 @@
+ /* ================================ INCLUDES ============================== */
+ /* ======================================================================== */
+ 
++#include "m68kops.h"
++#include "m68kcpu.h"
++
++#if M68K_EMULATE_040
++#include "m68kfpu.c"
+ extern void m68040_fpu_op0(void);
+ extern void m68040_fpu_op1(void);
++#endif /* M68K_EMULATE_040 */
+ 
+-#include "m68kops.h"
+-#include "m68kcpu.h"
+-//#include "m68kfpu.c"
+-
+ /* ======================================================================== */
+ /* ================================= DATA ================================= */
+ /* ======================================================================== */
+ 
+-//int  m68ki_initial_cycles;
+-//int  m68ki_remaining_cycles = 0;                     /* Number of clocks remaining */
++#if 0
++int  m68ki_initial_cycles;
++int  m68ki_remaining_cycles = 0;  /* Number of clocks remaining */
++#endif
++
++#if M68K_EMULATE_TRACE
+ uint m68ki_tracing = 0;
++#endif /* M68K_EMULATE_TRACE */
++
++#if M68K_EMULATE_FC
+ uint m68ki_address_space;
++#endif /* M68K_EMULATE_FC */
+ 
+ #ifdef M68K_LOG_ENABLE
+ const char *const m68ki_cpu_names[] =
+@@ -783,12 +793,12 @@
+   }
+ }
+ 
++#if 0
+ /* Execute a single  instruction */
+-//INLINE int m68k_execute(void)
+-INLINE void m68k_execute(void)
++INLINE int m68k_execute(void)
+ {
+     /* Set our pool of clock cycles available */
+-    //SET_CYCLES(0);
++    SET_CYCLES(0);
+ 
+     /* Set tracing accodring to T1. (T0 is done inside instruction) */
+     m68ki_trace_t1(); /* auto-disable (see m68kcpu.h) */
+@@ -811,8 +821,9 @@
+     m68ki_exception_if_trace(); /* auto-disable (see m68kcpu.h) */
+ 
+     /* return how many clocks we used */
+-    //return - GET_CYCLES();
++    return GET_CYCLES();
+ }
++#endif
+ 
+ /* ASG: rewrote so that the int_level is a mask of the IPL0/IPL1/IPL2 bits */
+ /* KS: Modified so that IPL* bits match with mask positions in the SR
+@@ -839,32 +850,32 @@
+ 
+ void m68k_run (unsigned int cycles) 
+ {
+-  unsigned int int_level;
+-
+   /* Return point if we had an address error */
+   m68ki_set_address_error_trap(); /* auto-disable (see m68kcpu.h) */
+ 
+   while (mcycles_68k < cycles)
+   {
+-    /* check interrupt updates */
++    /* check IRQ triggering */
+     if (irq_status & 0x10)
+     {
+       irq_status &= ~0x10;
+-      int_level = irq_status & 6;
++      CPU_INT_LEVEL = (irq_status & 6) << 8;
+ 
+-      /* hardware latency */
++      /* IRQ was triggered during previous instruction */
+       if (irq_status & 0x40)
+-        m68k_execute();
+-
++      {
++        /* one instruction latency */
++        REG_IR = m68ki_read_imm_16();
++        m68ki_instruction_jump_table[REG_IR]();
++        USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
++      }
+ #ifdef LOGVDP
+       error("[%d(%d)][%d(%d)] IRQ Level = %d(0x%02x) (%x)\n", v_counter, mcycles_68k/3420, mcycles_68k, mcycles_68k%3420,int_level,FLAG_INT_MASK,m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+-      /* update IRQ level */
+-      CPU_INT_LEVEL = int_level << 8;
++      /* update internal interrupt level */
+       m68ki_check_interrupts();
+ 
+-      if (mcycles_68k >= cycles)
+-        return;
++      if (mcycles_68k >= cycles) return;
+     }
+ 
+     /* Make sure we're not stopped */
+@@ -875,11 +886,13 @@
+     }
+ 
+     /* execute a single instruction */
+-    m68k_execute();
++    REG_IR = m68ki_read_imm_16();
++    m68ki_instruction_jump_table[REG_IR]();
++    USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
+   }
+ }
+ 
+-/*
++#if 0
+ int m68k_cycles_run(void)
+ {
+   return m68ki_initial_cycles - GET_CYCLES();
+@@ -889,10 +902,8 @@
+ {
+   return GET_CYCLES();
+ }
+-*/
+ 
+ /* Change the timeslice */
+-/*
+ void m68k_modify_timeslice(int cycles)
+ {
+   m68ki_initial_cycles += cycles;
+@@ -904,7 +915,7 @@
+   m68ki_initial_cycles = GET_CYCLES();
+   SET_CYCLES(0);
+ }
+-*/
++#endif
+ 
+ void m68k_init(void)
+ {
+@@ -933,8 +944,9 @@
+ {
+   /* Clear all stop levels and eat up all remaining cycles */
+   CPU_STOPPED = 0;
+-  //SET_CYCLES(0);
+-
++#if 0
++  SET_CYCLES(0);
++#endif
+   CPU_RUN_MODE = RUN_MODE_BERR_AERR_RESET;
+ 
+   /* Turn off tracing */
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 473)
++++ source/render.c	(revision 474)
+@@ -1923,7 +1923,7 @@
+     size = q[link + 1] >> 8;
+     height = sizetab[size & 3];
+ 
+-    if ((ypos >= 0) && (ypos < height)) 
++    if ((ypos >= 0) && (ypos < height))
+     {
+       /* Sprite limit (max. 16 or 20 sprites displayed per line) */
+       if(count == limit)

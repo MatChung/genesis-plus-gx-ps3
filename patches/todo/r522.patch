@@ -1,0 +1,13 @@
+Index: source/cart_hw/svp/svp.c
+===================================================================
+--- source/cart_hw/svp/svp.c	(revision 521)
++++ source/cart_hw/svp/svp.c	(revision 522)
+@@ -13,7 +13,7 @@
+ #include "shared.h"
+ 
+ svp_t *svp = NULL;
+-int16 SVP_cycles = 850; 
++int16 SVP_cycles = 800; 
+ 
+ void svp_init(void)
+ {

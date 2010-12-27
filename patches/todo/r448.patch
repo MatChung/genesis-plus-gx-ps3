@@ -1,0 +1,324 @@
+Index: source/system.c
+===================================================================
+--- source/system.c	(revision 447)
++++ source/system.c	(revision 448)
+@@ -42,9 +42,9 @@
+ void audio_set_equalizer(void)
+ {
+   init_3band_state(&eq,config.low_freq,config.high_freq,snd.sample_rate);
+-  eq.lg = (double)(config.lg);
+-  eq.mg = (double)(config.mg);
+-  eq.hg = (double)(config.hg);
++  eq.lg = (double)(config.lg) / 100.0;
++  eq.mg = (double)(config.mg) / 100.0;
++  eq.hg = (double)(config.hg) / 100.0;
+ }
+ 
+ /****************************************************************
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 447)
++++ source/gx/gui/menu.c	(revision 448)
+@@ -703,6 +703,9 @@
+   float fm_volume = (float)config.fm_preamp/100.0;
+   float psg_volume = (float)config.psg_preamp/100.0;
+   float rolloff = config.rolloff * 100.0;
++  float lg = (float)config.lg/100.0;
++  float mg = (float)config.mg/100.0;
++  float hg = config.hg * 100.0;
+   
+   if (config.hq_fm)
+   {
+@@ -735,16 +738,7 @@
+   if (config.filter == 2)
+   {
+     sprintf (items[offset+4].text, "Filtering: 3-BAND EQ");
+-    sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
+-    sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
+-    sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
+-    sprintf (items[offset+8].text, "Low Freq: %d", config.low_freq);
+-    sprintf (items[offset+9].text, "High Freq: %d", config.high_freq);
+-    strcpy  (items[offset+5].comment, "Adjust EQ Low Band Gain");
+-    strcpy  (items[offset+6].comment, "Adjust EQ Mid Band Gain");
+-    strcpy  (items[offset+7].comment, "Adjust EQ High Band Gain");
+-    strcpy  (items[offset+8].comment, "Adjust EQ Lowest Frequency");
+-    strcpy  (items[offset+9].comment, "Adjust EQ Highest Frequency");
++    sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
+     m->max_items  = offset + 10;
+   }
+   else if (config.filter == 1)
+@@ -760,8 +754,8 @@
+     m->max_items  = offset + 5;
+   }
+ 
+-  sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
+-  sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
++  sprintf (items[offset+6].text, "Middle Gain: %1.2f", mg);
++  sprintf (items[offset+7].text, "High Gain: %1.2f", hg);
+   sprintf (items[offset+8].text, "Low Freq: %d", config.low_freq);
+   sprintf (items[offset+9].text, "High Freq: %d", config.high_freq);
+   strcpy  (items[offset+5].comment, "Adjust EQ Low Band Gain");
+@@ -782,6 +776,9 @@
+   float fm_volume = (float)config.fm_preamp/100.0;
+   float psg_volume = (float)config.psg_preamp/100.0;
+   float rolloff = config.rolloff * 100.0;
++  float lg = (float)config.lg/100.0;
++  float mg = (float)config.mg/100.0;
++  float hg = config.hg * 100.0;
+   int offset = update_snd_items();
+   GUI_InitMenu(m);
+   GUI_SlideMenuTitle(m,strlen("Audio "));
+@@ -906,7 +903,7 @@
+         if (config.filter == 2)
+         {
+           sprintf (items[offset+4].text, "Filtering: 3-BAND EQ");
+-          sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
++          sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
+           strcpy (items[offset+5].comment, "Adjust EQ Low Band Gain");
+           m->max_items = offset + 10;
+           audio_set_equalizer();
+@@ -939,21 +936,24 @@
+         }
+         else
+         {
+-          GUI_OptionBox(m,0,"Low Gain",(void *)&config.lg,0.01,0.0,2.0,0);
+-          sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
++          GUI_OptionBox(m,0,"Low Gain",(void *)&lg,0.01,0.0,2.0,0);
++          sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
++          config.lg = (int)(lg * 100.0);
+           audio_set_equalizer();
+         }
+         break;
+ 
+       case 7:
+-        GUI_OptionBox(m,0,"Middle Gain",(void *)&config.mg,0.01,0.0,2.0,0);
+-        sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
++        GUI_OptionBox(m,0,"Middle Gain",(void *)&mg,0.01,0.0,2.0,0);
++        sprintf (items[offset+6].text, "Middle Gain: %1.2f", mg);
++        config.mg = (int)(mg * 100.0);
+         audio_set_equalizer();
+         break;
+ 
+       case 8:
+-        GUI_OptionBox(m,0,"High Gain",(void *)&config.hg,0.01,0.0,2.0,0);
+-        sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
++        GUI_OptionBox(m,0,"High Gain",(void *)&hg,0.01,0.0,2.0,0);
++        sprintf (items[offset+7].text, "High Gain: %1.2f", hg);
++        config.hg = (int)(hg * 100.0);
+         audio_set_equalizer();
+         break;
+ 
+@@ -997,7 +997,7 @@
+   else if (config.region_detect == 2)
+     sprintf (items[0].text, "Console Region:  EUR");
+   else if (config.region_detect == 3)
+-    sprintf (items[0].text, "Console Region:  JAP");
++    sprintf (items[0].text, "Console Region:  JPN");
+ 
+   sprintf (items[1].text, "System Lockups: %s", config.force_dtack ? "OFF" : "ON");
+   sprintf (items[2].text, "68k Address Error: %s", config.addr_error ? "ON" : "OFF");
+@@ -1008,7 +1008,7 @@
+   else if (config.lock_on == TYPE_AR)
+     sprintf (items[4].text, "Lock-On: ACTION REPLAY");
+   else if (config.lock_on == TYPE_SK)
+-    sprintf (items[4].text, "Lock-On: SONIC & KNUCKLES");
++    sprintf (items[4].text, "Lock-On: SONIC&KNUCKLES");
+   else
+     sprintf (items[4].text, "Lock-On: OFF");
+ 
+@@ -1118,12 +1118,11 @@
+         else if (config.lock_on == TYPE_AR)
+           sprintf (items[4].text, "Lock-On: ACTION REPLAY");
+         else if (config.lock_on == TYPE_SK)
+-          sprintf (items[4].text, "Lock-On: SONIC & KNUCKLES");
++          sprintf (items[4].text, "Lock-On: SONIC&KNUCKLES");
+         else
+           sprintf (items[4].text, "Lock-On: OFF");
+         if (cart.romsize) 
+         {
+-          system_reset(); /* clear any patches first */
+           system_init();
+           system_reset();
+           if (config.s_auto & 1)
+@@ -2660,14 +2659,14 @@
+   sprintf (items[11], "ROM end: $%06X", rominfo.romend);
+ 
+   if (sram.custom)
+-    sprintf (items[12], "EEPROM(%dK): $%06X", ((eeprom.type.size_mask+1)* 8) /1024, (unsigned int)eeprom.type.sda_out_bit);
++    sprintf (items[12], "EEPROM(%dK): $%06X", ((eeprom.type.size_mask+1)* 8) /1024, eeprom.type.sda_in_adr);
+   else if (sram.detected)
+     sprintf (items[12], "SRAM Start: $%06X", sram.start);
+   else
+     sprintf (items[12], "No Backup Memory specified");
+ 
+   if (sram.custom) 
+-    sprintf (items[13], "EEPROM(%dK): $%06X", ((eeprom.type.size_mask+1)* 8) /1024, (unsigned int)eeprom.type.scl_bit);
++    sprintf (items[13], "EEPROM(%dK): $%06X", ((eeprom.type.size_mask+1)* 8) /1024, eeprom.type.sda_out_adr);
+   else if (sram.detected)
+     sprintf (items[13], "SRAM End: $%06X", sram.end);
+   else if (sram.on)
+@@ -2676,15 +2675,15 @@
+     sprintf (items[13], "SRAM disabled by default");
+   
+   if (region_code == REGION_USA)
+-    sprintf (items[14], "Region: %s (USA)", rominfo.country);
++    sprintf (items[14], "Region Code: %s (USA)", rominfo.country);
+   else if (region_code == REGION_EUROPE)
+-    sprintf (items[14], "Region: %s (EUR)", rominfo.country);
++    sprintf (items[14], "Region Code: %s (EUR)", rominfo.country);
+   else if (region_code == REGION_JAPAN_NTSC)
+-    sprintf (items[14], "Region: %s (JAP)", rominfo.country);
++    sprintf (items[14], "Region Code: %s (JPN)", rominfo.country);
+   else if (region_code == REGION_JAPAN_PAL)
+-    sprintf (items[14], "Region: %s (JAP 50Hz)", rominfo.country);
++    sprintf (items[14], "Region Code: %s (JPN-PAL)", rominfo.country);
+ 
+-  GUI_TextWindow(&menu_main, "ROM Header Infos", items, 15, 15);
++  GUI_TextWindow(&menu_main, "ROM Header Info", items, 15, 15);
+ }
+ 
+ /***************************************************************************
+Index: source/gx/config.h
+===================================================================
+--- source/gx/config.h	(revision 447)
++++ source/gx/config.h	(revision 448)
+@@ -31,19 +31,19 @@
+ typedef struct 
+ {
+   char version[16];
+-  int32 psg_preamp;
+-  int32 fm_preamp;
+   uint8 hq_fm;
++  uint8 filter;
+   uint8 psgBoostNoise;
+-  uint8 filter;
+-  int8 lp_range;
++  uint8 dac_bits;
++  int16 psg_preamp;
++  int16 fm_preamp;
++  int16 lp_range;
+   int16 low_freq;
+   int16 high_freq;
+-  float lg;
+-  float mg;
+-  float hg;
++  int16 lg;
++  int16 mg;
++  int16 hg;
+   float rolloff;
+-  uint8 dac_bits;
+   uint8 region_detect;
+   uint8 force_dtack;
+   uint8 addr_error;
+@@ -51,20 +51,27 @@
+   uint8 lock_on;
+   uint8 hot_swap;
+   uint8 romtype;
++  uint8 invert_mouse;
++  uint8 gun_cursor[2];
++  uint8 overscan;
++  uint8 ntsc;
++  uint8 render;
++  uint8 tv_mode;
++  uint8 bilinear;
++  uint8 aspect;
+   int16 xshift;
+   int16 yshift;
+   int16 xscale;
+   int16 yscale;
+-  uint8 tv_mode;
+-  uint8 aspect;
+-  uint8 overscan;
+-  uint8 render;
+-  uint8 ntsc;
+-  uint8 bilinear;
+-  uint8 gun_cursor[2];
+-  uint8 invert_mouse;
++#ifdef HW_RVL
++  uint32 trap;
++  float gamma;
++#endif
++  t_input_config input[MAX_INPUTS];
+   uint16 pad_keymap[4][MAX_KEYS];
+-  t_input_config input[MAX_INPUTS];
++#ifdef HW_RVL
++  uint32 wpad_keymap[4*3][MAX_KEYS];
++#endif
+   uint8 autoload;
+   uint8 s_auto;
+   uint8 s_default;
+@@ -76,9 +83,6 @@
+   float sfx_volume;
+   char sddir[MAXPATHLEN];
+ #ifdef HW_RVL
+-  float gamma;
+-  uint32 trap;
+-  uint32 wpad_keymap[4*3][MAX_KEYS];
+   char usbdir[MAXPATHLEN];
+ #endif
+ } t_config;
+Index: source/gx/fileio/file_slot.c
+===================================================================
+--- source/gx/fileio/file_slot.c	(revision 447)
++++ source/gx/fileio/file_slot.c	(revision 448)
+@@ -251,8 +251,8 @@
+     if (fp)
+     {
+       /* Read size */
+-      fseek(fp , 0 , SEEK_END);
+-      filesize = ftell (fp);
++      fseek(fp, 0, SEEK_END);
++      filesize = ftell(fp);
+       fseek(fp, 0, SEEK_SET);
+ 
+       /* Read into buffer (2k blocks) */
+Index: source/gx/fileio/unzip.c
+===================================================================
+--- source/gx/fileio/unzip.c	(revision 447)
++++ source/gx/fileio/unzip.c	(revision 448)
+@@ -123,11 +123,11 @@
+   if (fatfile)
+   {
+     fseek(fatfile, 0, SEEK_SET);
+-    fread(readbuffer, FATCHUNK,  1, fatfile);
++    fread(readbuffer, 2048,  1, fatfile);
+   }
+   else
+   {
+-    dvd_read (&readbuffer, DVDCHUNK, discoffset);
++    dvd_read (&readbuffer, 2048, discoffset);
+   }
+ 
+   /*** Copy PKZip header to local, used as info ***/
+@@ -191,12 +191,12 @@
+     
+     if (fatfile)
+     {
+-      fread(readbuffer, FATCHUNK, 1, fatfile);
++      fread(readbuffer, 2048, 1, fatfile);
+     }
+     else
+     {
+-      discoffset += DVDCHUNK;
+-      dvd_read (&readbuffer, DVDCHUNK, discoffset);
++      discoffset += 2048;
++      dvd_read (&readbuffer, 2048, discoffset);
+     }
+   }
+   while (res != Z_STREAM_END);
+Index: source/gx/osd.h
+===================================================================
+--- source/gx/osd.h	(revision 447)
++++ source/gx/osd.h	(revision 448)
+@@ -33,9 +33,9 @@
+ #define SK_UPMEM      "/genplus/sk2chip.bin"
+ 
+ #ifdef HW_RVL
+-#define VERSION "version 1.3.xW"
++#define VERSION "version 1.4.0W"
+ #else
+-#define VERSION "version 1.3.xG"
++#define VERSION "version 1.4.0G"
+ #endif
+ 
+ #define osd_input_Update() gx_input_UpdateEmu()

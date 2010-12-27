@@ -1,0 +1,4054 @@
+Index: HISTORY.txt
+===================================================================
+--- HISTORY.txt	(revision 442)
++++ HISTORY.txt	(revision 443)
+@@ -14,7 +14,7 @@
+ * fixed YM2612 context saving/loading.
+ * fixed YM2612 state on reset.
+ * removed outdated & less accurate Gens YM2612 core
+-* added preliminar emulation of YM2612 DAC original resolution (configurable).
++* added configurable YM2612 DAC resolution emulation.
+ * added configurable & faster FIR resampler (thanks to Blargg & AamirM), dropped libsamplerate support.
+ * added configurable Low-Pass filtering
+ * added configurable 3-Band Equalizer (thanks to Neil C).
+@@ -25,7 +25,9 @@
+ ---------------
+ * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
+ * added support for 2-Cell vertical scrolling in Interlaced 2 mode
++* fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
+ * fixed VBLANK transition line checks
++* improved VDP FIFO timings accuracy: fixes Sol Deace intro
+ * improved sprite masking accuracy (thanks to Nemesis for his sprite test program)
+ * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
+ * improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
+@@ -48,9 +50,9 @@
+ * added Action Replay hardware emulation (Action replay ROM is now fully supported).
+ * added S&K "Lock-On" hardware emulation (you can "lock" any games to Sonic & Knuckles).
+ * added Cartridge "hot swap" feature.
+-* fixed Backup Memory support in some games that were actually using serial EEPROM.
++* added EEPROM support in some games requiring it.
+ * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
+-* fixed lightgun auto detection: fixes cursor position in Lethal Enforcers II.
++* fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
+ * lots of code cleanup, bugfixes & optimization.
+ 
+ 
+@@ -63,11 +65,18 @@
+ * improved reset button behavior, now works more like the real Genesis reset button.
+ * improved lightgun cursors layout.
+ * fixed stability issues and memory leaks.
+-* compiled with devkitPPC r19 & libOGC 1.8.1 (SDHC support, new DVDX, etc)
+ 
++[Wii only]
++---------------
++* added USB2 support through Hermes cIOS/mload (cIOS 202 is required)
++* added Video Hardware Gamma control
++* added Video Hardware "Trap Filter" control
++* improved Mouse emulation through the Wiimote
++* compiled with devkitPPC r21 & libOGC 1.8.3 (SDHC support, DVDX v2 support)
+ 
+ 
+ 
++
+ ---------------------------------------------------------------------------------------------------------
+ Genesis Plus GX 1.3.1 (20/12/2008) (Eke-Eke)
+ ---------------------------------------------------------------------------------------------------------
+Index: source/loadrom.h
+===================================================================
+--- source/loadrom.h	(revision 442)
++++ source/loadrom.h	(revision 443)
+@@ -64,6 +64,7 @@
+ extern PERIPHERALINFO peripheralinfo[14];
+ extern uint16 realchecksum;
+ extern uint16 peripherals;
++extern char rom_filename[256];
+ 
+ /* Function prototypes */
+ extern int load_rom(char *filename);
+Index: source/cart_hw/sram.c
+===================================================================
+--- source/cart_hw/sram.c	(revision 442)
++++ source/cart_hw/sram.c	(revision 443)
+@@ -43,7 +43,7 @@
+ {
+   memset (&sram, 0, sizeof (T_SRAM));
+   memset (&sram.sram[0], 0xFF, 0x10000);
+-  sram.crc = crc32 (0, &sram.sram[0], 0x10000);
++  sram.crc = crc32(0, &sram.sram[0], 0x10000);
+ 
+   if ((READ_BYTE(cart.rom,0x1b0) == 0x52) && (READ_BYTE(cart.rom,0x1b1) == 0x41))
+   {
+Index: source/loadrom.c
+===================================================================
+--- source/loadrom.c	(revision 442)
++++ source/loadrom.c	(revision 443)
+@@ -60,7 +60,9 @@
+ uint16 peripherals;
+ uint16 realchecksum;
+ ROMINFO rominfo;
++char rom_filename[256];
+ 
++
+ /***************************************************************************
+   * Genesis ROM Manufacturers
+   *
+Index: source/gx/gui/ggentry.c
+===================================================================
+--- source/gx/gui/ggentry.c	(revision 442)
++++ source/gx/gui/ggentry.c	(revision 443)
+@@ -28,8 +28,6 @@
+ 
+ #define MAXCODES 8
+ 
+-extern char menutitle[60];
+-
+ typedef struct
+ {
+   int address;
+@@ -168,7 +166,7 @@
+   unsigned char c[2] = { 0, 0 };
+ 
+   gxClearScreen ((GXColor)BLACK);
+-  WriteCentre (134, menutitle);
++  WriteCentre (134, "Game Genie Entry");
+ 
+   for (i = 0; i < MAXCODES; i++)
+   {
+@@ -340,7 +338,6 @@
+ void GetGGEntries ()
+ {
+   editing = 0;
+-  strcpy (menutitle, "Game Genie Entry");
+   GGSelectLine ();
+ 
+   /* Apply Game Genie patches */
+Index: source/gx/gui/filesel.c
+===================================================================
+--- source/gx/gui/filesel.c	(revision 442)
++++ source/gx/gui/filesel.c	(revision 443)
+@@ -23,11 +23,13 @@
+  ********************************************************************************/
+ 
+ #include "shared.h"
++#include "filesel.h"
++#include "menu.h"
+ #include "font.h"
+ #include "gui.h"
+ #include "file_dvd.h"
+ #include "file_fat.h"
+-#include "filesel.h"
++#include "file_slot.h"
+ 
+ #ifdef HW_RVL
+ #include <wiiuse/wpad.h>
+@@ -43,6 +45,8 @@
+ static int old_selection = 0;
+ static int old_offset    = 0;
+ static int maxfiles      = 0;
++static int string_offset = 0;
++static void selector_cb(void);
+ 
+ /*****************************************************************************/
+ /*  GUI Buttons data                                                         */
+@@ -63,8 +67,8 @@
+ /*  GUI Arrows button                                                        */
+ /*****************************************************************************/
+ 
+-static gui_butn arrow_up = {&arrow_up_data,BUTTON_VISIBLE|BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
+-static gui_butn arrow_down = {&arrow_down_data,BUTTON_VISIBLE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
++static gui_butn arrow_up = {&arrow_up_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
++static gui_butn arrow_down = {&arrow_down_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
+ 
+ /*****************************************************************************/
+ /*  GUI helpers                                                              */
+@@ -108,7 +112,8 @@
+   NULL,
+   bg_filesel,
+   {&action_cancel, &action_select},
+-  {&arrow_up,&arrow_down}
++  {&arrow_up,&arrow_down},
++  selector_cb
+ };
+ 
+ /***************************************************************************
+@@ -146,20 +151,95 @@
+  * ROM size is returned
+  *
+  ****************************************************************************/ 
++static void selector_cb(void)
++{
++  int i;
++  char text[MAXPATHLEN];
++  int yoffset = PAGEOFFSET;
++
++  /* Initialize directory icon */
++  gui_image dir_icon;
++  dir_icon.texture = gxTextureOpenPNG(Browser_dir_png,0);
++  dir_icon.w = dir_icon.texture->width;
++  dir_icon.h = dir_icon.texture->height;
++  dir_icon.x = 26;
++  dir_icon.y = PAGEOFFSET;
++
++  /* Initialize selection bar */
++  gui_image bar_over;
++  bar_over.texture = gxTextureOpenPNG(Overlay_bar_png,0);
++  bar_over.w = bar_over.texture->width;
++  bar_over.h = bar_over.texture->height;
++  bar_over.x = 22;
++  bar_over.y = -(bar_over.h - dir_icon.h)/2;
++
++  /* Draw Files list */
++  for (i = offset; i < (offset + PAGESIZE) && (i < maxfiles); i++)
++  {
++    if (i == selection)
++    {
++      /* selection bar */
++      gxDrawTexture(bar_over.texture,bar_over.x,yoffset+bar_over.y,bar_over.w,bar_over.h,255);
++
++      /* scrolling text */
++      if ((string_offset/10) >= strlen(filelist[i].filename))
++        string_offset = 0;
++      sprintf(text, "%s  ",filelist[i].filename + string_offset/10);
++      strncat(text, filelist[i].filename, string_offset/10);
++      if (filelist[i].flags)
++      {
++        /* directory icon */
++        gxDrawTexture(dir_icon.texture,dir_icon.x-1,yoffset-1,dir_icon.w+2,dir_icon.h+2,255);
++        if (FONT_write(text,18,dir_icon.x+dir_icon.w+6,yoffset+16,bar_over.w-dir_icon.w-14,(GXColor)WHITE))
++        {
++          /* string is too large -> scroll text */
++          string_offset ++;
++        }
++      }
++      else
++      {
++        if (FONT_write(text,18,dir_icon.x,yoffset+16,bar_over.w-8,(GXColor)WHITE))
++        {
++          /* text scrolling */
++          string_offset ++;
++        }
++      }
++    }
++    else
++    {
++      if (filelist[i].flags)
++      {
++        /* directory icon */
++        gxDrawTexture(dir_icon.texture,dir_icon.x,yoffset,dir_icon.w,dir_icon.h,255);
++        FONT_write(filelist[i].filename,16,dir_icon.x+dir_icon.w+6,yoffset+16,bar_over.w-dir_icon.w-14,(GXColor)WHITE);
++      }
++      else
++      {
++        FONT_write(filelist[i].filename,16,dir_icon.x,yoffset+16,bar_over.w-8,(GXColor)WHITE);
++      }
++    }
++
++    yoffset += 22;
++  }
++
++  gxTextureClose(&bar_over.texture);
++  gxTextureClose(&dir_icon.texture);
++}  
++  
++
+ int FileSelector(unsigned char *buffer, bool useFAT)
+ {
+   short p;
+-  int ret,i,yoffset;
++  int ret;
+   int size = 0;
+   int go_up = 0;
+-  int string_offset = 0;
+   int old = -1;
++  char fname[MAXPATHLEN];
+   char text[MAXPATHLEN];
+-  char fname[MAXPATHLEN];
+   FILE *xml,*snap;
+ 
+ #ifdef HW_RVL
+-  int x,y;
++  int x,y,i,yoffset;
+   gui_butn *button;
+ #endif
+ 
+@@ -176,23 +256,8 @@
+   /* Initialize Menu */
+   gui_menu *m = &menu_browser;
+   GUI_InitMenu(m);
++  string_offset = 0;
+ 
+-  /* Initialize directory icon */
+-  gui_image dir_icon;
+-  dir_icon.texture = gxTextureOpenPNG(Browser_dir_png,0);
+-  dir_icon.w = dir_icon.texture->width;
+-  dir_icon.h = dir_icon.texture->height;
+-  dir_icon.x = 26;
+-  dir_icon.y = PAGEOFFSET;
+-
+-  /* Initialize selection bar */
+-  gui_image bar_over;
+-  bar_over.texture = gxTextureOpenPNG(Overlay_bar_png,0);
+-  bar_over.w = bar_over.texture->width;
+-  bar_over.h = bar_over.texture->height;
+-  bar_over.x = 22;
+-  bar_over.y = -(bar_over.h - dir_icon.h)/2;
+-
+   while (1)
+   {
+     /* ROM file snapshot/database */
+@@ -210,7 +275,8 @@
+       {
+         /* get ROM filename without extension */
+         sprintf (text, "%s", filelist[selection].filename);
+-        if (strlen(text) >= 4) text[strlen(text) - 4] = 0;
++        if (strlen(text) >= 4)
++          text[strlen(text) - 4] = 0;
+ 
+         /* ROM database informations */
+         sprintf (fname, "%s/db/%s.xml", DEFAULT_PATH, text);
+@@ -227,7 +293,8 @@
+         if (snap)
+         {
+           bg_filesel[8].texture = gxTextureOpenPNG(0,snap);
+-          if (bg_filesel[8].texture) bg_filesel[8].state |= IMAGE_VISIBLE;
++          if (bg_filesel[8].texture)
++            bg_filesel[8].state |= IMAGE_VISIBLE;
+           fclose(snap);
+         }
+       }
+@@ -256,60 +323,10 @@
+     /* Draw menu*/
+     GUI_DrawMenu(m);
+ 
+-    /* Draw Files list */
+-    yoffset = PAGEOFFSET;
+-    for (i = offset; i < (offset + PAGESIZE) && (i < maxfiles); i++)
+-    {
+-      if (i == selection)
+-      {
+-        /* scrolling text */
+-        if ((string_offset/10) >= strlen(filelist[i].filename))  string_offset = 0;
+-        sprintf(text, "%s  ",filelist[i].filename + string_offset/10);
+-        strncat(text, filelist[i].filename, string_offset/10);
+-
+-        gxDrawTexture(bar_over.texture,bar_over.x,yoffset+bar_over.y,bar_over.w,bar_over.h,255);
+-        if (filelist[i].flags)
+-        {
+-          /* directory icon */
+-          gxDrawTexture(dir_icon.texture,dir_icon.x-1,yoffset-1,dir_icon.w+2,dir_icon.h+2,255);
+-          if (FONT_write(text,18,dir_icon.x+dir_icon.w+6,yoffset+16,bar_over.w-dir_icon.w-14,(GXColor)WHITE))
+-          {
+-            /* text scrolling */
+-            string_offset ++;
+-          }
+-        }
+-        else
+-        {
+-          if (FONT_write(text,18,dir_icon.x,yoffset+16,bar_over.w-8,(GXColor)WHITE))
+-          {
+-            /* text scrolling */
+-            string_offset ++;
+-          }
+-        }
+-      }
+-      else
+-      {
+-        if (filelist[i].flags)
+-        {
+-          /* directory icon */
+-          gxDrawTexture(dir_icon.texture,dir_icon.x,yoffset,dir_icon.w,dir_icon.h,255);
+-          FONT_write(filelist[i].filename,16,dir_icon.x+dir_icon.w+6,yoffset+16,bar_over.w-dir_icon.w-14,(GXColor)WHITE);
+-        }
+-        else
+-        {
+-          FONT_write(filelist[i].filename,16,dir_icon.x,yoffset+16,bar_over.w-8,(GXColor)WHITE);
+-        }
+-      }
+-
+-      yoffset += 22;
+-    }
+-
+ #ifdef HW_RVL
+     if (Shutdown)
+     {
+       gxTextureClose(&w_pointer);
+-      gxTextureClose(&bar_over.texture);
+-      gxTextureClose(&dir_icon.texture);
+       GUI_DeleteMenu(m);
+       GUI_FadeOut();
+       shutdown();
+@@ -371,8 +388,10 @@
+     if (p & PAD_BUTTON_DOWN)
+     {
+       selection++;
+-      if (selection == maxfiles) selection = offset = 0;
+-      if ((selection - offset) >= PAGESIZE) offset += PAGESIZE;
++      if (selection == maxfiles)
++        selection = offset = 0;
++      if ((selection - offset) >= PAGESIZE)
++        offset += PAGESIZE;
+     }
+ 
+     /* highlight previous item */
+@@ -384,8 +403,10 @@
+         selection = maxfiles - 1;
+         offset = selection - PAGESIZE + 1;
+       }
+-      if (selection < offset) offset -= PAGESIZE;
+-      if (offset < 0) offset = 0;
++      if (selection < offset)
++        offset -= PAGESIZE;
++      if (offset < 0)
++        offset = 0;
+     }
+ 
+     /* go back one page */
+@@ -397,24 +418,26 @@
+         selection = maxfiles - 1;
+         offset = selection - PAGESIZE + 1;
+       }
+-      if (selection < offset) offset -= PAGESIZE;
+-      if (offset < 0) offset = 0;
++      if (selection < offset)
++        offset -= PAGESIZE;
++      if (offset < 0)
++        offset = 0;
+     }
+ 
+     /* go forward one page */
+     else if (p & PAD_TRIGGER_R)
+     {
+       selection += PAGESIZE;
+-      if (selection > maxfiles - 1) selection = offset = 0;
+-      if ((selection - offset) >= PAGESIZE) offset += PAGESIZE;
++      if (selection > maxfiles - 1)
++        selection = offset = 0;
++      if ((selection - offset) >= PAGESIZE)
++        offset += PAGESIZE;
+     }
+ 
+     /* quit */
+     else if (p & PAD_TRIGGER_Z)
+     {
+       GUI_DeleteMenu(m);
+-      gxTextureClose(&bar_over.texture);
+-      gxTextureClose(&dir_icon.texture);
+       return 0;
+     }
+ 
+@@ -442,14 +465,18 @@
+             selection = maxfiles - 1;
+             offset = selection - PAGESIZE + 1;
+           }
+-          if (selection < offset) offset -= PAGESIZE;
+-          if (offset < 0) offset = 0;
++          if (selection < offset)
++            offset -= PAGESIZE;
++          if (offset < 0)
++            offset = 0;
+         }
+         else if (m->selected == (m->max_buttons+1)) /* down arrow */
+         {
+           selection++;
+-          if (selection == maxfiles) selection = offset = 0;
+-          if ((selection - offset) >= PAGESIZE) offset += PAGESIZE;
++          if (selection == maxfiles)
++            selection = offset = 0;
++          if ((selection - offset) >= PAGESIZE)
++            offset += PAGESIZE;
+         }
+       }
+ #endif
+@@ -498,8 +525,6 @@
+           else
+           {
+             GUI_DeleteMenu(m);
+-            gxTextureClose(&bar_over.texture);
+-            gxTextureClose(&dir_icon.texture);
+             return 0;
+           }
+         }
+@@ -511,8 +536,6 @@
+           if (go_up)
+           {
+             GUI_DeleteMenu(m);
+-            gxTextureClose(&bar_over.texture);
+-            gxTextureClose(&dir_icon.texture);
+             return 0;
+           }
+           else
+@@ -529,16 +552,18 @@
+               /* Reload emulation */
+               if (size)
+               {
+-                memfile_autosave(-1,config.state_auto);
++                if (config.s_auto & 2)
++                  slot_autosave(config.s_default,config.s_device);
+                 reloadrom(size,filelist[selection].filename);
+-                memfile_autoload(config.sram_auto,config.state_auto);
++                if (config.s_auto & 1)
++                  slot_autoload(0,config.s_device);
++                if (config.s_auto & 2)
++                  slot_autoload(config.s_default,config.s_device);
+               }
+ 
+               /* Exit */
+               GUI_MsgBoxClose();
+               GUI_DeleteMenu(m);
+-              gxTextureClose(&bar_over.texture);
+-              gxTextureClose(&dir_icon.texture);
+               return size;
+             }
+ 
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 442)
++++ source/gx/gui/menu.c	(revision 443)
+@@ -22,16 +22,24 @@
+  ***************************************************************************/
+ 
+ #include "shared.h"
++#include "menu.h"
+ #include "font.h"
+ #include "gui.h"
+ #include "dvd.h"
+ #include "file_dvd.h"
+ #include "file_fat.h"
++#include "file_slot.h"
+ #include "filesel.h"
+ 
+ /*****************************************************************************/
+-/*  Generic Buttons data                                                      */
++/*  Specific Menu Callbacks                                                  */
+ /*****************************************************************************/
++static void ctrlmenu_cb(void);
++static void savemenu_cb(void);
++
++/*****************************************************************************/
++/*  Generic Buttons data                                                     */
++/*****************************************************************************/
+ static butn_data arrow_up_data =
+ {
+   {NULL,NULL},
+@@ -74,6 +82,30 @@
+   {Ctrl_player_none_png,NULL}
+ };
+ 
++static butn_data button_load_data =
++{
++  {NULL,NULL},
++  {Button_load_png,Button_load_over_png}
++};
++
++static butn_data button_save_data =
++{
++  {NULL,NULL},
++  {Button_save_png,Button_save_over_png}
++};
++
++static butn_data button_special_data =
++{
++  {NULL,NULL},
++  {Button_special_png,Button_special_over_png}
++};
++
++static butn_data button_delete_data =
++{
++  {NULL,NULL},
++  {Button_delete_png,Button_delete_over_png}
++};
++
+ /*****************************************************************************/
+ /*  Generic GUI items                                                         */
+ /*****************************************************************************/
+@@ -130,6 +162,18 @@
+   {NULL,Frame_s1_png,IMAGE_VISIBLE,8,70,372,336,64}
+ };
+ 
++static gui_image bg_saves[8] =
++{
++  {NULL,NULL,0,0,0,0,0,255},
++  {NULL,Bg_main_png,IMAGE_VISIBLE,374,140,284,288,255},
++  {NULL,Bg_overlay_png,IMAGE_VISIBLE|IMAGE_REPEAT,0,0,640,480,255},
++  {NULL,Banner_top_png,IMAGE_VISIBLE|IMAGE_SLIDE_TOP,0,0,640,108,255},
++  {NULL,Banner_bottom_png,IMAGE_VISIBLE|IMAGE_SLIDE_BOTTOM,0,380,640,100,255},
++  {NULL,Main_logo_png,IMAGE_VISIBLE|IMAGE_SLIDE_TOP,466,40,152,44,255},
++  {NULL,Frame_s1_png,IMAGE_VISIBLE,8,70,372,336,64},
++  {NULL,Frame_s1_png,IMAGE_SLIDE_RIGHT,468,110,372,296,64}
++};
++
+ /*****************************************************************************/
+ /*  Menu Items description                                                   */
+ /*****************************************************************************/
+@@ -250,22 +294,36 @@
+   {NULL,NULL,"Confirm Box: OFF",  "Enable/disable user confirmation",     52,132,276,48}
+ };
+ 
++/* Save Manager */
++static gui_item items_saves[9] =
++{
++  {NULL,NULL,"",""                   ,0,0,0,0},
++  {NULL,NULL,"",""                   ,0,0,0,0},
++  {NULL,NULL,"",""                   ,0,0,0,0},
++  {NULL,NULL,"",""                   ,0,0,0,0},
++  {NULL,NULL,"",""                   ,0,0,0,0},
++  {NULL,NULL,"","Load file"          ,0,0,0,0},
++  {NULL,NULL,"","Set as default file",0,0,0,0},
++  {NULL,NULL,"","Delete file"        ,0,0,0,0},
++  {NULL,NULL,"","Save file"          ,0,0,0,0}
++};
++
+ /*****************************************************************************/
+ /*  Menu Buttons description                                                 */
+ /*****************************************************************************/
+ 
+ /* Generic Buttons for list menu */
+-static gui_butn arrow_up = {&arrow_up_data,BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
+-static gui_butn arrow_down = {&arrow_down_data,BUTTON_VISIBLE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
++static gui_butn arrow_up = {&arrow_up_data,BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
++static gui_butn arrow_down = {&arrow_down_data,BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
+ 
+ /* Generic list menu */
+ static gui_butn buttons_list[4] =
+ {
+-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,132,276,48},
+-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,188,276,48},
+-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,244,276,48},
+-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,300,276,48}
+- };
++  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,132,276,48},
++  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,188,276,48},
++  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,244,276,48},
++  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,300,276,48}
++};
+ 
+ /* Main menu */
+ static gui_butn buttons_main[9] =
+@@ -322,6 +380,20 @@
+   {&button_icon_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX|BUTTON_SELECT_SFX,{2,0,1,0},330,264,148,132}
+ };
+ 
++/* Save Manager Menu */
++static gui_butn buttons_saves[9] =
++{
++  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,1,0,0}, 56,102,276,48},
++  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,158,276,48},
++  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,214,276,48},
++  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,270,276,48},
++  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,0,0,0}, 56,326,276,48},
++  {&button_load_data   ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{0,1,0,0},530,130, 56,56},
++  {&button_special_data,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,1,0,0},530,196, 56,56},
++  {&button_delete_data ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,1,0,0},530,262, 56,56},
++  {&button_save_data   ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,0,0,0},530,328, 56,56}
++};
++
+ /*****************************************************************************/
+ /*  Menu descriptions                                                        */
+ /*****************************************************************************/
+@@ -336,7 +408,8 @@
+   buttons_main,
+   bg_main,
+   {NULL,NULL},
+-  {NULL,NULL}
++  {NULL,NULL},
++  NULL
+ };
+ 
+ /* Main menu */
+@@ -349,7 +422,8 @@
+   buttons_ctrls,
+   bg_ctrls,
+   {&action_cancel, &action_select},
+-  {NULL,NULL}
++  {NULL,NULL},
++  ctrlmenu_cb
+ };
+ 
+ /* Load Game menu */
+@@ -366,7 +440,8 @@
+   buttons_load,
+   bg_misc,
+   {&action_cancel, &action_select},
+-  {NULL,NULL}
++  {NULL,NULL},
++  NULL
+ };
+ 
+ /* Options menu */
+@@ -379,7 +454,8 @@
+   buttons_options,
+   bg_misc,
+   {&action_cancel, &action_select},
+-  {NULL,NULL}
++  {NULL,NULL},
++  NULL
+ };
+ 
+ /* System Options menu */
+@@ -392,7 +468,8 @@
+   buttons_list,
+   bg_list,
+   {&action_cancel, &action_select},
+-  {&arrow_up,&arrow_down}
++  {&arrow_up,&arrow_down},
++  NULL
+ };
+ 
+ /* Video Options menu */
+@@ -405,7 +482,8 @@
+   buttons_list,
+   bg_list,
+   {&action_cancel, &action_select},
+-  {&arrow_up,&arrow_down}
++  {&arrow_up,&arrow_down},
++  NULL
+ };
+ 
+ /* Sound Options menu */
+@@ -418,7 +496,8 @@
+   buttons_list,
+   bg_list,
+   {&action_cancel, &action_select},
+-  {&arrow_up,&arrow_down}
++  {&arrow_up,&arrow_down},
++  NULL
+ };
+ 
+ /* Sound Options menu */
+@@ -431,132 +510,25 @@
+   buttons_list,
+   bg_list,
+   {&action_cancel, &action_select},
+-  {&arrow_up,&arrow_down}
++  {&arrow_up,&arrow_down},
++  NULL
+ };
+ 
+ 
+-/***************************************************************************
+- * drawmenu (deprecated)
+- *
+- * As it says, simply draws the menu with a highlight on the currently
+- * selected item :)
+- ***************************************************************************/
+-char menutitle[60] = { "" };
+-static int menu = 0;
+-
+-static void drawmenu (char items[][25], int maxitems, int selected)
++/* Save Manager menu */
++static gui_menu menu_saves =
+ {
++  "Save Manager",
++  0,0,
++  9,9,8,0,
++  items_saves,
++  buttons_saves,
++  bg_saves,
++  {&action_cancel, &action_select},
++  {NULL,NULL},
++  savemenu_cb
++};
+ 
+-  int i;
+-  int ypos;
+-
+-  ypos = (226 - (fheight * maxitems)) >> 1;
+-  ypos += 130;
+-
+-  /* reset texture data */
+-  gx_texture *texture;
+-  memset(&texture,0,sizeof(gx_texture));
+-
+-  /* draw background items */
+-  gxClearScreen (*GUI_GetBgColor());
+-  texture= gxTextureOpenPNG(Bg_main_png,0);
+-  if (texture)
+-  {
+-    gxDrawTexture(texture, (640-texture->width)/2, (480-texture->height)/2, texture->width, texture->height,255);
+-    if (texture->data) free(texture->data);
+-    free(texture);
+-  }
+-  texture= gxTextureOpenPNG(Banner_bottom_png,0);
+-  if (texture)
+-  {
+-    gxDrawTexture(texture, 0, 480-texture->height, texture->width, texture->height, 255);
+-    if (texture->data) free(texture->data);
+-    free(texture);
+-  }
+-  texture= gxTextureOpenPNG(Banner_top_png,0);
+-  if (texture)
+-  {
+-    gxDrawTexture(texture, 0, 0, texture->width, texture->height, 255);
+-    if (texture->data) free(texture->data);
+-    free(texture);
+-  }
+-  texture= gxTextureOpenPNG(Main_logo_png,0);
+-  if (texture)
+-  {
+-    gxDrawTexture(texture, 444, 28, 176, 48, 255);
+-    if (texture->data) free(texture->data);
+-    free(texture);
+-  }
+-
+-  for (i = 0; i < maxitems; i++)
+-  {
+-    if (i == selected) WriteCentre_HL (i * fheight + ypos, (char *) items[i]);
+-    else WriteCentre (i * fheight + ypos, (char *) items[i]);
+-  }
+-
+-  gxSetScreen();
+-}
+-
+-static int domenu (char items[][25], int maxitems, u8 fastmove)
+-{
+-  int redraw = 1;
+-  int quit = 0;
+-  short p;
+-  int ret = 0;
+-
+-
+-  while (quit == 0)
+-  {
+-    if (redraw)
+-    {
+-      drawmenu (&items[0], maxitems, menu);
+-      redraw = 0;
+-    }
+-    
+-    p = m_input.keys;
+-    
+-    if (p & PAD_BUTTON_UP)
+-    {
+-      redraw = 1;
+-      menu--;
+-      if (menu < 0) menu = maxitems - 1;
+-    }
+-    else if (p & PAD_BUTTON_DOWN)
+-    {
+-      redraw = 1;
+-      menu++;
+-      if (menu == maxitems) menu = 0;
+-    }
+-
+-    if (p & PAD_BUTTON_A)
+-    {
+-      quit = 1;
+-      ret = menu;
+-    }
+-    else if (p & PAD_BUTTON_B)
+-    {
+-      quit = 1;
+-      ret = -1;
+-    }
+-
+-    if (fastmove)
+-    {
+-      if (p & PAD_BUTTON_RIGHT)
+-      {
+-        quit = 1;
+-        ret = menu;
+-      }
+-      else if (p & PAD_BUTTON_LEFT)
+-      {
+-        quit = 1;
+-        ret = 0 - 2 - menu;
+-      }
+-    }
+-  }
+-
+-  return ret;
+-}
+-
+ /****************************************************************************
+  * GUI Settings menu
+  *
+@@ -579,19 +551,27 @@
+   int ret, quit = 0;
+   gui_menu *m = &menu_prefs;
+   gui_item *items = m->items;
+-
+-  if (config.sram_auto == 0) sprintf (items[0].text, "SRAM Auto: FAT");
+-  else if (config.sram_auto == 1) sprintf (items[0].text, "SRAM Auto: MCARD A");
+-  else if (config.sram_auto == 2) sprintf (items[0].text, "SRAM Auto: MCARD B");
+-  else sprintf (items[0].text, "SRAM Auto: OFF");
+-  if (config.state_auto == 0) sprintf (items[1].text, "Savestate Auto: FAT");
+-  else if (config.state_auto == 1) sprintf (items[1].text, "Savestate Auto: MCARD A");
+-  else if (config.state_auto == 2) sprintf (items[1].text, "Savestate Auto: MCARD B");
+-  else sprintf (items[1].text, "Savestate Auto: OFF");
++  
++  if (config.s_auto == 3)
++    sprintf (items[0].text, "Auto Saves: ALL");
++  else if (config.s_auto == 2)
++    sprintf (items[0].text, "Auto Saves: STATE ONLY");
++  else if (config.s_auto == 1)
++    sprintf (items[0].text, "Auto Saves: SRAM ONLY");
++  else
++    sprintf (items[0].text, "Auto Saves: NONE");
++  if (config.s_device == 1)
++    sprintf (items[1].text, "Saves Device: MCARD A");
++  else if (config.s_device == 2)
++    sprintf (items[1].text, "Saves Device: MCARD B");
++  else
++    sprintf (items[1].text, "Saves Device: FAT");
+   sprintf (items[2].text, "SFX Volume: %1.1f", config.sfx_volume);
+   sprintf (items[3].text, "BGM Volume: %1.1f", config.bgm_volume);
+-  if (config.bg_color) sprintf (items[4].text, "BG Color: Type %d", config.bg_color);
+-  else sprintf (items[4].text, "BG Color: DEFAULT");
++  if (config.bg_color)
++    sprintf (items[4].text, "BG Color: TYPE %d", config.bg_color);
++  else
++    sprintf (items[4].text, "BG Color: DEFAULT");
+   sprintf (items[5].text, "BG Overlay: %s", config.bg_overlay ? "ON":"OFF");
+   sprintf (items[6].text, "Screen Width: %d", config.screen_w);
+   sprintf (items[7].text, "Confirmation Box: %s",config.ask_confirm ? "ON":"OFF");
+@@ -605,22 +585,26 @@
+ 
+     switch (ret)
+     {
+-      case 0:  /*** SRAM auto load/save ***/
+-        config.sram_auto ++;
+-        if (config.sram_auto > 2) config.sram_auto = -1;
+-        if (config.sram_auto == 0) sprintf (items[0].text, "SRAM Auto: FAT");
+-        else if (config.sram_auto == 1) sprintf (items[0].text, "SRAM Auto: MCARD A");
+-        else if (config.sram_auto == 2) sprintf (items[0].text, "SRAM Auto: MCARD B");
+-        else sprintf (items[0].text, "SRAM Auto: OFF");
++      case 0:  /*** Auto load/save ***/
++        config.s_auto = (config.s_auto + 1) % 4;
++        if (config.s_auto == 3)
++          sprintf (items[0].text, "Auto Saves: ALL");
++        else if (config.s_auto == 2)
++          sprintf (items[0].text, "Auto Saves: STATE ONLY");
++        else if (config.s_auto == 1)
++          sprintf (items[0].text, "Auto Saves: SRAM ONLY");
++        else
++          sprintf (items[0].text, "Auto Saves: NONE");
+         break;
+ 
+-      case 1:   /*** Savestate auto load/save ***/
+-        config.state_auto ++;
+-        if (config.state_auto > 2) config.state_auto = -1;
+-        if (config.state_auto == 0) sprintf (items[1].text, "Savestate Auto: FAT");
+-        else if (config.state_auto == 1) sprintf (items[1].text, "Savestate Auto: MCARD A");
+-        else if (config.state_auto == 2) sprintf (items[1].text, "Savestate Auto: MCARD B");
+-        else sprintf (items[1].text, "Savestate Auto: OFF");
++      case 1:   /*** Default saves device ***/
++        config.s_device = (config.s_device + 1) % 3;
++        if (config.s_device == 1)
++          sprintf (items[1].text, "Saves Device: MCARD A");
++        else if (config.s_device == 2)
++          sprintf (items[1].text, "Saves Device: MCARD B");
++        else
++          sprintf (items[1].text, "Saves Device: FAT");
+         break;
+ 
+       case 2:   /*** Sound effects volume ***/
+@@ -638,7 +622,7 @@
+         else config.bg_color ++;
+         if (config.bg_color < 0) config.bg_color = BG_COLOR_MAX - 1;
+         else if (config.bg_color >= BG_COLOR_MAX) config.bg_color = 0;
+-        if (config.bg_color) sprintf (items[4].text, "BG Color: Type %d", config.bg_color);
++        if (config.bg_color) sprintf (items[4].text, "BG Color: TYPE %d", config.bg_color);
+         else sprintf (items[4].text, "BG Color: DEFAULT");
+         GUI_SetBgColor((u8)config.bg_color);
+         GUI_DeleteMenu(m);
+@@ -648,6 +632,7 @@
+           bg_misc[0].data = Bg_main_2_png;
+           bg_ctrls[0].data = Bg_main_2_png;
+           bg_list[0].data = Bg_main_2_png;
++          bg_saves[1].data = Bg_main_2_png;
+         }
+         else
+         {
+@@ -655,6 +640,7 @@
+           bg_misc[0].data = Bg_main_png;
+           bg_ctrls[0].data = Bg_main_png;
+           bg_list[0].data = Bg_main_png;
++          bg_saves[1].data = Bg_main_png;
+         }
+         GUI_InitMenu(m);
+         break;
+@@ -668,6 +654,7 @@
+           bg_misc[1].state |= IMAGE_VISIBLE;
+           bg_ctrls[1].state |= IMAGE_VISIBLE;
+           bg_list[1].state |= IMAGE_VISIBLE;
++          bg_saves[2].state |= IMAGE_VISIBLE;
+         }
+         else
+         {
+@@ -675,17 +662,18 @@
+           bg_misc[1].state &= ~IMAGE_VISIBLE;
+           bg_ctrls[1].state &= ~IMAGE_VISIBLE;
+           bg_list[1].state &= ~IMAGE_VISIBLE;
++          bg_saves[2].state &= ~IMAGE_VISIBLE;
+         }
+         break;
+ 
+       case 6:   /*** Screen Width ***/
+         GUI_OptionBox(m,update_screen_w,"Screen Width",(void *)&config.screen_w,2,640,VI_MAX_WIDTH_NTSC,1);
+-        sprintf (items[5].text, "Screen Width: %d", config.screen_w);
++        sprintf (items[6].text, "Screen Width: %d", config.screen_w);
+         break;
+ 
+       case 7:   /*** User COnfirmation ***/
+         config.ask_confirm ^= 1;
+-        sprintf (items[6].text, "Confirmation Box: %s",config.ask_confirm ? "ON":"OFF");
++        sprintf (items[7].text, "Confirmation Box: %s",config.ask_confirm ? "ON":"OFF");
+         break;
+ 
+       case -1:
+@@ -1071,7 +1059,8 @@
+           system_init();
+ 
+           /* restore SRAM */
+-          memfile_autoload(config.sram_auto,-1);
++          if (config.s_auto & 1)
++            slot_autoload(0,config.s_device);
+ 
+           /* restore YM2612 context */
+           if (temp)
+@@ -1109,7 +1098,8 @@
+         {
+           system_init();
+           system_reset();
+-          memfile_autoload(config.sram_auto,-1);
++          if (config.s_auto & 1)
++            slot_autoload(0,config.s_device);
+         }
+         break;
+ 
+@@ -1130,7 +1120,8 @@
+           system_reset(); /* clear any patches first */
+           system_init();
+           system_reset();
+-          memfile_autoload(config.sram_auto,-1);
++          if (config.s_auto & 1)
++            slot_autoload(0,config.s_device);
+         }
+         break;
+ 
+@@ -1457,7 +1448,26 @@
+ /****************************************************************************
+  * Controllers Settings menu
+  ****************************************************************************/
++static int player = 0;
++static void ctrlmenu_cb(void)
++{
++  char msg[16];
++  gui_menu *m = &menu_ctrls;
+ 
++  /* draw device port number */
++  if (m->bg_images[7].state & IMAGE_VISIBLE)
++  {
++    if (config.input[player].device != -1)
++    {
++      sprintf(msg,"%d",config.input[player].port + 1);
++      if (m->selected == 11)
++        FONT_write(msg,16,m->items[11].x+m->items[11].w+4,m->items[11].y+m->items[11].h+4,640,(GXColor)DARK_GREY);
++      else
++        FONT_write(msg,14,m->items[11].x+m->items[11].w,m->items[11].y+m->items[11].h,640,(GXColor)DARK_GREY);
++    }
++  }
++}
++
+ /* Set menu elements depending on current system configuration */
+ static void ctrlmenu_raz(void)
+ {
+@@ -1539,14 +1549,11 @@
+ 
+ static void ctrlmenu(void)
+ {
+-  int player = 0;
+   int old_player = -1;
+   int i = 0;
+   int update = 0;
+-
+   gui_item *items = NULL;
+   u8 *special = NULL;
+-  char msg[16];
+   u32 exp;
+ 
+   /* System devices */
+@@ -1640,6 +1647,7 @@
+ #endif
+ 
+   /* restore current menu elements */
++  player = 0;
+   ctrlmenu_raz();
+   memcpy(&m->items[0],&items_sys[0][input.system[0]],sizeof(gui_item));
+   memcpy(&m->items[1],&items_sys[1][input.system[1]],sizeof(gui_item));
+@@ -1653,19 +1661,6 @@
+     /* draw menu */
+     GUI_DrawMenu(m);
+ 
+-    /* draw device port number */
+-    if (m->bg_images[7].state & IMAGE_VISIBLE)
+-    {
+-      if (config.input[player].device != -1)
+-      {
+-        sprintf(msg,"%d",config.input[player].port + 1);
+-        if (m->selected == 11)
+-          FONT_write(msg,16,m->items[11].x+m->items[11].w+4,m->items[11].y+m->items[11].h+4,640,(GXColor)DARK_GREY);
+-        else
+-          FONT_write(msg,14,m->items[11].x+m->items[11].w,m->items[11].y+m->items[11].h,640,(GXColor)DARK_GREY);
+-      }
+-    }
+-
+     /* update menu */
+     update = GUI_UpdateMenu(m);
+ 
+@@ -2048,6 +2043,7 @@
+       }
+     }
+ 
++    /* Close Window */
+     else if (update < 0)
+     {
+       if (m->bg_images[7].state & IMAGE_VISIBLE)
+@@ -2082,31 +2078,30 @@
+         /* stay in menu */
+         update = 0;
+       }
+-    }
+-
+-    /* check we have at least one connected input before leaving */
+-    if (update < 0)
+-    {
+-      old_player = player;
+-      player = 0;
+-      for (i=0; i<MAX_DEVICES; i++)
++      else
+       {
+-        /* check inputs */
+-        if (input.dev[i] != NO_DEVICE)
++        /* check we have at least one connected input before leaving */
++        old_player = player;
++        player = 0;
++        for (i=0; i<MAX_DEVICES; i++)
+         {
+-          if (config.input[player].device != -1)
+-            break;
+-          player++;
++          /* check inputs */
++          if (input.dev[i] != NO_DEVICE)
++          {
++            if (config.input[player].device != -1)
++              break;
++            player++;
++          }
+         }
+-      }
+-      player = old_player;
++        player = old_player;
+ 
+-      /* no input connected */
+-      if (i == MAX_DEVICES) 
+-      {
+-        /* stay in menu */
+-        GUI_WaitPrompt("Error","No input connected !");
+-        update = 0;
++        /* no input connected */
++        if (i == MAX_DEVICES) 
++        {
++          /* stay in menu */
++          GUI_WaitPrompt("Error","No input connected !");
++          update = 0;
++        }
+       }
+     }
+   }
+@@ -2238,115 +2233,320 @@
+ }
+ 
+ /****************************************************************************
+-* Generic Load/Save menu
++* Save Manager menu
+ *
+ ****************************************************************************/
+-static u8 device = 0;
+-
+-static int loadsavemenu (int which)
++static t_slot slots[5];
++static void savemenu_cb(void)
+ {
+-  int prevmenu = menu;
+-  int quit = 0;
+-  int ret;
+-  int count = 3;
+-  char items[3][25];
++  int i;
++  char msg[16];
++  gx_texture *star = gxTextureOpenPNG(Star_full_png,0);
++  
++  if (sram.on)
++  {
++    FONT_write("Backup Memory",16,buttons_saves[0].x+16,buttons_saves[0].y+(buttons_saves[0].h-16)/2+16,buttons_saves[0].x+buttons_saves[0].w,(GXColor)DARK_GREY);
++    if (slots[0].valid)
++    {
++      sprintf(msg,"%d/%02d/%02d",slots[0].day,slots[0].month,slots[0].year);
++      FONT_alignRight(msg,12,buttons_saves[0].x+buttons_saves[0].w-16,buttons_saves[0].y+(buttons_saves[0].h-28)/2+12,(GXColor)DARK_GREY);
++      sprintf(msg,"%02d:%02d",slots[0].hour,slots[0].min);
++      FONT_alignRight(msg,12,buttons_saves[0].x+buttons_saves[0].w-16,buttons_saves[0].y+(buttons_saves[0].h-28)/2+28,(GXColor)DARK_GREY);
++    }
+ 
+-  menu = 2;
++    if (sram.crc != crc32(0, &sram.sram[0], 0x10000))
++      gxDrawTexture(star,22,buttons_saves[0].y+(buttons_saves[0].h-star->height)/2,star->width,star->height,255);
++  }
++  else
++  {
++    FONT_writeCenter("Backup Memory disabled",16,buttons_saves[0].x,buttons_saves[0].x+buttons_saves[0].w,buttons_saves[0].y+(buttons_saves[0].h-16)/2+16,(GXColor)DARK_GREY);
++  }
+ 
+-  if (which == 1)
++  for (i=1; i<5; i++)
+   {
+-    sprintf(items[1], "Save State");
+-    sprintf(items[2], "Load State");
++    if (slots[i].valid)
++    {
++      sprintf(msg,"Slot %d",i);
++      FONT_write(msg,16,buttons_saves[i].x+16,buttons_saves[i].y+(buttons_saves[i].h-16)/2+16,buttons_saves[i].x+buttons_saves[i].w,(GXColor)DARK_GREY);
++      sprintf(msg,"%d/%02d/%02d",slots[i].day,slots[i].month,slots[i].year);
++      FONT_alignRight(msg,12,buttons_saves[i].x+buttons_saves[i].w-16,buttons_saves[i].y+(buttons_saves[i].h-28)/2+12,(GXColor)DARK_GREY);
++      sprintf(msg,"%02d:%02d",slots[i].hour,slots[i].min);
++      FONT_alignRight(msg,12,buttons_saves[i].x+buttons_saves[i].w-16,buttons_saves[i].y+(buttons_saves[i].h-28)/2+28,(GXColor)DARK_GREY);
++    }
++    else
++    {
++      FONT_write("Empty Slot",16,buttons_saves[i].x+16,buttons_saves[i].y+(buttons_saves[i].h-16)/2+16,buttons_saves[i].x+buttons_saves[i].h,(GXColor)DARK_GREY);
++    }
++
++    if (i == config.s_default)
++      gxDrawTexture(star,22,buttons_saves[i].y+(buttons_saves[i].h-star->height)/2,star->width,star->height,255);
+   }
++  gxTextureClose(&star);
++}
++
++static int savemenu(void)
++{
++  int i, update = 0;
++  int ret = 0;
++  int slot = -1;
++  char filename[MAXPATHLEN];
++  gui_menu *m = &menu_saves;
++  FILE *snap;
++
++  GUI_InitMenu(m);
++  GUI_DrawMenuFX(m,30,0);
++  m->bg_images[3].state &= ~IMAGE_SLIDE_TOP;
++  m->bg_images[4].state &= ~IMAGE_SLIDE_BOTTOM;
++  m->bg_images[5].state &= ~IMAGE_SLIDE_TOP;
++
++  /* detect existing files */
++  for (i=0; i<5; i++)
++    slot_autodetect(i, config.s_device, &slots[i]);
++
++  /* SRAM disabled */
++  if (sram.on)
++    m->buttons[0].state |= BUTTON_ACTIVE;
+   else
+   {
+-    sprintf(items[1], "Save SRAM");
+-    sprintf(items[2], "Load SRAM");
++    m->buttons[0].state &= ~BUTTON_ACTIVE;
++    if (m->selected == 0)
++      m->selected = 1;
+   }
+ 
+-  while (quit == 0)
++  while (update != -1)
+   {
+-    if (device == 0)
+-      sprintf(items[0], "Device: FAT");
+-    else if (device == 1)
+-      sprintf(items[0], "Device: MCARD A");
+-    else if (device == 2)
+-      sprintf(items[0], "Device: MCARD B");
+-
+-    ret = domenu (&items[0], count, 0);
+-    switch (ret)
++    /* slot selection */
++    if ((m->selected < 5) && (slot != m->selected))
+     {
+-      case -1:
+-        quit = 1;
+-        break;
++      /* update slot */
++      slot = m->selected;
+ 
+-      case 0:
+-        device = (device + 1)%3;
+-        break;
++      /* delete previous texture if any */
++      gxTextureClose(&bg_saves[0].texture);
++      bg_saves[0].state &= ~IMAGE_VISIBLE;
++      bg_saves[1].state |= IMAGE_VISIBLE;
+ 
+-      case 1:
+-      case 2:
+-        if (which == 1)
+-          quit = ManageState(ret-1,device);
+-        else if (which == 0)
+-          quit = ManageSRAM(ret-1,device);
+-        if (quit)
+-          return 1;
+-        break;
++      /* state slot */
++      if (slot && slots[slot].valid)
++      {
++        /* open screenshot file */
++        sprintf (filename, "%s/saves/%s__%d.png", DEFAULT_PATH, rom_filename, slot - 1);
++        snap = fopen(filename, "rb");
++        if (snap)
++        {
++          /* load texture from file */
++          bg_saves[0].texture = gxTextureOpenPNG(0,snap);
++          if (bg_saves[0].texture)
++          {
++            /* set menu background */
++            bg_saves[0].w = bg_saves[0].texture->width * 2;
++            bg_saves[0].h = bg_saves[0].texture->height * 2;
++            bg_saves[0].x = (vmode->fbWidth - bg_saves[0].w) / 2;
++            bg_saves[0].y = (vmode->efbHeight - bg_saves[0].h) / 2;
++            bg_saves[0].state |= IMAGE_VISIBLE;
++            bg_saves[1].state &= ~IMAGE_VISIBLE;
++          }
++          fclose(snap);
++        }
++      }
+     }
+-  }
+ 
+-  menu = prevmenu;
+-  return 0;
+-}
++    /* draw menu */
++    GUI_DrawMenu(m);
+ 
++    /* update menu */
++    update = GUI_UpdateMenu(m);
+ 
+-/****************************************************************************
+- * File Manager menu
+- *
+- ****************************************************************************/
+-static int filemenu ()
+-{
+-  int prevmenu = menu;
+-  int ret;
+-  int quit = 0;
+-  int count = 2;
+-  char items[2][25] = {
+-    {"SRAM Manager"},
+-    {"STATE Manager"}
+-  };
++    if (update > 0)
++    {
++      switch (m->selected)
++      {
++        case 5: /* load file */
++        {
++          if (slots[slot].valid)
++          {
++            ret = slot_load(slot,config.s_device);
++         
++            /* force exit */
++            if (ret > 0)
++            {
++              GUI_DrawMenuFX(m, 20, 1);
++              m->buttons[slot].state &= ~BUTTON_SELECTED;
++              m->bg_images[7].state &= ~IMAGE_VISIBLE;
++              if (sram.on)
++                m->buttons[0].state |= BUTTON_ACTIVE;
++              m->buttons[1].state |= BUTTON_ACTIVE;
++              m->buttons[2].state |= BUTTON_ACTIVE;
++              m->buttons[3].state |= BUTTON_ACTIVE;
++              m->buttons[4].state |= BUTTON_ACTIVE;
++              m->buttons[5].state &= ~BUTTON_VISIBLE;
++              m->buttons[6].state &= ~BUTTON_VISIBLE;
++              m->buttons[7].state &= ~BUTTON_VISIBLE;
++              m->buttons[8].state &= ~BUTTON_VISIBLE;
++              m->selected = slot;
++              update = -1;
++            }
++          }
++          break;
++        }
+ 
+-  menu = 0;
++        case 6: /* set default slot */
++        {
++          config.s_default = slot;
++          config_save();
++          break;
++        }
+ 
+-  while (quit == 0)
+-  {
+-    strcpy (menutitle, "Press B to return");
+-    ret = domenu (&items[0], count, 0);
+-    switch (ret)
++        case 7: /* delete file */
++        {
++          if (slots[slot].valid)
++          {
++            if (slot_delete(slot,config.s_device) >= 0)
++            {
++              /* hide screenshot */
++              gxTextureClose(&bg_saves[0].texture);
++              bg_saves[0].state &= ~IMAGE_VISIBLE;
++              slots[slot].valid = 0;
++              update = -1;
++            }
++          }
++          break;
++        }
++
++        case 8: /* save file */
++        {
++          ret = slot_save(slot,config.s_device);
++
++          /* force exit */
++          if (ret > 0)
++          {
++            GUI_DrawMenuFX(m, 20, 1);
++            m->buttons[slot].state &= ~BUTTON_SELECTED;
++            m->bg_images[7].state &= ~IMAGE_VISIBLE;
++            if (sram.on)
++              m->buttons[0].state |= BUTTON_ACTIVE;
++            m->buttons[1].state |= BUTTON_ACTIVE;
++            m->buttons[2].state |= BUTTON_ACTIVE;
++            m->buttons[3].state |= BUTTON_ACTIVE;
++            m->buttons[4].state |= BUTTON_ACTIVE;
++            m->buttons[5].state &= ~BUTTON_VISIBLE;
++            m->buttons[6].state &= ~BUTTON_VISIBLE;
++            m->buttons[7].state &= ~BUTTON_VISIBLE;
++            m->buttons[8].state &= ~BUTTON_VISIBLE;
++            m->selected = slot;
++            update = -1;
++          }
++          break;
++        }
++
++        default: /* slot selection */
++        {
++          /* enable right window */
++          m->bg_images[7].state |= IMAGE_VISIBLE;
++          m->buttons[5].state |= BUTTON_VISIBLE;
++          m->buttons[6].state |= BUTTON_VISIBLE;
++          m->buttons[7].state |= BUTTON_VISIBLE;
++          m->buttons[8].state |= BUTTON_VISIBLE;
++
++          /* only enable valid options */
++          if (slots[slot].valid)
++          {
++            m->buttons[5].state |= BUTTON_ACTIVE;
++            m->buttons[7].state |= BUTTON_ACTIVE;
++            m->buttons[6].shift[0] = 1;
++            m->buttons[6].shift[1] = 1;
++            m->buttons[8].shift[0] = 1;
++            m->selected = 5;
++          }
++          else
++          {
++            m->buttons[5].state &= ~BUTTON_ACTIVE;
++            m->buttons[7].state &= ~BUTTON_ACTIVE;
++            m->buttons[6].shift[0] = 0;
++            m->buttons[6].shift[1] = 2;
++            m->buttons[8].shift[0] = 2;
++            m->selected = 8;
++          }
++
++          /* state slot 'only' button */
++          if (slot > 0)
++          {
++            m->buttons[6].state |= BUTTON_ACTIVE;
++            m->buttons[5].shift[1] = 1;
++            m->buttons[7].shift[0] = 1;
++          }
++          else
++          {
++            m->buttons[6].state &= ~BUTTON_ACTIVE;
++            m->buttons[5].shift[1] = 2;
++            m->buttons[7].shift[0] = 2;
++          }
++
++          /* disable left buttons */
++          m->buttons[0].state &= ~BUTTON_ACTIVE;
++          m->buttons[1].state &= ~BUTTON_ACTIVE;
++          m->buttons[2].state &= ~BUTTON_ACTIVE;
++          m->buttons[3].state &= ~BUTTON_ACTIVE;
++          m->buttons[4].state &= ~BUTTON_ACTIVE;
++
++          /* keep current selection highlighted */
++          m->buttons[slot].state |= BUTTON_SELECTED;
++
++          /* slide in window */
++          GUI_DrawMenuFX(m, 20, 0);
++
++          break;
++        }
++      }
++    }
++
++    if (update < 0)
+     {
+-      case -1: /*** Button B ***/
+-        ret = 0;
+-        quit = 1;
+-        break;
++      /* close right window */
++      if (m->bg_images[7].state & IMAGE_VISIBLE)
++      {
++        /* slide out window */
++        GUI_DrawMenuFX(m, 20, 1);
+ 
+-      case 0:   /*** SRAM Manager ***/
+-      case 1:  /*** SaveState Manager ***/
+-        if (loadsavemenu(ret))
+-          return 1;
+-        break;
++        /* clear current selection */
++        m->buttons[slot].state &= ~BUTTON_SELECTED;
++
++        /* enable left buttons */
++        if (sram.on)
++          m->buttons[0].state |= BUTTON_ACTIVE;
++        m->buttons[1].state |= BUTTON_ACTIVE;
++        m->buttons[2].state |= BUTTON_ACTIVE;
++        m->buttons[3].state |= BUTTON_ACTIVE;
++        m->buttons[4].state |= BUTTON_ACTIVE;
++
++        /* disable right window */
++        m->bg_images[7].state &= ~IMAGE_VISIBLE;
++        m->buttons[5].state &= ~BUTTON_VISIBLE;
++        m->buttons[6].state &= ~BUTTON_VISIBLE;
++        m->buttons[7].state &= ~BUTTON_VISIBLE;
++        m->buttons[8].state &= ~BUTTON_VISIBLE;
++
++        /* stay in menu */
++        m->selected = slot;
++        update = 0;
++      }
+     }
+   }
+ 
+-  menu = prevmenu;
+-  return 0;
++  /* leave menu */
++  m->bg_images[3].state |= IMAGE_SLIDE_TOP;
++  m->bg_images[4].state |= IMAGE_SLIDE_BOTTOM;
++  m->bg_images[5].state |= IMAGE_SLIDE_TOP;
++  GUI_DrawMenuFX(m,30,1);
++  GUI_DeleteMenu(m);
++  return ret;
+ }
+ 
+-
+ /****************************************************************************
+- * Load Rom menu
++ * Load Game menu
+  *
+  ****************************************************************************/
+-static int loadmenu ()
++static int loadgamemenu ()
+ {
+   int ret;
+   gui_menu *m = &menu_load;
+@@ -2521,9 +2721,9 @@
+  * Main Menu
+  *
+  ****************************************************************************/
+-static int rom_loaded = 0;
+ void MainMenu (void)
+ {
++  static int rom_loaded = 0;
+   int ret, quit = 0;
+ 
+   char *items[3] =
+@@ -2538,7 +2738,8 @@
+   };
+ 
+   /* autosave SRAM */
+-  memfile_autosave(config.sram_auto,-1);
++  if (config.s_auto & 1)
++    slot_autosave(0,config.s_device);
+ 
+ #ifdef HW_RVL
+   /* Wiimote shutdown */
+@@ -2583,6 +2784,7 @@
+     bg_misc[0].data = Bg_main_2_png;
+     bg_ctrls[0].data = Bg_main_2_png;
+     bg_list[0].data = Bg_main_2_png;
++    bg_saves[1].data = Bg_main_2_png;
+   }
+   else
+   {
+@@ -2590,6 +2792,7 @@
+     bg_misc[0].data = Bg_main_png;
+     bg_ctrls[0].data = Bg_main_png;
+     bg_list[0].data = Bg_main_png;
++    bg_saves[1].data = Bg_main_png;
+   }
+   if (config.bg_overlay)
+   {
+@@ -2597,6 +2800,7 @@
+     bg_misc[1].state |= IMAGE_VISIBLE;
+     bg_ctrls[1].state |= IMAGE_VISIBLE;
+     bg_list[1].state |= IMAGE_VISIBLE;
++    bg_saves[2].state |= IMAGE_VISIBLE;
+   }
+   else
+   {
+@@ -2604,6 +2808,7 @@
+     bg_misc[1].state &= ~IMAGE_VISIBLE;
+     bg_ctrls[1].state &= ~IMAGE_VISIBLE;
+     bg_list[1].state &= ~IMAGE_VISIBLE;
++    bg_saves[2].state &= ~IMAGE_VISIBLE;
+   }
+ 
+   GUI_InitMenu(m);
+@@ -2619,7 +2824,7 @@
+       case 0:
+         GUI_DrawMenuFX(m,30,1);
+         GUI_DeleteMenu(m);
+-        quit = loadmenu();
++        quit = loadgamemenu();
+         if (quit)
+           break;
+         GUI_InitMenu(m);
+@@ -2686,14 +2891,15 @@
+         break;
+       }
+ 
+-      /*** File Manager (TODO !!!) ***/
++      /*** Save Manager ***/
+       case 3:
+         if (!cart.romsize)
+           break;
+         GUI_DrawMenuFX(m,30,1);
+         GUI_DeleteMenu(m);
+-        quit = filemenu();
+-        if (quit) break;
++        quit = savemenu();
++        if (quit)
++          break;
+         GUI_InitMenu(m);
+         GUI_DrawMenuFX(m,30,0);
+         break;
+@@ -2709,7 +2915,8 @@
+         audio_init(snd.sample_rate,snd.frame_rate);
+         system_init();
+         system_reset();
+-        memfile_autoload(config.sram_auto,-1);
++        if (config.s_auto & 1)
++          slot_autoload(0,config.s_device);
+         quit = 1;
+         break;
+ 
+Index: source/gx/gui/gui.c
+===================================================================
+--- source/gx/gui/gui.c	(revision 442)
++++ source/gx/gui/gui.c	(revision 443)
+@@ -219,36 +219,45 @@
+ 
+     if (button->state & BUTTON_VISIBLE)
+     {
++      /* item select (text or image) */
++      item = (menu->items) ? (&menu->items[menu->offset + i]) : NULL;
++      
+       /* draw button + items */ 
+-      item = &menu->items[menu->offset +i];
+-      if ((i == menu->selected) && (button->state & BUTTON_ACTIVE))
++      if ((i == menu->selected) || (button->state & BUTTON_SELECTED))
+       {
+-        if (button->data) gxDrawTexture(button->data->texture[1],button->x-4,button->y-4,button->w+8,button->h+8,255);
++        if (button->data)
++          gxDrawTexture(button->data->texture[1],button->x-4,button->y-4,button->w+8,button->h+8,255);
+ 
+-        if (item->texture)
++        if (item)
+         {
+-          gxDrawTexture(item->texture, item->x-4,item->y-4,item->w+8,item->h+8,255);
+-          FONT_writeCenter(item->text,18,button->x+4,item->x-4,button->y+(button->h - 36)/2+18,(GXColor)DARK_GREY);
++          if (item->texture)
++          {
++            gxDrawTexture(item->texture, item->x-4,item->y-4,item->w+8,item->h+8,255);
++            FONT_writeCenter(item->text,18,button->x+4,item->x-4,button->y+(button->h - 36)/2+18,(GXColor)DARK_GREY);
++          }
++          else
++          {
++            FONT_writeCenter(item->text,18,item->x+2,item->x+item->w+2,button->y+(button->h-18)/2+18,(GXColor)DARK_GREY);
++          }
+         }
+-        else
+-        {
+-          FONT_writeCenter(item->text,18,item->x+2,item->x+item->w+2,button->y+(button->h-18)/2+18,(GXColor)DARK_GREY);
+-        }
+       }
+       else
+       {
+         if (button->data)
+           gxDrawTexture(button->data->texture[0],button->x,button->y,button->w, button->h,255);
+ 
+-        if (item->texture)
++        if (item)
+         {
+-          gxDrawTexture(item->texture,item->x,item->y,item->w,item->h,255);
+-          FONT_writeCenter(item->text,16,button->x+8,item->x,button->y+(button->h - 32)/2+16,(GXColor)DARK_GREY);
++          if (item->texture)
++          {
++            gxDrawTexture(item->texture,item->x,item->y,item->w,item->h,255);
++            FONT_writeCenter(item->text,16,button->x+8,item->x,button->y+(button->h - 32)/2+16,(GXColor)DARK_GREY);
++          }
++          else
++          {
++            FONT_writeCenter(item->text,16,item->x,item->x+item->w,button->y+(button->h - 16)/2+16,(GXColor)DARK_GREY);
++          }
+         }
+-        else
+-        {
+-          FONT_writeCenter(item->text,16,item->x,item->x+item->w,button->y+(button->h - 16)/2+16,(GXColor)DARK_GREY);
+-        }
+       }
+     }
+   }
+@@ -290,6 +299,9 @@
+       FONT_alignRight(item->comment,16,item->x-6,item->y+(item->h-16)/2+16,(GXColor)WHITE);
+     }
+   }
++
++  if (menu->cb)
++    menu->cb();
+ }
+ 
+ /* Draw Menu with transitions effects */
+@@ -321,7 +333,6 @@
+         max_offset = temp;
+     }
+ 
+-
+     if (image->state & IMAGE_SLIDE_TOP)
+     {
+       temp = image->y + image->h;
+@@ -410,7 +421,7 @@
+     }
+ 
+     /* menu title */
+-    if (menu->bg_images[2].state & IMAGE_SLIDE_TOP)
++    if ((menu->bg_images[2].state & IMAGE_SLIDE_TOP) || (menu->bg_images[3].state & IMAGE_SLIDE_TOP))
+       FONT_write(menu->title, 22,10,out ? (56 + temp - max_offset) : (56 -temp),640,(GXColor)WHITE);
+     else
+       FONT_write(menu->title, 22,10,56,640,(GXColor)WHITE);
+@@ -450,24 +461,72 @@
+           text_color.a = 255;
+         }
+ 
++        /* item select (text or image) */
++        item = (menu->items) ? (&menu->items[menu->offset + i]) : NULL;
++
+         /* draw button + items */ 
+-        item = &menu->items[menu->offset + i];
+-
+         if (button->data)
+           gxDrawTexture(button->data->texture[0],button->x+xoffset,button->y+yoffset,button->w, button->h,item_alpha);
+ 
+-        if (item->texture)
++        if (item)
+         {
+-          gxDrawTexture(item->texture,item->x+xoffset,item->y+yoffset,item->w,item->h,item_alpha);
+-          FONT_writeCenter(item->text,16,button->x+xoffset+8,item->x+xoffset,button->y+yoffset+(button->h - 32)/2+16,text_color);
++          if (item->texture)
++          {
++            gxDrawTexture(item->texture,item->x+xoffset,item->y+yoffset,item->w,item->h,item_alpha);
++            FONT_writeCenter(item->text,16,button->x+xoffset+8,item->x+xoffset,button->y+yoffset+(button->h - 32)/2+16,text_color);
++          }
++          else
++          {
++            FONT_writeCenter(item->text,16,item->x+xoffset,item->x+item->w+xoffset,button->y+yoffset+(button->h - 16)/2+16,text_color);
++          }
+         }
+-        else
++      }
++    }
++
++    /* draw arrow */
++    for (i=0; i<2; i++)
++    {
++      button = menu->arrows[i];
++      if (button)
++      {
++        if (button->state & BUTTON_VISIBLE)
+         {
+-          FONT_writeCenter(item->text,16,item->x+xoffset,item->x+item->w+xoffset,button->y+yoffset+(button->h - 16)/2+16,text_color);
++          if (menu->selected == (menu->max_buttons + i))
++            gxDrawTexture(button->data->texture[1],button->x-2,button->y-2,button->w+4,button->h+4,255);
++          else
++            gxDrawTexture(button->data->texture[0],button->x,button->y,button->w, button->h,255);
+         }
+       }
+     }
+ 
++    if (!(menu->bg_images[3].state & IMAGE_SLIDE_BOTTOM) && !(menu->bg_images[4].state & IMAGE_SLIDE_BOTTOM))
++    {
++      /* left comment */
++      item = menu->helpers[0];
++      if (item)
++      {
++        if (item->data && strlen(item->comment))
++        {
++          gxDrawTexture(item->texture,item->x,item->y,item->w,item->h,255);
++          FONT_write(item->comment,16,item->x+item->w+6,item->y+(item->h-16)/2 + 16,640,(GXColor)WHITE);
++        }
++      }
++
++      /* right comment */
++      item = menu->helpers[1];
++      if (item)
++      {
++        if (item->data && strlen(item->comment))
++        {
++          gxDrawTexture(item->texture,item->x,item->y,item->w,item->h,255);
++          FONT_alignRight(item->comment,16,item->x-6,item->y+(item->h-16)/2+16,(GXColor)WHITE);
++        }
++      }
++    }
++
++    if (menu->cb)
++      menu->cb();
++
+     /* update offset */
+     temp -= speed;
+ 
+@@ -478,6 +537,7 @@
+     else if (alpha < 0)
+       alpha = 0;
+ 
++
+     /* copy EFB to XFB */
+     gxSetScreen();
+   }
+@@ -517,6 +577,7 @@
+     GUI_DrawMenu(m);
+ 
+ #ifdef HW_RVL
++    /* keep pointer active */
+     if (m_input.ir.valid)
+     {
+       /* get cursor position */
+@@ -554,11 +615,6 @@
+         }
+       }
+     }
+-    else
+-    {
+-      /* reinitialize selection */
+-      if (m->selected >= m->max_buttons) m->selected = 0;
+-    }
+ #endif
+     gxSetScreen();
+     usleep(6000);
+@@ -600,10 +656,13 @@
+     for (i=0; i<max_buttons; i++)
+     {
+       button = &menu->buttons[i];
+-      if ((button->state & BUTTON_ACTIVE)&&(x>=button->x)&&(x<=(button->x+button->w))&&(y>=button->y)&&(y<=(button->y+button->h)))
++      if ((button->state & BUTTON_ACTIVE) && (button->state & BUTTON_VISIBLE))
+       {
+-        selected = i;
+-        break;
++        if((x>=button->x)&&(x<=(button->x+button->w))&&(y>=button->y)&&(y<=(button->y+button->h)))
++        {
++          selected = i;
++          break;
++        }
+       }
+     }
+ 
+@@ -612,7 +671,7 @@
+       button = menu->arrows[i];
+       if (button)
+       {
+-        if (button->state & BUTTON_VISIBLE)
++        if ((button->state & BUTTON_ACTIVE) && (button->state & BUTTON_VISIBLE))
+         {
+           if ((x<=(button->x+button->w))&&(y>=button->y)&&(y<=(button->y+button->h)))
+           {
+@@ -626,7 +685,12 @@
+   else
+   {
+     /* reinitialize selection */
+-    if (selected >= menu->max_buttons) selected = 0;
++    if (selected >= menu->max_buttons)
++    {
++      selected = 0;
++      while (!(menu->buttons[selected].state & BUTTON_ACTIVE))
++        selected++;
++    }
+   }
+ #endif
+ 
+@@ -683,9 +747,12 @@
+ 
+   if (p & PAD_BUTTON_A)
+   {
+-    if (selected < max_buttons) ret = 1; /* menu clicked */
+-    else if (selected == max_buttons) menu->offset --; /* up arrow */
+-    else if (selected == (max_buttons+1))menu->offset ++; /* down arrow */
++    if (selected < max_buttons)
++      ret = 1; /* menu clicked */
++    else if (selected == max_buttons)
++      menu->offset --; /* up arrow */
++    else if (selected == (max_buttons+1))
++      menu->offset ++; /* down arrow */
+   }
+   else if ((p & PAD_BUTTON_B) || (p & PAD_TRIGGER_Z))
+   {
+@@ -739,14 +806,18 @@
+   button = menu->arrows[0];
+   if (button)
+   {
+-    if (menu->offset > 0) button->state |= BUTTON_VISIBLE;
+-    else button->state &= ~BUTTON_VISIBLE;
++    if (menu->offset > 0)
++      button->state |= BUTTON_VISIBLE;
++    else
++      button->state &= ~BUTTON_VISIBLE;
+   }
+   button = menu->arrows[1];
+   if (button)
+   {
+-    if ((menu->offset + max_buttons) < max_items) button->state |= BUTTON_VISIBLE;
+-    else button->state &= ~BUTTON_VISIBLE;
++    if ((menu->offset + max_buttons) < max_items)
++      button->state |= BUTTON_VISIBLE;
++    else
++      button->state &= ~BUTTON_VISIBLE;
+   }
+ 
+   if (ret > 0)
+@@ -778,9 +849,12 @@
+     update = GUI_UpdateMenu(menu);
+   }
+ 
+-  if (update == 2) return (-2-menu->offset-menu->selected);
+-  else if (update == 1) return (menu->offset + menu->selected);
+-  else return -1;
++  if (update == 2)
++    return (-2-menu->offset-menu->selected);
++  else if (update == 1)
++    return (menu->offset + menu->selected);
++  else
++    return -1;
+  }
+ 
+ #if 0
+@@ -917,16 +991,16 @@
+       /* check for valid buttons */
+       selected = -1;
+       if ((x>=xwindow)&&(x<=(xwindow+window->width))&&(y>=ypos+i*(20 + h))&&(y<=(ypos+i*(20+h)+h)))
+-        {
++      {
+           selected = i;
+           break;
+-        }
+       }
+     }
+     else
+     {
+       /* reinitialize selection */
+-      if (selected == -1) selected = 0;
++      if (selected == -1)
++        selected = 0;
+     }
+ #endif
+ 
+@@ -936,11 +1010,13 @@
+     /* update selection */
+     if (p&PAD_BUTTON_UP)
+     {
+-      if (selected > 0) selected --;
++      if (selected > 0)
++        selected --;
+     }
+     else if (p&PAD_BUTTON_DOWN)
+     {
+-      if (selected < (nb_items -1)) selected ++;
++      if (selected < (nb_items -1))
++        selected ++;
+     }
+ 
+     /* sound fx */
+@@ -996,7 +1072,8 @@
+   }
+ 
+   /* restore helper comment */
+-  if (parent->helpers[1]) parent->helpers[1]->data = Key_A_png;
++  if (parent->helpers[1])
++    parent->helpers[1]->data = Key_A_png;
+ 
+   /* final position */
+   GUI_DrawMenu(parent);
+@@ -1047,7 +1124,8 @@
+   int yoffset = ywindow + window->height;
+ 
+   /* disable helper comment */
+-  if (parent->helpers[1]) parent->helpers[1]->data = 0;
++  if (parent->helpers[1])
++    parent->helpers[1]->data = 0;
+ 
+   /* slide in */
+   while (yoffset > 0)
+@@ -1143,7 +1221,8 @@
+     else
+     {
+       /* reinitialize selection */
+-      if (selected == -1) selected = 0;
++      if (selected == -1)
++        selected = 0;
+     }
+ #endif
+ 
+@@ -1153,11 +1232,13 @@
+     /* update selection */
+     if (p&PAD_BUTTON_UP)
+     {
+-      if (selected > 0) selected --;
++      if (selected > 0)
++        selected --;
+     }
+     else if (p&PAD_BUTTON_DOWN)
+     {
+-      if (selected < (nb_items -1)) selected ++;
++      if (selected < (nb_items -1))
++        selected ++;
+     }
+ 
+     /* sound fx */
+@@ -1213,7 +1294,8 @@
+   }
+ 
+   /* restore helper comment */
+-  if (parent->helpers[1]) parent->helpers[1]->data = Key_A_png;
++  if (parent->helpers[1])
++    parent->helpers[1]->data = Key_A_png;
+ 
+   /* final position */
+   GUI_DrawMenu(parent);
+@@ -1298,14 +1380,18 @@
+     if (type)
+     {
+       /* integer type */
+-      if (*(s16 *)option < 0) sprintf(msg,"-%d",abs(*(s16 *)option));
+-      else sprintf(msg,"%d",abs(*(s16 *)option));
++      if (*(s16 *)option < 0)
++        sprintf(msg,"-%d",abs(*(s16 *)option));
++      else
++        sprintf(msg,"%d",abs(*(s16 *)option));
+     }
+     else
+     {
+       /* float type */
+-      if (*(float *)option < 0.0) sprintf(msg,"-%1.2f",fabs(*(float *)option));
+-      else sprintf(msg,"%1.2f",fabs(*(float *)option));
++      if (*(float *)option < 0.0)
++        sprintf(msg,"-%1.2f",fabs(*(float *)option));
++      else
++        sprintf(msg,"%1.2f",fabs(*(float *)option));
+     }
+ 
+     /* draw option text */
+@@ -1385,13 +1471,15 @@
+       {
+         /* integer type */
+         *(s16 *)option -= (s16)step;
+-        if (*(s16 *)option < (s16)min)  *(s16 *)option = (s16)max;
++        if (*(s16 *)option < (s16)min)
++          *(s16 *)option = (s16)max;
+       }
+       else
+       {
+         /* float type */
+         *(float *)option -= step;
+-        if (*(float *)option < min) *(float *)option = max;
++        if (*(float *)option < min)
++          *(float *)option = max;
+       }
+ 
+       modified = 1;
+@@ -1403,13 +1491,15 @@
+       {
+         /* integer type */
+         *(s16 *)option += (s16)step;
+-        if (*(s16 *)option > (s16)max)  *(s16 *)option = (s16)min;
++        if (*(s16 *)option > (s16)max)
++          *(s16 *)option = (s16)min;
+       }
+       else
+       {
+         /* float type */
+         *(float *)option += step;
+-        if (*(float *)option > max) *(float *)option = min;
++        if (*(float *)option > max)
++          *(float *)option = min;
+       }
+ 
+       modified = 1;
+@@ -1428,7 +1518,8 @@
+                     ((int)config.sfx_volume * 255) / 100,((int)config.sfx_volume * 255) / 100,NULL);
+ 
+       /* option callback */
+-      if (cb) cb();
++      if (cb)
++        cb();
+     }
+   }
+ 
+@@ -1529,11 +1620,15 @@
+     gxDrawTexture(window,xwindow,ywindow,window->width,window->height,225);
+ 
+     /* draw options text */
+-    if (*option_1 < 0) sprintf(msg,"%s: -%02d",text_1,abs(*option_1));
+-    else sprintf(msg,"%s: +%02d",text_1,abs(*option_1));
++    if (*option_1 < 0)
++      sprintf(msg,"%s: -%02d",text_1,abs(*option_1));
++    else
++      sprintf(msg,"%s: +%02d",text_1,abs(*option_1));
+     FONT_writeCenter(msg,24,xwindow,xwindow+window->width,240,(GXColor)WHITE);
+-    if (*option_2 < 0) sprintf(msg,"%s: -%02d",text_2,abs(*option_2));
+-    else sprintf(msg,"%s: +%02d",text_2,abs(*option_2));
++    if (*option_2 < 0)
++      sprintf(msg,"%s: -%02d",text_2,abs(*option_2));
++    else
++      sprintf(msg,"%s: +%02d",text_2,abs(*option_2));
+     FONT_writeCenter(msg,24,xwindow,xwindow+window->width,264,(GXColor)WHITE);
+ 
+     /* update inputs */
+@@ -1727,9 +1822,7 @@
+ 
+       /* draw throbber */
+       if (message_box.throbber)
+-      {
+         gxDrawTextureRotate(message_box.throbber,166+(message_box.window->width-message_box.throbber->width)/2,160+message_box.window->height-message_box.throbber->height-20,message_box.throbber->width,message_box.throbber->height,(message_box.progress * 360.0) / 100.0, 255);
+-      }
+ 
+       /* draw exit message */
+       if (message_box.buttonA)
+@@ -1738,13 +1831,16 @@
+         {
+           FONT_write("OK",18,220+message_box.buttonA->width+6,288,640,(GXColor)WHITE);
+           FONT_alignRight("CANCEL",18,166+message_box.window->width-(220-166),288,(GXColor)WHITE);
+-          if (message_box.buttonA) gxDrawTexture(message_box.buttonA, 220, 288-18+(18-message_box.buttonA->height)/2,message_box.buttonA->width, message_box.buttonA->height,255);
+-          if (message_box.buttonB) gxDrawTexture(message_box.buttonB, 328, 288-18+(18-message_box.buttonB->height)/2,message_box.buttonB->width, message_box.buttonB->height,255);
++          if (message_box.buttonA)
++            gxDrawTexture(message_box.buttonA, 220, 288-18+(18-message_box.buttonA->height)/2,message_box.buttonA->width, message_box.buttonA->height,255);
++          if (message_box.buttonB)
++            gxDrawTexture(message_box.buttonB, 328, 288-18+(18-message_box.buttonB->height)/2,message_box.buttonB->width, message_box.buttonB->height,255);
+         }
+         else
+         {
+           FONT_writeCenter("Press    to continue.",18,166,166+message_box.window->width,248+22,(GXColor)WHITE);
+-          if (message_box.buttonA) gxDrawTexture(message_box.buttonA, 166+116, 248+4+(18-message_box.buttonA->height)/2,message_box.buttonA->width, message_box.buttonA->height,255);
++          if (message_box.buttonA)
++            gxDrawTexture(message_box.buttonA, 166+116, 248+4+(18-message_box.buttonA->height)/2,message_box.buttonA->width, message_box.buttonA->height,255);
+         }
+       }
+ 
+@@ -1753,7 +1849,8 @@
+ 
+       /* update progression */
+       message_box.progress++;
+-      if (message_box.progress > 100) message_box.progress = 0;
++      if (message_box.progress > 100)
++        message_box.progress = 0;
+     }
+     else
+     {
+@@ -1767,14 +1864,17 @@
+ /* update current Message Box */
+ void GUI_MsgBoxUpdate(char *title, char *msg)
+ {
+-  if (title) strncpy(message_box.title,title,64);
+-  if (msg) strncpy(message_box.msg,msg,64);
++  if (title)
++    strncpy(message_box.title,title,64);
++  if (msg)
++    strncpy(message_box.msg,msg,64);
+ }
+ 
+ /* setup current Message Box */
+ void GUI_MsgBoxOpen(char *title, char *msg, bool throbber)
+ {
+-  if (SILENT) return;
++  if (SILENT)
++    return;
+ 
+   /* clear unused textures */
+   gxTextureClose(&message_box.buttonA);
+@@ -1790,7 +1890,8 @@
+     /* initialize default textures */
+     message_box.window = gxTextureOpenPNG(Frame_s4_png,0);
+     message_box.top = gxTextureOpenPNG(Frame_s4_title_png,0);
+-    if (throbber) message_box.throbber = gxTextureOpenPNG(Frame_throbber_png,0);
++    if (throbber)
++      message_box.throbber = gxTextureOpenPNG(Frame_throbber_png,0);
+ 
+     /* window position */
+     int xwindow = 166;
+@@ -1798,8 +1899,10 @@
+     int ypos = 248;
+ 
+     /* disable helper comments */
+-    if (message_box.parent->helpers[0]) message_box.parent->helpers[0]->data = 0;
+-    if (message_box.parent->helpers[1]) message_box.parent->helpers[1]->data = 0;
++    if (message_box.parent->helpers[0])
++      message_box.parent->helpers[0]->data = 0;
++    if (message_box.parent->helpers[1])
++      message_box.parent->helpers[1]->data = 0;
+ 
+     /* slide in */
+     int yoffset = ywindow + message_box.window->height;
+@@ -1813,10 +1916,12 @@
+       gxDrawTexture(message_box.top,xwindow,ywindow-yoffset,message_box.top->width,message_box.top->height,255);
+ 
+       /* draw title */
+-      if (title) FONT_writeCenter(title,20,xwindow,xwindow+message_box.window->width,ywindow+(message_box.top->height-20)/2+20-yoffset,(GXColor)WHITE);
++      if (title)
++        FONT_writeCenter(title,20,xwindow,xwindow+message_box.window->width,ywindow+(message_box.top->height-20)/2+20-yoffset,(GXColor)WHITE);
+ 
+       /* draw box message */
+-      if (msg) FONT_writeCenter(msg,18,xwindow,xwindow+message_box.window->width,ypos-yoffset,(GXColor)WHITE);
++      if (msg)
++        FONT_writeCenter(msg,18,xwindow,xwindow+message_box.window->width,ypos-yoffset,(GXColor)WHITE);
+ 
+       /* update display */
+       gxSetScreen();
+@@ -1825,6 +1930,16 @@
+       yoffset -= 60;
+     }
+ 
++    /* Final position */
++    GUI_DrawMenu(message_box.parent);
++    gxDrawTexture(message_box.window,xwindow,ywindow,message_box.window->width,message_box.window->height,230);
++    gxDrawTexture(message_box.top,xwindow,ywindow,message_box.top->width,message_box.top->height,255);
++    if (title)
++      FONT_writeCenter(title,20,xwindow,xwindow+message_box.window->width,ywindow+(message_box.top->height-20)/2+20,(GXColor)WHITE);
++    if (msg)
++      FONT_writeCenter(msg,18,xwindow,xwindow+message_box.window->width,ypos,(GXColor)WHITE);
++    gxSetScreen();
++
+     /* resume LWP thread for MessageBox refresh */
+     message_box.progress = 0;
+     message_box.refresh = TRUE;
+@@ -1873,8 +1988,10 @@
+     }
+ 
+     /* restore helper comment */
+-    if (message_box.parent->helpers[0]) message_box.parent->helpers[0]->data = Key_B_png;
+-    if (message_box.parent->helpers[1]) message_box.parent->helpers[1]->data = Key_A_png;
++    if (message_box.parent->helpers[0])
++      message_box.parent->helpers[0]->data = Key_B_png;
++    if (message_box.parent->helpers[1])
++      message_box.parent->helpers[1]->data = Key_A_png;
+ 
+     /* final position */
+     GUI_DrawMenu(message_box.parent);
+@@ -1891,7 +2008,8 @@
+ 
+ void GUI_WaitPrompt(char *title, char *msg)
+ {
+-  if (SILENT) return;
++  if (SILENT)
++    return;
+ 
+   /* update message box */
+   GUI_MsgBoxOpen(title, msg, 0);
+@@ -1900,8 +2018,10 @@
+   message_box.buttonA = gxTextureOpenPNG(Key_A_png,0);
+ 
+   /* wait for button A */
+-  while (m_input.keys & PAD_BUTTON_A)    VIDEO_WaitVSync();
+-  while (!(m_input.keys & PAD_BUTTON_A)) VIDEO_WaitVSync();
++  while (m_input.keys & PAD_BUTTON_A)
++    VIDEO_WaitVSync();
++  while (!(m_input.keys & PAD_BUTTON_A))
++    VIDEO_WaitVSync();
+ 
+   /* always close message box */
+   GUI_MsgBoxClose();
+@@ -1920,7 +2040,8 @@
+ 
+     /* wait for button A or button B*/
+     s16 p = 0;
+-    while (m_input.keys) VIDEO_WaitVSync();
++    while (m_input.keys)
++      VIDEO_WaitVSync();
+     while (!(p & (PAD_BUTTON_A | PAD_BUTTON_B)))
+     {
+       VIDEO_WaitVSync();
+@@ -1928,8 +2049,10 @@
+     }
+ 
+     /* return user choice */
+-    if (p & PAD_BUTTON_A) return 1;
+-    else return 0;
++    if (p & PAD_BUTTON_A)
++      return 1;
++    else
++      return 0;
+   }
+ 
+   return 1;
+Index: source/gx/gui/legal.c
+===================================================================
+--- source/gx/gui/legal.c	(revision 442)
++++ source/gx/gui/legal.c	(revision 443)
+@@ -24,6 +24,7 @@
+ 
+ #include "shared.h"
+ #include "font.h"
++#include "menu.h"
+ #include "gui.h"
+ 
+ /* 
+Index: source/gx/gui/font.c
+===================================================================
+--- source/gx/gui/font.c	(revision 442)
++++ source/gx/gui/font.c	(revision 443)
+@@ -24,7 +24,7 @@
+ 
+ #include "shared.h"
+ #include "font.h"
+-#include "gui.h"
++#include "menu.h"
+ 
+ #define _SHIFTR(v, s, w)	\
+     ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
+Index: source/gx/gui/menu.h
+===================================================================
+--- source/gx/gui/menu.h	(revision 0)
++++ source/gx/gui/menu.h	(revision 443)
+@@ -0,0 +1,110 @@
++/****************************************************************************
++ *  menu.c
++ *
++ *  Genesis Plus GX menus
++ *
++ *  Eke-Eke (2009)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ ***************************************************************************/
++
++#ifndef _MENU_H
++#define _MENU_H
++
++/* PNG images */
++/* Intro */
++extern const u8 Bg_intro_c1_png[];
++extern const u8 Bg_intro_c2_png[];
++extern const u8 Bg_intro_c3_png[];
++extern const u8 Bg_intro_c4_png[];
++extern const u8 Bg_intro_c5_png[];
++extern const u8 Bg_credits_png[];
++
++/* ROM Browser */
++extern const u8 Overlay_bar_png[];
++extern const u8 Browser_dir_png[];
++extern const u8 Star_full_png[];
++extern const u8 Star_empty_png[];
++extern const u8 Snap_empty_png[];
++extern const u8 Snap_frame_png[];
++
++/* Main menu */
++extern const u8 Main_load_png[];
++extern const u8 Main_options_png[];
++extern const u8 Main_quit_png[];
++extern const u8 Main_file_png[];
++extern const u8 Main_reset_png[];
++extern const u8 Main_ggenie_png[];
++extern const u8 Main_showinfo_png[];
++extern const u8 Main_takeshot_png[];
++#ifdef HW_RVL
++extern const u8 Main_play_wii_png[];
++#else
++extern const u8 Main_play_gcn_png[];
++#endif
++
++/* Options menu */
++extern const u8 Option_menu_png[];
++extern const u8 Option_ctrl_png[];
++extern const u8 Option_sound_png[];
++extern const u8 Option_video_png[];
++extern const u8 Option_system_png[];
++
++/* Load ROM menu */
++extern const u8 Load_recent_png[];
++extern const u8 Load_sd_png[];
++extern const u8 Load_dvd_png[];
++#ifdef HW_RVL
++extern const u8 Load_usb_png[];
++#endif
++
++/* Save Manager menu */
++extern const u8 Button_load_png[];
++extern const u8 Button_load_over_png[];
++extern const u8 Button_save_png[];
++extern const u8 Button_save_over_png[];
++extern const u8 Button_special_png[];
++extern const u8 Button_special_over_png[];
++extern const u8 Button_delete_png[];
++extern const u8 Button_delete_over_png[];
++
++/* Controller Settings */
++extern const u8 Ctrl_4wayplay_png[];
++extern const u8 Ctrl_gamepad_png[];
++extern const u8 Ctrl_justifiers_png[];
++extern const u8 Ctrl_menacer_png[];
++extern const u8 Ctrl_mouse_png[];
++extern const u8 Ctrl_none_png[];
++extern const u8 Ctrl_teamplayer_png[];
++extern const u8 Ctrl_pad3b_png[];
++extern const u8 Ctrl_pad6b_png[];
++extern const u8 Ctrl_config_png[];
++extern const u8 Ctrl_player_png[];
++extern const u8 Ctrl_player_over_png[];
++extern const u8 Ctrl_player_none_png[];
++extern const u8 ctrl_option_off_png[];
++extern const u8 ctrl_option_on_png[];
++extern const u8 ctrl_gamecube_png[];
++#ifdef HW_RVL
++extern const u8 ctrl_classic_png[];
++extern const u8 ctrl_nunchuk_png[];
++extern const u8 ctrl_wiimote_png[];
++#endif
++
++extern void MainMenu (void);
++
++#endif
++
+Index: source/gx/gui/gui.h
+===================================================================
+--- source/gx/gui/gui.h	(revision 442)
++++ source/gx/gui/gui.h	(revision 443)
+@@ -33,7 +33,8 @@
+ /*****************************************************************************/
+ #define BUTTON_VISIBLE       0x01
+ #define BUTTON_ACTIVE        0x02
+-#define BUTTON_OVER_SFX      0x04
++#define BUTTON_SELECTED      0x04
++#define BUTTON_OVER_SFX      0x08
+ #define BUTTON_SELECT_SFX    0x10
+ #define BUTTON_FADE          0x20
+ #define BUTTON_SLIDE_LEFT    0x40
+@@ -118,6 +119,7 @@
+   gui_image *bg_images;       /* background images                  */
+   gui_item *helpers[2];       /* left & right key comments          */
+   gui_butn *arrows[2];        /* arrows buttons                     */
++  void (*cb)(void);           /* specific draw callback */
+ } gui_menu;
+ 
+ typedef struct 
+@@ -146,17 +148,11 @@
+ /* Optionbox callback */
+ typedef void (*optioncallback)(void);
+ 
++/* Generic textures*/
++#ifdef HW_RVL
++extern gx_texture *w_pointer;
++#endif
+ 
+-/* PNG images */
+-
+-/* Intro */
+-extern const u8 Bg_intro_c1_png[];
+-extern const u8 Bg_intro_c2_png[];
+-extern const u8 Bg_intro_c3_png[];
+-extern const u8 Bg_intro_c4_png[];
+-extern const u8 Bg_intro_c5_png[];
+-extern const u8 Bg_credits_png[];
+-
+ /* Generic backgrounds */
+ extern const u8 Bg_main_png[];
+ extern const u8 Bg_main_2_png[];
+@@ -164,6 +160,9 @@
+ extern const u8 Banner_main_png[];
+ extern const u8 Banner_bottom_png[];
+ extern const u8 Banner_top_png[];
++extern const u8 Banner_main_2_png[];
++extern const u8 Banner_bottom_2_png[];
++extern const u8 Banner_top_2_png[];
+ extern const u8 Main_logo_png[];
+ 
+ /* Generic frames */
+@@ -175,44 +174,6 @@
+ extern const u8 Frame_s4_title_png[];
+ extern const u8 Frame_throbber_png[];
+ 
+-/* ROM Browser */
+-extern const u8 Overlay_bar_png[];
+-extern const u8 Browser_dir_png[];
+-extern const u8 Star_full_png[];
+-extern const u8 Star_empty_png[];
+-extern const u8 Snap_empty_png[];
+-extern const u8 Snap_frame_png[];
+-
+-/* Main menu */
+-extern const u8 Main_load_png[];
+-extern const u8 Main_options_png[];
+-extern const u8 Main_quit_png[];
+-extern const u8 Main_file_png[];
+-extern const u8 Main_reset_png[];
+-extern const u8 Main_ggenie_png[];
+-extern const u8 Main_showinfo_png[];
+-extern const u8 Main_takeshot_png[];
+-#ifdef HW_RVL
+-extern const u8 Main_play_wii_png[];
+-#else
+-extern const u8 Main_play_gcn_png[];
+-#endif
+-
+-/* Options menu */
+-extern const u8 Option_menu_png[];
+-extern const u8 Option_ctrl_png[];
+-extern const u8 Option_sound_png[];
+-extern const u8 Option_video_png[];
+-extern const u8 Option_system_png[];
+-
+-/* Load ROM menu */
+-extern const u8 Load_recent_png[];
+-extern const u8 Load_sd_png[];
+-extern const u8 Load_dvd_png[];
+-#ifdef HW_RVL
+-extern const u8 Load_usb_png[];
+-#endif
+-
+ /* Generic Buttons */
+ extern const u8 Button_text_png[];
+ extern const u8 Button_text_over_png[];
+@@ -227,29 +188,6 @@
+ extern const u8 Button_arrow_png[];
+ extern const u8 Button_arrow_over_png[];
+ 
+-/* Controller Settings */
+-extern const u8 Ctrl_4wayplay_png[];
+-extern const u8 Ctrl_gamepad_png[];
+-extern const u8 Ctrl_justifiers_png[];
+-extern const u8 Ctrl_menacer_png[];
+-extern const u8 Ctrl_mouse_png[];
+-extern const u8 Ctrl_none_png[];
+-extern const u8 Ctrl_teamplayer_png[];
+-extern const u8 Ctrl_pad3b_png[];
+-extern const u8 Ctrl_pad6b_png[];
+-extern const u8 Ctrl_config_png[];
+-extern const u8 Ctrl_player_png[];
+-extern const u8 Ctrl_player_over_png[];
+-extern const u8 Ctrl_player_none_png[];
+-extern const u8 ctrl_option_off_png[];
+-extern const u8 ctrl_option_on_png[];
+-extern const u8 ctrl_gamecube_png[];
+-#ifdef HW_RVL
+-extern const u8 ctrl_classic_png[];
+-extern const u8 ctrl_nunchuk_png[];
+-extern const u8 ctrl_wiimote_png[];
+-#endif
+-
+ /* Generic images*/
+ #ifdef HW_RVL
+ #define Key_A_png Key_A_wii_png
+@@ -262,6 +200,8 @@
+ #define Key_B_png Key_B_gcn_png
+ extern const u8 Key_A_gcn_png[];
+ extern const u8 Key_B_gcn_png[];
++extern const u8 Star_empty_png[];
++extern const u8 Star_full_png[];
+ #endif
+ 
+ /* Generic Sounds */
+@@ -272,11 +212,6 @@
+ extern const u32 button_over_pcm_size;
+ extern const u32 intro_pcm_size;
+ 
+-/* Generic textures*/
+-#ifdef HW_RVL
+-extern gx_texture *w_pointer;
+-#endif
+-
+ extern u8 SILENT;
+ 
+ extern void GUI_InitMenu(gui_menu *menu);
+Index: source/gx/gx_video.c
+===================================================================
+--- source/gx/gx_video.c	(revision 442)
++++ source/gx/gx_video.c	(revision 443)
+@@ -826,7 +826,6 @@
+ void gxCopyScreenshot(gx_texture *texture)
+ {
+   /* retrieve gamescreen texture */
+-  gxClearScreen((GXColor)BLACK);
+   GXTexObj texobj;
+   GX_InitTexObj(&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   GX_LoadTexObj(&texobj, GX_TEXMAP0);
+Index: source/gx/config.c
+===================================================================
+--- source/gx/config.c	(revision 442)
++++ source/gx/config.c	(revision 443)
+@@ -79,7 +79,7 @@
+   config.mg             = 1.0;
+   config.hg             = 1.0;
+   config.rolloff        = 0.995;
+-  config.dac_bits 		= 14;
++  config.dac_bits 		  = 14;
+ 
+   /* system options */
+   config.region_detect  = 0;
+@@ -116,11 +116,12 @@
+ 
+   /* menu options */
+ #ifdef HW_RVL
+-  config.sram_auto    = 0;
++  config.s_auto       = 1;
+ #else
+-  config.sram_auto    = -1;
++  config.s_auto       = 0;
+ #endif
+-  config.state_auto   = -1;
++  config.s_default    = 1;
++  config.s_device     = 0;
+   config.bg_color     = 0;
+   config.bg_overlay   = 0;
+   config.screen_w     = 658;
+Index: source/gx/config.h
+===================================================================
+--- source/gx/config.h	(revision 442)
++++ source/gx/config.h	(revision 443)
+@@ -70,8 +70,9 @@
+   uint16 pad_keymap[4][MAX_KEYS];
+   uint32 wpad_keymap[4*3][MAX_KEYS];
+   t_input_config input[MAX_INPUTS];
+-  int8 sram_auto;
+-  int8 state_auto;
++  uint8 s_auto;
++  uint8 s_default;
++  uint8 s_device;
+   int8 bg_color;
+   int8 bg_overlay;
+   int16 screen_w;
+Index: source/gx/images/Overlay_item.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: source/gx/images/Progress_bar.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: source/gx/images/Overlay_item_over.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: source/gx/images/Button_save.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+
+Property changes on: source/gx/images/Button_save.png
+___________________________________________________________________
+Added: svn:mime-type
+   + application/octet-stream
+
+Index: source/gx/images/Button_save_over.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+
+Property changes on: source/gx/images/Button_save_over.png
+___________________________________________________________________
+Added: svn:mime-type
+   + application/octet-stream
+
+Index: source/gx/main.c
+===================================================================
+--- source/gx/main.c	(revision 442)
++++ source/gx/main.c	(revision 443)
+@@ -28,6 +28,7 @@
+ #include "history.h"
+ #include "aram.h"
+ #include "dvd.h"
++#include "file_slot.h"
+ 
+ #ifdef HW_RVL
+ #include "usb2storage.h"
+@@ -35,7 +36,6 @@
+ #endif
+ 
+ #include <fat.h>
+-#include <ogc/cast.h>
+ 
+ #ifdef HW_RVL
+ #include <wiiuse/wpad.h>
+@@ -196,7 +196,8 @@
+ void shutdown(void)
+ {
+   /* system shutdown */
+-  memfile_autosave(-1,config.state_auto);
++  if (config.s_auto & 2)
++    slot_autosave(config.s_default,config.s_device);
+   system_shutdown();
+   audio_shutdown();
+   free(cart.rom);
+Index: source/gx/fileio/file_mem.h
+===================================================================
+--- source/gx/fileio/file_mem.h	(revision 442)
++++ source/gx/fileio/file_mem.h	(revision 443)
+@@ -1,35 +0,0 @@
+-/*
+- *  file_mem.c
+- *
+- *  FAT and Memory Card SRAM/Savestate files managment
+- *
+- *  Softdev (2006)
+- *  Eke-Eke (2007,2008,2009)
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation; either version 2 of the License, or
+- *  (at your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *  GNU General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License
+- *  along with this program; if not, write to the Free Software
+- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- ***************************************************************************/
+-
+-#ifndef _FILE_MEM_H
+-#define _FILE_MEM_H
+-
+-extern int ManageSRAM(u8 direction, u8 device);
+-extern int ManageState(u8 direction, u8 device);
+-extern void memfile_autosave(s8 autosram, s8 autostate);
+-extern void memfile_autoload(s8 autosram, s8 autostate);
+-
+-extern char rom_filename[256];
+-
+-#endif
+Index: source/gx/fileio/file_mem.c
+===================================================================
+--- source/gx/fileio/file_mem.c	(revision 442)
++++ source/gx/fileio/file_mem.c	(revision 443)
+@@ -1,637 +0,0 @@
+-/*
+- *  file_mem.c
+- *
+- *  FAT and Memory Card SRAM/Savestate files managment
+- *
+- *  Softdev (2006)
+- *  Eke-Eke (2007,2008,2009)
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License as published by
+- *  the Free Software Foundation; either version 2 of the License, or
+- *  (at your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *  GNU General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License
+- *  along with this program; if not, write to the Free Software
+- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- *
+- ***************************************************************************/
+-
+-#include "shared.h"
+-#include "file_mem.h"
+-#include "file_fat.h"
+-#include "dvd.h"
+-#include "gui.h"
+-#include "filesel.h"
+-#include "saveicon.h"
+-
+-/* Global ROM filename */
+-char rom_filename[MAXJOLIET];
+-
+-
+-/* Support for MemCards  */
+-/**
+- * libOGC System Work Area
+- */
+-static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN (32);
+-
+-/**
+- * DMA Transfer Area.
+- * Must be 32-byte aligned.
+- * 64k SRAM + 2k Icon
+- */
+-static u8 savebuffer[STATE_SIZE] ATTRIBUTE_ALIGN (32);
+-
+-
+-/****************************************************************************
+- * SDCARD Access functions
+- *
+- * We use the same buffer as for Memory Card manager
+- * Function returns TRUE on success.
+- *****************************************************************************/
+-static int FAT_ManageFile(char *filename, u8 direction, u8 filetype)
+-{
+-  char fname[MAXPATHLEN];
+-  int done = 0;
+-  int filesize;
+-
+-  /* build complete SDCARD filename */
+-  sprintf (fname, "%s/saves/%s", DEFAULT_PATH, filename);
+-
+-  /* open file */
+-  FILE *fp = fopen(fname, direction ? "rb" : "wb");
+-  if (fp == NULL)
+-  {
+-    GUI_WaitPrompt("Error","Unable to open file !");
+-    return 0;
+-  }
+-
+-  switch (direction)
+-  {
+-    case 0: /* SAVING */
+-
+-      if (filetype) /* SRAM */
+-      {
+-        memcpy(savebuffer, sram.sram, 0x10000);
+-        sram.crc = crc32 (0, sram.sram, 0x10000);
+-        filesize = 0x10000;
+-      }
+-      else filesize = state_save(savebuffer); /* STATE */
+-
+-      /* write buffer (2k blocks) */
+-      while (filesize > FATCHUNK)
+-      {
+-        fwrite(savebuffer + done, FATCHUNK, 1, fp);
+-        filesize -= FATCHUNK;
+-        done += FATCHUNK;
+-      }
+-      done += fwrite(savebuffer + done, filesize, 1, fp);
+-      fclose(fp);
+-
+-      if (done < filesize)
+-      {
+-        GUI_WaitPrompt("Error","Unable to write file !");
+-        return 0;
+-      }
+-
+-      GUI_MsgBoxClose();
+-      return 1;
+-
+-    case 1: /* LOADING */
+-
+-      /* read size */
+-      fseek(fp , 0 , SEEK_END);
+-      filesize = ftell (fp);
+-      fseek(fp, 0, SEEK_SET);
+-
+-      /* read into buffer (2k blocks) */
+-      while (filesize > FATCHUNK)
+-      {
+-        fread(savebuffer + done, FATCHUNK, 1, fp);
+-        filesize -= FATCHUNK;
+-        done += FATCHUNK;
+-      }
+-      done += fread(savebuffer + done, filesize, 1, fp);
+-      fclose(fp);
+-
+-      if (done < filesize)
+-      {
+-        GUI_WaitPrompt("Error","Unable to read file !");
+-        return 0;
+-      }
+-
+-      if (filetype) /* SRAM */
+-      {
+-        memcpy(sram.sram, savebuffer, done);
+-        sram.crc = crc32 (0, sram.sram, 0x10000);
+-      }
+-      else
+-      {
+-        /* STATE */
+-        if (!state_load(savebuffer))
+-        {
+-          GUI_WaitPrompt("Error","File version is not compatible !");
+-          return 0;
+-        }
+-      }
+-
+-      GUI_MsgBoxClose();
+-      return 1;
+-  }
+-
+-  return 0; 
+-}
+-
+-/****************************************************************************
+- * MountTheCard
+- *
+- * libOGC provides the CARD_Mount function, and it should be all you need.
+- * However, experience with previous emulators has taught me that you are
+- * better off doing a little bit more than that!
+- *
+- * Function returns TRUE on success.
+- *****************************************************************************/
+-static int MountTheCard (u8 slot)
+-{
+-  int tries = 0;
+-  int CardError;
+-#if defined(HW_DOL)
+-  *(unsigned long *) (0xCC006800) |= 1 << 13; /*** Disable Encryption ***/
+-  uselessinquiry ();
+-#elif defined(HW_RVL)
+-  *(unsigned long *) (0xCD006800) |= 1 << 13; /*** Disable Encryption ***/
+-#endif
+-  while (tries < 10)
+-  {
+-    VIDEO_WaitVSync ();
+-    CardError = CARD_Mount (slot, SysArea, NULL); /*** Don't need or want a callback ***/
+-    if (CardError == 0)
+-      return 1;
+-    else
+-      EXI_ProbeReset ();
+-    tries++;
+-  }
+-  return 0;
+-}
+-
+-/****************************************************************************
+- * CardFileExists
+- *
+- * Wrapper to search through the files on the card.
+- * Returns TRUE if found.
+- ****************************************************************************/
+-static int CardFileExists (char *filename, u8 slot)
+-{
+-  card_dir CardDir;
+-  int CardError = CARD_FindFirst (slot, &CardDir, TRUE);
+-  while (CardError >= 0)
+-  {
+-    CardError = CARD_FindNext (&CardDir);
+-    if (strcmp ((char *) CardDir.filename, filename) == 0)
+-      return 1;
+-  }
+-  return 0;
+-}
+-
+-/****************************************************************************
+- * FILE autoload (SRAM/FreezeState or Config File)
+- *
+- *
+- *****************************************************************************/
+-void memfile_autoload(s8 autosram, s8 autostate)
+-{
+-  /* this should be transparent to the user */
+-  SILENT = 1; 
+-
+-  /* SRAM */
+-  if (autosram != -1)
+-    ManageSRAM(1,autosram);
+-
+-  /* STATE */
+-  if (autostate != -1)
+-    ManageState(1,autostate);
+-
+-  SILENT = 0;
+-}
+-
+-void memfile_autosave(s8 autosram, s8 autostate)
+-{
+-  int crccheck = crc32 (0, sram.sram, 0x10000);
+-
+-  /* this should be transparent to the user */
+-  SILENT = 1;
+-  
+-  /* SRAM */
+-  if ((autosram != -1) && (crccheck != sram.crc))
+-    ManageSRAM(0, autosram);
+-
+-  /* STATE */
+-  if (autostate != -1)
+-    ManageState(0,autostate);
+-
+-  SILENT = 0;
+-}
+-
+-
+-/****************************************************************************
+- * ManageSRAM
+- *
+- * Here is the main SRAM Management stuff.
+- * The output file contains an icon (2K), 64 bytes comment and the SRAM (64k).
+- * As memcards are allocated in blocks of 8k or more, you have a around
+- * 6k bytes to save/load any other data you wish without altering any of the
+- * main save / load code.
+- *
+- * direction == 0 save, 1 load.
+- ****************************************************************************/
+-int ManageSRAM (u8 direction, u8 device)
+-{
+-  if (!cart.romsize)
+-    return 0;
+-
+-  char filename[MAXJOLIET];
+-
+-  if (direction)
+-    GUI_MsgBoxOpen("Information","Loading SRAM ...",1);
+-  else
+-    GUI_MsgBoxOpen("Information","Saving SRAM ...",1);
+-
+-  /* clean buffer */
+-  memset(savebuffer, 0, STATE_SIZE);
+-
+-  if (device == 0)
+-  {
+-    /* FAT support */
+-    sprintf (filename, "%s.srm", rom_filename);
+-    return FAT_ManageFile(filename,direction,1);
+-  }
+-
+-  /* Memory CARD support */
+-  char action[80];
+-  int CardError;
+-  unsigned int SectorSize = 0;
+-  int blocks;
+-  char comment[2][32] = { {"Genesis Plus 1.2a"}, {"SRAM Save"} };
+-  int outbytes = 0;
+-  int sbo;
+-  unsigned long inzipped,outzipped;
+-  card_file CardFile;
+-  card_stat CardStatus;
+-
+-  /* First, build a filename */
+-  sprintf (filename, "MD-%04X.srm", realchecksum);
+-  strcpy (comment[1], filename);
+-
+-  /* set MCARD slot nr. */
+-  u8 CARDSLOT = device - 1;
+-
+-  /* Saving */
+-  if (direction == 0)
+-  {
+-    /*** Build the output buffer ***/
+-    memcpy (&savebuffer, &icon, 2048);
+-    memcpy (&savebuffer[2048], &comment[0], 64);
+-
+-    inzipped = 0x10000;
+-    outzipped = 0x12000;
+-    compress2 ((Bytef *) &savebuffer[2112+sizeof(outzipped)], &outzipped, (Bytef *) &sram.sram, inzipped, 9);
+-    memcpy(&savebuffer[2112], &outzipped, sizeof(outzipped));
+-  }
+-
+-  outbytes = 2048 + 64 + outzipped + sizeof(outzipped);
+-
+-  /*** Initialise the CARD system ***/
+-  memset (&SysArea, 0, CARD_WORKAREA);
+-  CARD_Init ("GENP", "00");
+-
+-  /*** Attempt to mount the card ***/
+-  CardError = MountTheCard (CARDSLOT);
+-
+-  if (CardError)
+-  {
+-    /*** Retrieve the sector size ***/
+-    CardError = CARD_GetSectorSize (CARDSLOT, &SectorSize);
+-
+-    if (SectorSize)
+-    {
+-      switch (direction)
+-      {
+-        case 0: /*** Saving ***/
+-
+-          /*** Determine number of blocks on this card ***/
+-          blocks = (outbytes / SectorSize) * SectorSize;
+-          if (outbytes % SectorSize)
+-            blocks += SectorSize;
+-
+-          /*** Check if a previous save exists ***/
+-          if (CardFileExists (filename,CARDSLOT))
+-          {
+-            CardError = CARD_Open (CARDSLOT, filename, &CardFile);
+-            if (CardError)
+-            {
+-              sprintf (action, "Unable to open file (%d)", CardError);
+-              GUI_WaitPrompt("Error",action);
+-              CARD_Unmount (CARDSLOT);
+-              return 0;
+-            }
+-
+-            int size = CardFile.len;
+-            CARD_Close (&CardFile);
+-
+-            if (size < blocks)
+-            {
+-              /* new size is bigger: check if there is enough space left */
+-              CardError = CARD_Create (CARDSLOT, "TEMP", blocks-size, &CardFile);
+-              if (CardError)
+-              {
+-                sprintf (action, "Unable to create temporary file (%d)", CardError);
+-                GUI_WaitPrompt("Error",action);
+-                CARD_Unmount (CARDSLOT);
+-                return 0;
+-              }
+-              CARD_Close (&CardFile);
+-              CARD_Delete(CARDSLOT, "TEMP");
+-            }
+-
+-            /* always delete existing slot */
+-            CARD_Delete(CARDSLOT, filename);
+-          }
+-
+-          /*** Create a new slot ***/
+-          CardError = CARD_Create (CARDSLOT, filename, blocks, &CardFile);
+-          if (CardError)
+-          {
+-            sprintf (action, "Unable to create new file (%d)", CardError);
+-            GUI_WaitPrompt("Error",action);
+-            CARD_Unmount (CARDSLOT);
+-            return 0;
+-          }
+-
+-          /*** Continue and save ***/
+-          CARD_GetStatus (CARDSLOT, CardFile.filenum, &CardStatus);
+-          CardStatus.icon_addr = 0x0;
+-          CardStatus.icon_fmt = 2;
+-          CardStatus.icon_speed = 1;
+-          CardStatus.comment_addr = 2048;
+-          CARD_SetStatus (CARDSLOT, CardFile.filenum, &CardStatus);
+-
+-          /*** And write the blocks out ***/
+-          sbo = 0;
+-          while (outbytes > 0)
+-          {
+-            CardError = CARD_Write (&CardFile, &savebuffer[sbo], SectorSize, sbo);
+-            outbytes -= SectorSize;
+-            sbo += SectorSize;
+-          }
+-
+-          CARD_Close (&CardFile);
+-          CARD_Unmount (CARDSLOT);
+-          sram.crc = crc32 (0, &sram.sram[0], 0x10000);
+-          GUI_MsgBoxClose();
+-          return 1;
+-
+-
+-        default: /*** Loading ***/
+-
+-          memset (&CardFile, 0, sizeof (CardFile));
+-          CardError = CARD_Open (CARDSLOT, filename, &CardFile);
+-          if (CardError)
+-          {
+-            sprintf (action, "Unable to open file (%d)", CardError);
+-            GUI_WaitPrompt("Error",action);
+-            CARD_Unmount (CARDSLOT);
+-            return 0;
+-          }
+-
+-          blocks = CardFile.len;
+-          if (blocks < SectorSize)
+-            blocks = SectorSize;
+-          if (blocks % SectorSize)
+-            blocks++;
+-
+-          /*** Just read the file back in ***/
+-          sbo = 0;
+-          while (blocks > 0)
+-          {
+-            CARD_Read (&CardFile, &savebuffer[sbo], SectorSize, sbo);
+-            sbo += SectorSize;
+-            blocks -= SectorSize;
+-          }
+-          CARD_Close (&CardFile);
+-          CARD_Unmount (CARDSLOT);
+-
+-          /*** update SRAM ***/
+-          memcpy(&inzipped,&savebuffer[2112],sizeof(inzipped));
+-          outzipped = 0x10000;
+-          uncompress ((Bytef *) &sram.sram, &outzipped, (Bytef *) &savebuffer[2112+sizeof(inzipped)], inzipped);
+-          sram.crc = crc32 (0, &sram.sram[0], 0x10000);
+-          GUI_MsgBoxClose();
+-          return 1;
+-      }
+-    }
+-
+-    GUI_WaitPrompt("Error","Invalid sector size");
+-    return 0;
+-  }
+-
+-  GUI_WaitPrompt("Error","Unable to mount memory card");
+-  return 0;
+-}
+-
+-/****************************************************************************
+- * ManageState
+- *
+- * Here is the main Freeze File Management stuff.
+- * The output file contains an icon (2K), 64 bytes comment and the STATE (~128k)
+- *
+- * direction == 0 save, 1 load.
+- ****************************************************************************/
+-int ManageState (u8 direction, u8 device)
+-{
+-  if (!cart.romsize)
+-    return 0;
+-
+-  char filename[MAXJOLIET];
+-
+-  if (direction)
+-    GUI_MsgBoxOpen("Information","Loading State ...",1);
+-  else
+-    GUI_MsgBoxOpen("Information","Saving State ...",1);
+-
+-  /* clean buffer */
+-  memset(savebuffer, 0, STATE_SIZE);
+-
+-  if (device == 0)
+-  {
+-    /* FAT support */
+-    sprintf (filename, "%s.gpz", rom_filename);
+-    return FAT_ManageFile(filename,direction,0);
+-  }
+-
+-  /* Memory CARD support */
+-  char action[80];
+-  int CardError;
+-  unsigned int SectorSize;
+-  int blocks;
+-  char comment[2][32] = { {"Genesis Plus 1.2a [FRZ]"}, {"Freeze State"} };
+-  int outbytes = 0;
+-  int sbo;
+-  int state_size = 0;
+-  card_file CardFile;
+-  card_stat CardStatus;
+-
+-  /* First, build a filename */
+-  sprintf (filename, "MD-%04X.gpz", realchecksum);
+-  strcpy (comment[1], filename);
+-
+-  /* set MCARD slot nr. */
+-  u8 CARDSLOT = device - 1;
+-
+-  /* Saving */
+-  if (direction == 0)
+-  {
+-    /* Build the output buffer */
+-    memcpy (&savebuffer, &icon, 2048);
+-    memcpy (&savebuffer[2048], &comment[0], 64);
+-    state_size = state_save(&savebuffer[2112]);
+-  }
+-
+-  outbytes = 2048 + 64 + state_size;
+-
+-  /*** Initialise the CARD system ***/
+-  memset (&SysArea, 0, CARD_WORKAREA);
+-  CARD_Init ("GENP", "00");
+-
+-  /*** Attempt to mount the card ***/
+-  CardError = MountTheCard (CARDSLOT);
+-
+-  if (CardError)
+-  {
+-    /*** Retrieve the sector size ***/
+-    CardError = CARD_GetSectorSize (CARDSLOT, &SectorSize);
+-
+-    if (SectorSize)
+-    {
+-      switch (direction)
+-      {
+-        case 0: /*** Saving ***/
+-          /*** Determine number of blocks on this card ***/
+-          blocks = (outbytes / SectorSize) * SectorSize;
+-          if (outbytes % SectorSize)
+-            blocks += SectorSize;
+-
+-          /*** Check if a previous save exists ***/
+-          if (CardFileExists (filename, CARDSLOT))
+-          {
+-            CardError = CARD_Open (CARDSLOT, filename, &CardFile);
+-            if (CardError)
+-            {
+-              sprintf (action, "Unable to open file (%d)", CardError);
+-              GUI_WaitPrompt("Error",action);
+-              CARD_Unmount (CARDSLOT);
+-              return 0;
+-            }
+-
+-            int size = CardFile.len;
+-            CARD_Close (&CardFile);
+-
+-            if (size < blocks)
+-            {
+-              /* new size is bigger: check if there is enough space left */
+-              CardError = CARD_Create (CARDSLOT, "TEMP", blocks-size, &CardFile);
+-              if (CardError)
+-              {
+-                sprintf (action, "Unable to create temporary file (%d)", CardError);
+-                GUI_WaitPrompt("Error",action);
+-                CARD_Unmount (CARDSLOT);
+-                return 0;
+-              }
+-              CARD_Close (&CardFile);
+-              CARD_Delete(CARDSLOT, "TEMP");
+-            }
+-
+-            /* always delete existing slot */
+-            CARD_Delete(CARDSLOT, filename);
+-          }
+-
+-          /*** Create a new slot ***/
+-          CardError = CARD_Create (CARDSLOT, filename, blocks, &CardFile);
+-          if (CardError)
+-          {
+-            sprintf (action, "Unable to create new file (%d)", CardError);
+-            GUI_WaitPrompt("Error",action);
+-            CARD_Unmount (CARDSLOT);
+-            return 0;
+-          }
+-          
+-          /*** Continue and save ***/
+-          CARD_GetStatus (CARDSLOT, CardFile.filenum, &CardStatus);
+-          CardStatus.icon_addr = 0x0;
+-          CardStatus.icon_fmt = 2;
+-          CardStatus.icon_speed = 1;
+-          CardStatus.comment_addr = 2048;
+-          CARD_SetStatus (CARDSLOT, CardFile.filenum, &CardStatus);
+-
+-          /*** And write the blocks out ***/
+-          sbo = 0;
+-          while (outbytes > 0)
+-          {
+-            CardError = CARD_Write (&CardFile, &savebuffer[sbo], SectorSize, sbo);
+-            outbytes -= SectorSize;
+-            sbo += SectorSize;
+-          }
+-
+-          CARD_Close (&CardFile);
+-          CARD_Unmount (CARDSLOT);
+-          GUI_MsgBoxClose();
+-          return 1;
+-
+-
+-        default: /*** Loading ***/
+-
+-          memset (&CardFile, 0, sizeof (CardFile));
+-          CardError = CARD_Open (CARDSLOT, filename, &CardFile);
+-          if (CardError)
+-          {
+-            sprintf (action, "Unable to open file (%d)", CardError);
+-            GUI_WaitPrompt("Error",action);
+-            CARD_Unmount (CARDSLOT);
+-            return 0;
+-          }
+-
+-          blocks = CardFile.len;
+-          if (blocks < SectorSize)
+-            blocks = SectorSize;
+-          if (blocks % SectorSize)
+-            blocks++;
+-
+-          /*** Just read the file back in ***/
+-          sbo = 0;
+-          while (blocks > 0)
+-          {
+-            CARD_Read (&CardFile, &savebuffer[sbo], SectorSize, sbo);
+-            sbo += SectorSize;
+-            blocks -= SectorSize;
+-          }
+-          CARD_Close (&CardFile);
+-          CARD_Unmount (CARDSLOT);
+-
+-          /*** Load State ***/
+-          state_load(&savebuffer[2112]);
+-          GUI_MsgBoxClose();
+-          return 1;
+-      }
+-    }
+-
+-    GUI_WaitPrompt("Error","Invalid sector size");
+-    return 0;
+-  }
+-  
+-  GUI_WaitPrompt("Error","Unable to mount memory card !");
+-  return 0;
+-}
+Index: source/gx/fileio/file_slot.c
+===================================================================
+--- source/gx/fileio/file_slot.c	(revision 0)
++++ source/gx/fileio/file_slot.c	(revision 443)
+@@ -0,0 +1,569 @@
++/*
++ *  file_slot.c
++ *
++ *  FAT and Memory Card SRAM/State slots managment
++ *
++ *  Softdev (2006)
++ *  Eke-Eke (2007,2008,2009)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ ***************************************************************************/
++
++#include "shared.h"
++#include "file_slot.h"
++#include "file_fat.h"
++#include "dvd.h"
++#include "gui.h"
++#include "filesel.h"
++#include "saveicon.h"
++
++/**
++ * libOGC CARD System Work Area
++ */
++static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN (32);
++
++/**
++ * DMA Transfer Area.
++ * Must be 32-byte aligned.
++ * 64k SRAM + 2k Icon
++ */
++static u8 savebuffer[STATE_SIZE] ATTRIBUTE_ALIGN (32);
++
++
++/****************************************************************************
++ * CardMount
++ *
++ * libOGC provides the CARD_Mount function, and it should be all you need.
++ * However, experience with previous emulators has taught me that you are
++ * better off doing a little bit more than that!
++ *
++ *****************************************************************************/
++static int CardMount(int slot)
++{
++  int tries = 0;
++  int CardError;
++#if defined(HW_DOL)
++  *(unsigned long *) (0xCC006800) |= 1 << 13; /*** Disable Encryption ***/
++  uselessinquiry ();
++#elif defined(HW_RVL)
++  *(unsigned long *) (0xCD006800) |= 1 << 13; /*** Disable Encryption ***/
++#endif
++  while (tries < 10)
++  {
++    VIDEO_WaitVSync ();
++    CardError = CARD_Mount (slot, SysArea, NULL); /*** Don't need or want a callback ***/
++    if (CardError == 0)
++      return 1;
++    else
++      EXI_ProbeReset ();
++    tries++;
++  }
++  return 0;
++}
++
++/****************************************************************************
++ * CardFileExists
++ *
++ * Wrapper to search through the files on the card.
++ ****************************************************************************/
++static int CardFileExists (char *filename, int slot)
++{
++  card_dir CardDir;
++  int CardError = CARD_FindFirst (slot, &CardDir, TRUE);
++  while (CardError >= 0)
++  {
++    CardError = CARD_FindNext (&CardDir);
++    if (strcmp ((char *) CardDir.filename, filename) == 0)
++      return 1;
++  }
++  return 0;
++}
++
++/****************************************************************************
++ * Slot Management
++ *
++ *
++ ****************************************************************************/
++
++void slot_autoload(int slot, int device)
++{
++  if (!cart.romsize)
++    return;
++  
++  SILENT = 1;
++  slot_load(slot, device);
++  SILENT = 0;
++}
++
++void slot_autosave(int slot, int device)
++{
++  if (!cart.romsize)
++    return;
++
++  /* only save if SRAM changed */
++  if (!slot && (crc32(0, &sram.sram[0], 0x10000) == sram.crc))
++      return;
++
++  SILENT = 1;
++  slot_save(slot, device);
++  SILENT = 0;
++}
++
++void slot_autodetect(int slot, int device, t_slot *ptr)
++{
++  if (!ptr)
++    return;
++  
++  char filename[MAXPATHLEN];
++  memset(ptr,0,sizeof(t_slot));
++
++  if (device == 0)
++  {
++    /* FAT support */
++    if (slot > 0)
++      sprintf (filename,"%s/saves/%s.gp%d", DEFAULT_PATH, rom_filename, slot - 1);
++    else
++      sprintf (filename,"%s/saves/%s.srm", DEFAULT_PATH, rom_filename);
++
++    /* Open file */
++    FILE *fp = fopen(filename, "rb");
++    if (fp)
++    {
++      /* Retrieve date & close */
++	    struct stat filestat;
++			stat(filename, &filestat);
++      struct tm *timeinfo = localtime(&filestat.st_mtime);
++      ptr->year = 1900 + timeinfo->tm_year;
++      ptr->month = timeinfo->tm_mon;
++      ptr->day = timeinfo->tm_mday;
++      ptr->hour = timeinfo->tm_hour;
++      ptr->min = timeinfo->tm_min;
++      fclose(fp);
++      ptr->valid = 1;
++    }
++  }
++  else
++  {
++    /* Memory Card support */
++    if (slot > 0)
++      sprintf(filename,"MD-%04X.gp%d", realchecksum, slot - 1);
++    else
++      sprintf(filename,"MD-%04X.srm", realchecksum);
++
++    /* Initialise the CARD system */
++    memset(&SysArea, 0, CARD_WORKAREA);
++    CARD_Init("GENP", "00");
++
++    /* CARD slot */
++    device--;
++
++    /* Mount CARD */
++    if (CardMount(device))
++    {
++      /* Open file */
++      card_file CardFile;
++      if (CARD_Open(device, filename, &CardFile))
++      {
++        /* Retrieve date & close */
++        card_stat CardStatus;
++        CARD_GetStatus(device, CardFile.filenum, &CardStatus);
++        time_t rawtime = CardStatus.time;
++	      struct tm *timeinfo = localtime(&rawtime);
++        ptr->year = 1900 + timeinfo->tm_year;
++        ptr->month = timeinfo->tm_mon;
++        ptr->day = timeinfo->tm_mday;
++        ptr->hour = timeinfo->tm_hour;
++        ptr->min = timeinfo->tm_min;
++        CARD_Close(&CardFile);
++        ptr->valid = 1;
++      }
++      CARD_Unmount(device);
++    }
++  }
++}
++
++int slot_delete(int slot, int device)
++{
++  char filename[MAXPATHLEN];
++  int ret = 0;
++
++  if (device == 0)
++  {
++    /* FAT support */
++    if (slot > 0)
++    {
++      /* remove screenshot */
++      sprintf(filename,"%s/saves/%s__%d.png", DEFAULT_PATH, rom_filename, slot - 1);
++      remove(filename);
++
++      sprintf (filename,"%s/saves/%s.gp%d", DEFAULT_PATH, rom_filename, slot - 1);
++    }
++    else
++      sprintf (filename,"%s/saves/%s.srm", DEFAULT_PATH, rom_filename);
++
++    /* Delete file */
++    ret = remove(filename);
++  }
++  else
++  {
++    /* Memory Card support */
++    if (slot > 0)
++      sprintf(filename,"MD-%04X.gp%d", realchecksum, slot - 1);
++    else
++      sprintf(filename,"MD-%04X.srm", realchecksum);
++
++    /* Initialise the CARD system */
++    memset(&SysArea, 0, CARD_WORKAREA);
++    CARD_Init("GENP", "00");
++
++    /* CARD slot */
++    device--;
++
++    /* Mount CARD */
++    if (CardMount(device))
++    {
++      /* Open file */
++      if (CardFileExists(filename, device))
++        ret = CARD_Delete(device,filename);
++      CARD_Unmount(device);
++    }
++  }
++
++  return ret;
++}
++
++int slot_load(int slot, int device)
++{
++  char filename[MAXPATHLEN];
++  int filesize, done = 0;
++  int offset = device ? 2112 : 0;
++
++  if (slot > 0)
++    GUI_MsgBoxOpen("Information","Loading State ...",1);
++  else
++    GUI_MsgBoxOpen("Information","Loading SRAM ...",1);
++
++  /* clean buffer */
++  memset(savebuffer, 0, STATE_SIZE);
++
++  if (device == 0)
++  {
++    /* FAT support */
++    if (slot > 0)
++      sprintf (filename,"%s/saves/%s.gp%d", DEFAULT_PATH, rom_filename, slot - 1);
++    else
++      sprintf (filename,"%s/saves/%s.srm", DEFAULT_PATH, rom_filename);
++
++    /* Open file */
++    FILE *fp = fopen(filename, "rb");
++    if (fp)
++    {
++      /* Read size */
++      fseek(fp , 0 , SEEK_END);
++      filesize = ftell (fp);
++      fseek(fp, 0, SEEK_SET);
++
++      /* Read into buffer (2k blocks) */
++      while (filesize > FATCHUNK)
++      {
++        fread(savebuffer + done, FATCHUNK, 1, fp);
++        done += FATCHUNK;
++        filesize -= FATCHUNK;
++      }
++
++      /* Read remaining bytes */
++      fread(savebuffer + done, filesize, 1, fp);
++      done += filesize;
++      fclose(fp);
++    }
++    else
++    {
++      GUI_WaitPrompt("Error","Unable to open file !");
++      return 0;
++    }
++  }  
++  else
++  {
++    /* Memory Card support */
++    if (index > 0)
++      sprintf(filename, "MD-%04X.gp%d", realchecksum, slot - 1);
++    else
++      sprintf(filename, "MD-%04X.srm", realchecksum);
++
++    /* Initialise the CARD system */
++    char action[80];
++    memset(&SysArea, 0, CARD_WORKAREA);
++    CARD_Init("GENP", "00");
++
++    /* CARD slot */
++    device--;
++
++    /* Attempt to mount the card */
++    if (CardMount(device))
++    {
++      /* Retrieve the sector size */
++      u32 SectorSize = 0;
++      int CardError = CARD_GetSectorSize(device, &SectorSize);
++      if (SectorSize)
++      {
++        /* Open file */
++        card_file CardFile;
++        CardError = CARD_Open(device, filename, &CardFile);
++        if (CardError)
++        {
++          sprintf(action, "Unable to open file (%d)", CardError);
++          GUI_WaitPrompt("Error",action);
++          CARD_Unmount(device);
++          return 0;
++        }
++
++        /* Get file size */
++        filesize = CardFile.len;
++        if (filesize % SectorSize)
++          filesize = ((filesize / SectorSize) + 1) * SectorSize;
++
++        /* Read file sectors */
++        while (filesize > 0)
++        {
++          CARD_Read(&CardFile, &savebuffer[done], SectorSize, done);
++          done += SectorSize;
++          filesize -= SectorSize;
++        }
++
++        CARD_Close(&CardFile);
++        CARD_Unmount(device);
++      }
++      else
++      {
++        sprintf(action, "Invalid sector size (%d)", CardError);
++        GUI_WaitPrompt("Error",action);
++        CARD_Unmount(device);
++        return 0;
++      }
++    }
++    else
++    {
++      GUI_WaitPrompt("Error","Unable to mount memory card");
++      return 0;
++    }
++  }
++
++  if (slot > 0)
++  {
++    /* Load state */
++    if (!state_load(&savebuffer[offset]))
++    {
++      GUI_WaitPrompt("Error","Version is not compatible !");
++      return 0;
++    }
++  }
++  else
++  {
++    /* Load SRAM & update CRC */
++    memcpy(sram.sram, &savebuffer[offset], 0x10000);
++    sram.crc = crc32(0, &sram.sram[0], 0x10000);
++  }
++
++  GUI_MsgBoxClose();
++  return 1;
++}
++
++
++int slot_save(int slot, int device)
++{
++  char filename[MAXPATHLEN];
++  int filesize, done = 0;
++  int offset = device ? 2112 : 0;
++
++  /* clean buffer */
++  memset(savebuffer, 0, STATE_SIZE);
++
++  if (slot > 0)
++  {
++    GUI_MsgBoxOpen("Information","Saving State ...",1);
++    filesize = state_save(&savebuffer[offset]);
++  }
++  else
++  {
++    GUI_MsgBoxOpen("Information","Saving SRAM ...",1);
++    memcpy(&savebuffer[offset], sram.sram, 0x10000);
++    sram.crc = crc32(0, &sram.sram[0], 0x10000);
++    filesize = 0x10000;
++  }
++
++  if (device == 0)
++  {
++    /* FAT support */
++    if (slot > 0)
++      sprintf(filename, "%s/saves/%s.gp%d", DEFAULT_PATH, rom_filename, slot - 1);
++    else
++      sprintf(filename, "%s/saves/%s.srm", DEFAULT_PATH, rom_filename);
++
++    /* Open file */
++    FILE *fp = fopen(filename, "wb");
++    if (fp)
++    {
++      /* Read into buffer (2k blocks) */
++      while (filesize > FATCHUNK)
++      {
++        fwrite(savebuffer + done, FATCHUNK, 1, fp);
++        done += FATCHUNK;
++        filesize -= FATCHUNK;
++      }
++
++      /* Write remaining bytes */
++      fwrite(savebuffer + done, filesize, 1, fp);
++      done += filesize;
++      fclose(fp);
++
++      if (slot)
++      {
++        /* save screenshot */
++        sprintf(filename,"%s/saves/%s__%d.png", DEFAULT_PATH, rom_filename, slot - 1);
++        gxSaveScreenshot(filename);
++      }
++    }
++    else
++    {
++      GUI_WaitPrompt("Error","Unable to open file !");
++      return 0;
++    }
++  }  
++  else
++  {
++    /* Memory Card support */
++    if (index > 0)
++      sprintf(filename, "MD-%04X.gp%d", realchecksum, slot - 1);
++    else
++      sprintf(filename, "MD-%04X.srm", realchecksum);
++
++    /* Initialise the CARD system */
++    char action[80];
++    memset(&SysArea, 0, CARD_WORKAREA);
++    CARD_Init("GENP", "00");
++
++    /* CARD slot */
++    device--;
++
++    /* Attempt to mount the card */
++    if (CardMount(device))
++    {
++      /* Retrieve the sector size */
++      u32 SectorSize = 0;
++      int CardError = CARD_GetSectorSize(device, &SectorSize);
++      if (SectorSize)
++      {
++        /* Build the output buffer */
++        char comment[2][32] = { {"Genesis Plus GX"}, {"SRAM Save"} };
++        strcpy (comment[1], filename);
++        memcpy (&savebuffer[0], &icon, 2048);
++        memcpy (&savebuffer[2048], &comment[0], 64);
++
++        /* Adjust file size */
++        filesize += 2112;
++        if (filesize % SectorSize)
++          filesize = ((filesize / SectorSize) + 1) * SectorSize;
++
++        /* Check if file already exists */
++        card_file CardFile;
++        if (CardFileExists(filename,device))
++        {
++          CardError = CARD_Open(device, filename, &CardFile);
++          if (CardError)
++          {
++            sprintf(action, "Unable to open file (%d)", CardError);
++            GUI_WaitPrompt("Error",action);
++            CARD_Unmount(device);
++            return 0;
++          }
++          
++          int size = filesize - CardFile.len;
++          CARD_Close(&CardFile);
++          memset(&CardFile,0,sizeof(CardFile));
++          if (size > 0)
++          {
++            /* new file is bigger: check if there is enough space left */
++            CardError = CARD_Create(device, "TEMP", size, &CardFile);
++            if (CardError)
++            {
++              sprintf(action, "Unable to create temporary file (%d)", CardError);
++              GUI_WaitPrompt("Error",action);
++              CARD_Unmount(device);
++              return 0;
++            }
++            CARD_Close(&CardFile);
++            CARD_Delete(device, "TEMP");
++            memset(&CardFile,0,sizeof(CardFile));
++          }
++
++          /* delete previously existing slot */
++          CARD_Delete(device, filename);
++        }
++
++        /* Create a new slot */
++        CardError = CARD_Create(device, filename, filesize, &CardFile);
++        if (CardError)
++        {
++          sprintf(action, "Unable to create file (%d)", CardError);
++          GUI_WaitPrompt("Error",action);
++          CARD_Unmount(device);
++          return 0;
++        }
++
++        /* Get current time */
++        time_t rawtime;
++        time(&rawtime);
++        
++        /* Update file informations */
++        card_stat CardStatus;
++        CARD_GetStatus(device, CardFile.filenum, &CardStatus);
++        CardStatus.icon_addr = 0x0;
++        CardStatus.icon_fmt = 2;
++        CardStatus.icon_speed = 1;
++        CardStatus.comment_addr = 2048;
++        CardStatus.time = rawtime;
++        CARD_SetStatus(device, CardFile.filenum, &CardStatus);
++
++        /* Write file sectors */
++        while (filesize > 0)
++        {
++          CARD_Write(&CardFile, &savebuffer[done], SectorSize, done);
++          filesize -= SectorSize;
++          done += SectorSize;
++        }
++
++        /* Close file */
++        CARD_Close(&CardFile);
++        CARD_Unmount(device);
++      }
++      else
++      {
++        sprintf(action, "Invalid sector size (%d)", CardError);
++        GUI_WaitPrompt("Error",action);
++        CARD_Unmount(device);
++        return 0;
++      }
++    }
++    else
++    {
++      GUI_WaitPrompt("Error","Unable to mount memory card");
++      return 0;
++    }
++  }
++
++  GUI_MsgBoxClose();
++  return 1;
++}
+Index: source/gx/fileio/file_slot.h
+===================================================================
+--- source/gx/fileio/file_slot.h	(revision 0)
++++ source/gx/fileio/file_slot.h	(revision 443)
+@@ -0,0 +1,45 @@
++/*
++ *  file_slot.c
++ *
++ *  FAT and Memory Card SRAM/Savestate files managment
++ *
++ *  Softdev (2006)
++ *  Eke-Eke (2007,2008,2009)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ ***************************************************************************/
++
++#ifndef _FILE_SLOT_H
++#define _FILE_SLOT_H
++
++typedef struct 
++{
++  int valid;
++  u16 year;
++  u8 month;
++  u8 day;
++  u8 hour;
++  u8 min;
++} t_slot;
++
++extern void slot_autoload(int slot, int device);
++extern void slot_autosave(int slot, int device);
++extern void slot_autodetect(int slot, int device, t_slot *ptr);
++extern int slot_delete(int slot, int device);
++extern int slot_load(int slot, int device);
++extern int slot_save(int slot, int device);
++
++#endif
+Index: source/gx/fileio/file_fat.c
+===================================================================
+--- source/gx/fileio/file_fat.c	(revision 442)
++++ source/gx/fileio/file_fat.c	(revision 443)
+@@ -227,8 +227,8 @@
+   int max = 0;
+   char root[10] = "";
+ 
++#ifdef HW_RVL
+   /* FAT header */
+-#ifdef HW_RVL
+   if (type == TYPE_SD) sprintf (root, "sd:");
+   else if (type == TYPE_USB) sprintf (root, "usb:");
+ #endif
+Index: source/gx/osd.h
+===================================================================
+--- source/gx/osd.h	(revision 442)
++++ source/gx/osd.h	(revision 443)
+@@ -24,7 +24,6 @@
+ #include "gx_audio.h"
+ #include "gx_video.h"
+ #include "config.h"
+-#include "file_mem.h"
+ 
+ #define DEFAULT_PATH  "/genplus"
+ #define GG_ROM        "/genplus/ggenie.bin"
+@@ -34,9 +33,9 @@
+ #define SK_UPMEM      "/genplus/sk2chip.bin"
+ 
+ #ifdef HW_RVL
+-#define VERSION "version 1.4.xW"
++#define VERSION "version 1.4.0W"
+ #else
+-#define VERSION "version 1.4.xG"
++#define VERSION "version 1.4.0G"
+ #endif
+ 
+ #define osd_input_Update() gx_input_UpdateEmu()

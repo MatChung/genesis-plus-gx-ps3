@@ -1,0 +1,2007 @@
+Index: source/gen_io.c
+===================================================================
+--- source/gen_io.c	(revision 459)
++++ source/gen_io.c	(revision 460)
+@@ -117,7 +117,7 @@
+ void io_reset(void)
+ {
+   /* Reset I/O registers */
+-  io_reg[0x00] = region_code | 0x20 | (config.bios_enabled == 3);
++  io_reg[0x00] = region_code | 0x20 | (config.tmss & 1);
+   io_reg[0x01] = 0x7F;
+   io_reg[0x02] = 0x7F;
+   io_reg[0x03] = 0x7F;
+Index: source/cart_hw/cart_hw.h
+===================================================================
+--- source/cart_hw/cart_hw.h	(revision 459)
++++ source/cart_hw/cart_hw.h	(revision 460)
+@@ -50,11 +50,11 @@
+ typedef struct
+ {
+   uint8 *rom;       /* ROM data */
+-  uint8 *base;      /* ROM base area (slot 0) */
++  uint8 *base;      /* ROM base (slot 0) */
+   uint32 romsize;   /* ROM size */
+-  uint32 mask;      /* mask ROM */
+-  uint16 lock_on;   /* 1: Lock-On enabled */
+-  uint16 jcart;     /* 1: J-CART port enabled */
++  uint32 mask;      /* ROM mask */
++  uint8 lock_on;    /* 1: Lock-On port */
++  uint8 jcart;      /* 1: J-CART port */
+   T_CART_HW hw;     /* Extra hardware */
+ } T_CART;
+ 
+Index: source/membnk.c
+===================================================================
+--- source/membnk.c	(revision 459)
++++ source/membnk.c	(revision 460)
+@@ -1,6 +1,6 @@
+ /***************************************************************************************
+  *  Genesis Plus
+- *  68k bus banked access from Z80
++ *  Z80 bank access to 68k bus
+  *
+  *  Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003  Charles Mac Donald (original code)
+  *  Eke-Eke (2007,2008,2009), additional code & fixes for the GCN/Wii port
+@@ -32,7 +32,7 @@
+ #ifdef LOGERROR
+   error("Z80 bank unused read %06X\n", address);
+ #endif
+-  return (address & 1) ? 0x00 : 0xFF;
++  return (address & 1) ? 0x00 : 0xff;
+ }
+ 
+ void zbank_unused_w(uint32 address, uint32 data)
+@@ -52,7 +52,7 @@
+     mcycles_z80 = 0xffffffff;
+     zstate = 0;
+   }
+-  return 0xFF;
++  return 0xff;
+ }
+ 
+ void zbank_lockup_w(uint32 address, uint32 data)
+@@ -73,31 +73,60 @@
+   switch ((address >> 8) & 0xff)
+   {
+     case 0x00:  /* I/O chip */
++    {
+       if (address & 0xe0)
++      {
+         return zbank_unused_r(address);
++      }
+       return (io_read((address >> 1) & 0x0f));
++    }
+ 
+     case 0x11:  /* BUSACK */
++    {
+       if (address & 1)
++      {
+         return zbank_unused_r(address);
++      }
+       return 0xff;
++    }
+ 
+     case 0x30:  /* TIME */
+-      if (cart.hw.time_r)
+-        return ((address & 1) ? (cart.hw.time_r(address) & 0xff) : (cart.hw.time_r(address) >> 8));
+-      return zbank_unused_r(address);
++    {
++      if (!cart.hw.time_r)
++      {
++        return zbank_unused_r(address);
++      }
++      unsigned int data = cart.hw.time_r(address);
++      if (address & 1)
++      {
++        return (data & 0xff);
++      }
++      return (data >> 8);
++    }
+ 
++    case 0x41:  /* OS ROM */
++    {
++      if (!(address & 1))
++      {
++        return zbank_unused_r(address);
++      }
++      return (gen_bankswitch_r() | 0xfe);
++    }
++
+     case 0x10:  /* MEMORY MODE */
+     case 0x12:  /* RESET */
+     case 0x20:  /* MEGA-CD */
+     case 0x40:  /* TMSS */
+-    case 0x41:  /* BOOTROM */
+     case 0x44:  /* RADICA */
+     case 0x50:  /* SVP REGISTERS */
++    {
+       return zbank_unused_r(address);
++    }
+ 
+     default:  /* Invalid address */
++    {
+       return zbank_lockup_r(address);
++    }
+   }
+ }
+ 
+@@ -106,60 +135,71 @@
+   switch ((address >> 8) & 0xff)
+   {
+     case 0x00:  /* I/O chip */
+-      if ((address & 0xe1) == 0x01)
+-        io_write((address >> 1) & 0x0f, data); /* get /LWR only */
+-      else
++    {
++      /* get /LWR only */
++      if ((address & 0xe1) != 0x01)
++      {
+         zbank_unused_w(address, data);
++        return;
++      }
++      io_write((address >> 1) & 0x0f, data);
+       return;
++    }
+ 
+     case 0x11:  /* BUSREQ */
++    {
+       if (address & 1) 
++      {
+         zbank_unused_w(address, data);
+-      else
+-        gen_busreq_w(data & 1, mcycles_z80);
++        return;
++      }
++      gen_zbusreq_w(data & 1, mcycles_z80);
+       return;
++    }
+ 
+     case 0x12:  /* RESET */
++    {
+       if (address & 1)
++      {
+         zbank_unused_w(address, data);
+-      else
+-        gen_reset_w(data & 1, mcycles_z80);
++        return;
++      }
++      gen_zreset_w(data & 1, mcycles_z80);
+       return;
++    }
+ 
+     case 0x30:  /* TIME */
++    {
+       cart.hw.time_w(address, data);
+       return;
++    }
+ 
+-    case 0x41:  /* BOOTROM */
+-      if (address & 1)
++    case 0x41:  /* OS ROM */
++    {
++      if (!(address & 1))
+       {
+-        m68k_memory_map[0].base = (data & 1) ?   cart.base : bios_rom;
+-    
+-        /* autodetect BIOS ROM file */
+-        if (!(config.bios_enabled & 2))
+-        {
+-          config.bios_enabled |= 2;
+-          memcpy(bios_rom, cart.rom, 0x800);
+-          memset(cart.rom, 0xff, cart.romsize);
+-        }
++        zbank_unused_w(address, data);
++        return;
+       }
+-      else
+-      {
+-        zbank_unused_w (address, data);
+-      }
++      gen_bankswitch_w(data & 1);
+       return;
++    }
+ 
+     case 0x10:  /* MEMORY MODE */
+     case 0x20:  /* MEGA-CD */
+     case 0x40:  /* TMSS */
+     case 0x44:  /* RADICA */
+     case 0x50:  /* SVP REGISTERS */
++    {
+       zbank_unused_w(address, data);
+       return;
++    }
+ 
+     default:  /* Invalid address */
++    {
+       zbank_lockup_w(address, data);
+       return;
++    }
+   }
+ }
+ 
+@@ -170,33 +210,49 @@
+   switch (address & 0xfd)
+   {
+     case 0x00:    /* DATA */
++    {
+       return (vdp_data_r() >> 8);
++    }
+       
+     case 0x01:    /* DATA */
++    {
+       return (vdp_data_r() & 0xff);
++    }
+       
+     case 0x04:    /* CTRL */
+-      return (0xfc | ((vdp_ctrl_r(mcycles_z80) >> 8) & 3));
++    {
++      return (((vdp_ctrl_r(mcycles_z80) >> 8) & 3) | 0xfc);
++    }
+ 
+     case 0x05:    /* CTRL */
++    {
+       return (vdp_ctrl_r(mcycles_z80) & 0xff);
++    }
+       
+     case 0x08:    /* HVC */
+     case 0x0c:
++    {
+       return (vdp_hvc_r(mcycles_z80) >> 8);
+-      
++    }
++
+     case 0x09:    /* HVC */
+     case 0x0d:
++    {
+       return (vdp_hvc_r(mcycles_z80) & 0xff);
+-        
++    }
++
+     case 0x18:    /* Unused */
+     case 0x19:
+     case 0x1c:
+     case 0x1d:
++    {
+       return zbank_unused_r(address);
++    }
+ 
+     default:    /* Invalid address */
++    {
+       return zbank_lockup_r(address);
++    }
+   }
+ }
+ 
+@@ -205,31 +261,45 @@
+   switch (address & 0xfc)
+   {
+     case 0x00:  /* Data port */
++    {
+       vdp_data_w(data << 8 | data);
+       return;
++    }
+ 
+     case 0x04:  /* Control port */
++    {
+       vdp_ctrl_w(data << 8 | data);
+       return;
++    }
+ 
+     case 0x10:  /* PSG */
+     case 0x14:
+-      if (address & 1)
+-        psg_write(mcycles_z80, data);
+-      else
++    {
++      if (!(address & 1))
++      {
+         zbank_unused_w(address, data);
++        return;
++      }
++      psg_write(mcycles_z80, data);
+       return;
+-              
++    }
++             
+     case 0x18: /* Unused */
++    {
+       zbank_unused_w(address, data);
+       return;
++    }
+ 
+     case 0x1c:  /* TEST register */
++    {
+       vdp_test_w(data << 8 | data);
+       return;
++    }
+ 
+     default:  /* Invalid address */
++    {
+       zbank_lockup_w(address, data);
+       return;
++    }
+   }
+ }
+Index: source/vdp.c
+===================================================================
+--- source/vdp.c	(revision 459)
++++ source/vdp.c	(revision 460)
+@@ -215,8 +215,8 @@
+   if (config.overscan & 2)
+     bitmap.viewport.x = 12;
+ 
+-  /* reset some registers normally set by BIOS */
+-  if (config.bios_enabled == 1)
++  /* initialize registers if OS ROM is not used */
++  if (config.tmss == 1)
+   {
+     reg_w(0 , 0x04);  /* Palette bit set */
+     reg_w(1 , 0x04);  /* Mode 5 enabled */
+@@ -489,7 +489,7 @@
+   }
+ 
+   /* restricted VDP writes during active display */
+-  if (!(status&8) && (reg[1]&0x40))
++  if (!(status & 8) && (reg[1] & 0x40))
+   {
+     /* update VDP FIFO */
+     fifo_update(mcycles_68k);
+Index: source/genesis.c
+===================================================================
+--- source/genesis.c	(revision 459)
++++ source/genesis.c	(revision 460)
+@@ -23,12 +23,17 @@
+ 
+ #include "shared.h"
+ 
+-uint8 bios_rom[0x10000];  /* OS ROM   */
++uint8 tmss[4];            /* TMSS security register */
++uint8 bios_rom[0x800];    /* OS ROM   */
+ uint8 work_ram[0x10000];  /* 68K RAM  */
+ uint8 zram[0x2000];       /* Z80 RAM  */
++uint32 zbank;             /* Z80 bank window address */
+ uint8 zstate;             /* Z80 bus state (d0 = BUSACK, d1 = /RESET) */
+-uint32 zbank;             /* Z80 bank window address */
+ 
++/* PICO data */
++uint8 pico_current;
++uint8 pico_page[7];
++
+ /*--------------------------------------------------------------------------*/
+ /* Init, reset, shutdown functions                                          */
+ /*--------------------------------------------------------------------------*/
+@@ -68,11 +73,7 @@
+     zbank_memory_map[i].write   = zbank_lockup_w;
+   }
+ 
+-  /* Z80 bus */
+-  m68k_memory_map[0xa0].read8   = z80_read_byte;
+-  m68k_memory_map[0xa0].read16  = z80_read_word;
+-  m68k_memory_map[0xa0].write8  = z80_write_byte;
+-  m68k_memory_map[0xa0].write16 = z80_write_word;
++  /* Z80 bus (bank access) */
+   zbank_memory_map[0xa0].read   = zbank_lockup_r;
+   zbank_memory_map[0xa0].write  = zbank_lockup_w;
+ 
+@@ -84,34 +85,43 @@
+   zbank_memory_map[0xa1].read   = zbank_read_ctrl_io;
+   zbank_memory_map[0xa1].write  = zbank_write_ctrl_io;
+ 
++  /* VDP (initially locked on models with TMSS) */
++  if (!(config.tmss & 1))
++  {
++    for (i=0xc0; i<0xe0; i+=8)
++    {
++      m68k_memory_map[i].read8    = vdp_read_byte;
++      m68k_memory_map[i].read16   = vdp_read_word;
++      m68k_memory_map[i].write8   = vdp_write_byte;
++      m68k_memory_map[i].write16  = vdp_write_word;
++      zbank_memory_map[i].read    = zbank_read_vdp;
++      zbank_memory_map[i].write   = zbank_write_vdp;
++    }
++  }
++
+   /* SEGA PICO */
+   if (system_hw == SYSTEM_PICO)
+   {
+-    m68k_memory_map[0x80].read8    = pico_read_byte;
+-    m68k_memory_map[0x80].read16   = pico_read_word;
+-    m68k_memory_map[0x80].write8   = m68k_unused_8_w;
+-    m68k_memory_map[0x80].write16  = m68k_unused_16_w;
++    m68k_memory_map[0x80].read8   = pico_read_byte;
++    m68k_memory_map[0x80].read16  = pico_read_word;
++    m68k_memory_map[0x80].write8  = m68k_unused_8_w;
++    m68k_memory_map[0x80].write16 = m68k_unused_16_w;
+ 
+     /* there is no I/O area (Notaz) */
+-    m68k_memory_map[0xa0].read8   = m68k_read_bus_8;
+-    m68k_memory_map[0xa0].read16  = m68k_read_bus_16;
+-    m68k_memory_map[0xa0].write8  = m68k_unused_8_w;
+-    m68k_memory_map[0xa0].write16 = m68k_unused_16_w;
+     m68k_memory_map[0xa1].read8   = m68k_read_bus_8;
+     m68k_memory_map[0xa1].read16  = m68k_read_bus_16;
+     m68k_memory_map[0xa1].write8  = m68k_unused_8_w;
+     m68k_memory_map[0xa1].write16 = m68k_unused_16_w;
+-  }
+ 
+-  /* VDP */
+-  for (i=0xc0; i<0xe0; i+=8)
+-  {
+-    m68k_memory_map[i].read8   = vdp_read_byte;
+-    m68k_memory_map[i].read16  = vdp_read_word;
+-    m68k_memory_map[i].write8  = vdp_write_byte;
+-    m68k_memory_map[i].write16 = vdp_write_word;
+-    zbank_memory_map[i].read   = zbank_read_vdp;
+-    zbank_memory_map[i].write  = zbank_write_vdp;
++    /* page registers */
++    pico_current = 0x00;
++    pico_page[0] = 0x00;
++    pico_page[1] = 0x01;
++    pico_page[2] = 0x03;
++    pico_page[3] = 0x07;
++    pico_page[4] = 0x0F;
++    pico_page[5] = 0x1F;
++    pico_page[6] = 0x3F;
+   }
+ }
+ 
+@@ -121,8 +131,9 @@
+   memset (work_ram, 0x00, sizeof (work_ram));
+   memset (zram, 0x00, sizeof (zram));
+ 
+-  /* TMSS BIOS support */
+-  if (config.bios_enabled == 3)
++  /* TMSS + OS ROM support */
++  memset(tmss, 0x00, sizeof(tmss));
++  if (config.tmss == 3)
+     m68k_memory_map[0].base = bios_rom;
+ 
+   /* Reset CPU cycles (check EA logo corruption, no glitches for Skitchin/Budokan on PAL 60hz MD2 with TMSS) */
+@@ -130,6 +141,10 @@
+ 
+   /* Z80 bus is released & Z80 reset is asserted */
+   zstate = 0;
++  m68k_memory_map[0xa0].read8   = m68k_read_bus_8;
++  m68k_memory_map[0xa0].read16  = m68k_read_bus_16;
++  m68k_memory_map[0xa0].write8  = m68k_unused_8_w;
++  m68k_memory_map[0xa0].write16 = m68k_unused_16_w;
+ 
+   /* Assume default bank is $000000-$007FFF */
+   zbank = 0;  
+@@ -170,11 +185,77 @@
+   z80_exit();
+ }
+ 
++
+ /*-----------------------------------------------------------------------
+-  Bus controller chip functions                                            
++  OS ROM / TMSS register control functions                                            
+   -----------------------------------------------------------------------*/
+-void gen_busreq_w(uint32 state, uint32 cycles)
++
++void gen_tmss_w(unsigned int offset, unsigned int data)
+ {
++  /* write TMSS regisiter */
++  WRITE_WORD(tmss, offset, data);
++
++  /* VDP requires "SEGA" value to be written in TMSSS register */
++  int i;
++  if (strncmp((char *)tmss, "SEGA", 4) == 0)
++  {
++    for (i=0xc0; i<0xe0; i+=8)
++    {
++      m68k_memory_map[i].read8    = vdp_read_byte;
++      m68k_memory_map[i].read16   = vdp_read_word;
++      m68k_memory_map[i].write8   = vdp_write_byte;
++      m68k_memory_map[i].write16  = vdp_write_word;
++      zbank_memory_map[i].read    = zbank_read_vdp;
++      zbank_memory_map[i].write   = zbank_write_vdp;
++    }
++  }
++  else
++  {
++    for (i=0xc0; i<0xe0; i+=8)
++    {
++      m68k_memory_map[i].read8    = m68k_lockup_r_8;
++      m68k_memory_map[i].read16   = m68k_lockup_r_16;
++      m68k_memory_map[i].write8   = m68k_lockup_w_8;
++      m68k_memory_map[i].write16  = m68k_lockup_w_16;
++      zbank_memory_map[i].read    = zbank_lockup_r;
++      zbank_memory_map[i].write   = zbank_lockup_w;
++    }
++  }
++}
++
++void gen_bankswitch_w(unsigned int data)
++{
++  /* BIOS has not been loaded yet */
++  if (!(config.tmss & 2))
++  {
++    config.tmss |= 2;
++    memcpy(bios_rom, cart.rom, 0x800);
++    memset(cart.rom, 0xff, cart.romsize);
++  }
++
++  if (data & 1)
++  {
++    /* enable CART */
++    m68k_memory_map[0].base = cart.base;
++  }
++  else
++  {
++    /* enable internal BIOS ROM */
++    m68k_memory_map[0].base = bios_rom;
++  }
++}
++
++unsigned int gen_bankswitch_r(void)
++{
++  return (m68k_memory_map[0].base == cart.base);
++}
++
++
++/*-----------------------------------------------------------------------
++  Z80 Bus controller chip functions                                            
++  -----------------------------------------------------------------------*/
++void gen_zbusreq_w(unsigned int state, unsigned int cycles)
++{
+   if (state)  /* Z80 Bus Requested */
+   {
+     /* if z80 was running, resynchronize with 68k */
+@@ -183,7 +264,16 @@
+ 
+     /* request Z80 bus */
+     zstate |= 2;
+-  } 
++
++    /* enable 68k access */
++    if (zstate & 1)
++    {
++      m68k_memory_map[0xa0].read8   = z80_read_byte;
++      m68k_memory_map[0xa0].read16  = z80_read_word;
++      m68k_memory_map[0xa0].write8  = z80_write_byte;
++      m68k_memory_map[0xa0].write16 = z80_write_word;
++    }
++  }
+   else  /* Z80 Bus Released */
+   {
+     /* if z80 is restarted, resynchronize with 68k */
+@@ -192,10 +282,16 @@
+ 
+     /* release Z80 bus */
+     zstate &= 1;
++
++    /* disable 68k access */
++    m68k_memory_map[0xa0].read8   = m68k_read_bus_8;
++    m68k_memory_map[0xa0].read16  = m68k_read_bus_16;
++    m68k_memory_map[0xa0].write8  = m68k_unused_8_w;
++    m68k_memory_map[0xa0].write16 = m68k_unused_16_w;
+   }
+ }
+ 
+-void gen_reset_w(uint32 state, uint32 cycles)
++void gen_zreset_w(unsigned int state, unsigned int cycles)
+ {
+   /* detect !ZRESET transitions */
+   if (state == (zstate & 1))
+@@ -212,6 +308,15 @@
+ 
+     /* negate Z80 reset */
+     zstate |= 1;
++
++    /* enable 68k access */
++    if (zstate & 1)
++    {
++      m68k_memory_map[0xa0].read8   = z80_read_byte;
++      m68k_memory_map[0xa0].read16  = z80_read_word;
++      m68k_memory_map[0xa0].write8  = z80_write_byte;
++      m68k_memory_map[0xa0].write16 = z80_write_word;
++    }
+   }
+   else  /* !ZRESET active */
+   {
+@@ -221,13 +326,19 @@
+ 
+     /* assert Z80 reset */
+     zstate &= 2;
++
++    /* disable 68k access */
++    m68k_memory_map[0xa0].read8   = m68k_read_bus_8;
++    m68k_memory_map[0xa0].read16  = m68k_read_bus_16;
++    m68k_memory_map[0xa0].write8  = m68k_unused_8_w;
++    m68k_memory_map[0xa0].write16 = m68k_unused_16_w;
+   }
+ 
+   /* reset YM2612 */
+   fm_reset(cycles);
+ }
+ 
+-void gen_bank_w (uint32 state)
++void gen_zbank_w (unsigned int state)
+ {
+   zbank = ((zbank >> 1) | ((state & 1) << 23)) & 0xFF8000;
+ }
+Index: source/genesis.h
+===================================================================
+--- source/genesis.h	(revision 459)
++++ source/genesis.h	(revision 460)
+@@ -25,20 +25,26 @@
+ #define _GENESIS_H_
+ 
+ /* Global variables */
+-extern uint8 bios_rom[0x10000];
++extern uint8 tmss[4];
++extern uint8 bios_rom[0x800];
+ extern uint8 work_ram[0x10000];
+ extern uint8 zram[0x2000];
++extern uint32 zbank;
+ extern uint8 zstate;
+-extern uint32 zbank;
++extern uint8 pico_current;
++extern uint8 pico_page[7];
+ 
+ /* Function prototypes */
+ extern void gen_init(void);
+ extern void gen_hardreset(void);
+ extern void gen_softreset(int state);
+ extern void gen_shutdown(void);
+-extern void gen_busreq_w(uint32 state, uint32 cycles);
+-extern void gen_reset_w(uint32 state, uint32 cycles);
+-extern void gen_bank_w(uint32 state);
++extern void gen_tmss_w(unsigned int offset, unsigned int data);
++extern void gen_bankswitch_w(unsigned int data);
++extern unsigned int gen_bankswitch_r(void);
++extern void gen_zbusreq_w(unsigned int state, unsigned int cycles);
++extern void gen_zreset_w(unsigned int state, unsigned int cycles);
++extern void gen_zbank_w(unsigned int state);
+ extern int z80_irq_callback(int param);
+ 
+ #endif /* _GEN_H_ */
+Index: source/mem68k.c
+===================================================================
+--- source/mem68k.c	(revision 459)
++++ source/mem68k.c	(revision 460)
+@@ -1,6 +1,6 @@
+ /***************************************************************************************
+  *  Genesis Plus
+- *  68k bus arbitration
++ *  68k bus address decoding
+  *
+  *  Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003  Charles Mac Donald (original code)
+  *  Eke-Eke (2007,2008,2009), additional code & fixes for the GCN/Wii port
+@@ -24,13 +24,16 @@
+ #include "m68kcpu.h"
+ #include "shared.h"
+ 
++
++/*--------------------------------------------------------------------------*/
++/* Unused area (return open bus data, i.e prefetched instruction word)      */
++/*--------------------------------------------------------------------------*/
+ uint32 m68k_read_bus_8(uint32 address)
+ {
+ #ifdef LOGERROR
+   error("Unused read8 %08X (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+-  return m68k_read_pcrelative_8(REG_PC | (address&1));
+-
++  return m68k_read_pcrelative_8(REG_PC | (address & 1));
+ }
+ 
+ uint32 m68k_read_bus_16(uint32 address)
+@@ -56,19 +59,19 @@
+ #endif
+ }
+ 
+-/*
+-  Functions to handle memory accesses which cause the Genesis to halt
+-  either temporarily (press RESET button to restart) or unrecoverably
+-  (cycle power to restart).
+-*/
+ 
++/*--------------------------------------------------------------------------*/
++/* Illegal area (cause system to lock-up since !DTACK is not returned)      */
++/*--------------------------------------------------------------------------*/
+ void m68k_lockup_w_8 (uint32 address, uint32 data)
+ {
+ #ifdef LOGERROR
+   error ("Lockup %08X = %02X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+   if (!config.force_dtack)
+-   m68k_pulse_halt ();
++  {
++    m68k_pulse_halt();
++  }
+ }
+ 
+ void m68k_lockup_w_16 (uint32 address, uint32 data)
+@@ -77,7 +80,9 @@
+   error ("Lockup %08X = %04X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+   if (!config.force_dtack)
+-    m68k_pulse_halt ();
++  {
++    m68k_pulse_halt();
++  }
+ }
+ 
+ uint32 m68k_lockup_r_8 (uint32 address)
+@@ -86,8 +91,10 @@
+   error ("Lockup %08X.b (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+   if (!config.force_dtack)
+-    m68k_pulse_halt ();
+-  return -1;
++  {
++    m68k_pulse_halt();
++  }
++  return m68k_read_pcrelative_8(REG_PC | (address & 1));
+ }
+ 
+ uint32 m68k_lockup_r_16 (uint32 address)
+@@ -96,120 +103,128 @@
+   error ("Lockup %08X.w (%08X)\n", address, m68k_get_reg (NULL, M68K_REG_PC));
+ #endif
+   if (!config.force_dtack)
+-    m68k_pulse_halt ();
+-  return -1;
++  {
++    m68k_pulse_halt();
++  }
++  return m68k_read_pcrelative_16(REG_PC);
+ }
+ 
+-/* PICO data */
+-static int pico_page[7] = {0x00,0x01,0x03,0x07,0x0F,0x1F,0x3F};
+ 
+ /*--------------------------------------------------------------------------*/
+-/* 68000 memory handlers                                                    */
++/* cartridge EEPROM                                                         */
+ /*--------------------------------------------------------------------------*/
+-
+-/******* EEPROM  **********************************************/
+-
+ uint32 eeprom_read_byte(uint32 address)
+ {
+-  if (address == eeprom.type.sda_out_adr)
+-    return eeprom_read(address, 0);
+-  return READ_BYTE(cart.rom, address);
++  if (address != eeprom.type.sda_out_adr)
++  {
++    return READ_BYTE(cart.rom, address);
++  }
++  return eeprom_read(address, 0);
+ }
+ 
+ uint32 eeprom_read_word(uint32 address)
+ {
+-  if (address == (eeprom.type.sda_out_adr & 0xfffffe))
+-    return eeprom_read(address, 1);
+-  return *(uint16 *)(cart.rom + address);
++  if (address != (eeprom.type.sda_out_adr & 0xfffffe))
++  {
++    return *(uint16 *)(cart.rom + address);
++  }
++  return eeprom_read(address, 1);
+ }
+ 
+ void eeprom_write_byte(uint32 address, uint32 data)
+ {
+-  if ((address == eeprom.type.sda_in_adr) || (address == eeprom.type.scl_adr))
+-    eeprom_write(address, data, 0);
+-  else
++  if ((address != eeprom.type.sda_in_adr) && (address != eeprom.type.scl_adr))
++  {
+     m68k_unused_8_w(address, data);
++    return;
++  }
++  eeprom_write(address, data, 0);
+ }
+ 
+ void eeprom_write_word(uint32 address, uint32 data)
+ {
+-  if ((address == (eeprom.type.sda_in_adr&0xfffffe)) || (address == (eeprom.type.scl_adr&0xfffffe)))
+-    eeprom_write(address, data, 1);
+-  else
++  if ((address != (eeprom.type.sda_in_adr & 0xfffffe)) && (address != (eeprom.type.scl_adr & 0xfffffe)))
++  {
+     m68k_unused_16_w (address, data);
++    return;
++  }
++  eeprom_write(address, data, 1);
+ }
+ 
+ 
+-/******* Z80  *************************************************/
+-
++/*--------------------------------------------------------------------------*/
++/* Z80 bus (accessed through I/O chip)                                      */
++/*--------------------------------------------------------------------------*/
+ uint32 z80_read_byte(uint32 address)
+ {
+-  /* Z80 bus is available ? */
+-  if (zstate ^ 3)
+-    return m68k_read_bus_8(address);
+-
+   switch ((address >> 13) & 3)
+   {
+     case 2:   /* YM2612 */
++    {
+       return fm_read(mcycles_68k, address & 3);
++    }
+ 
+-    case 3:   /* MISC */
++    case 3:   /* Misc  */
++    {
+       if ((address & 0xff00) == 0x7f00)
+-        return m68k_lockup_r_8(address); /* VDP */
++      {
++        /* VDP (through 68k bus) */
++        return m68k_lockup_r_8(address);
++      }
+       return (m68k_read_bus_8(address) | 0xff);
++    }
+ 
+     default: /* ZRAM */
++    {
+       return zram[address & 0x1fff];
++    }
+   }
+ }
+ 
+ uint32 z80_read_word(uint32 address)
+ {
+-  /* Z80 bus is available ? */
+-  if (zstate ^ 3)
+-    return m68k_read_bus_16(address);
+-
+   switch ((address >> 13) & 3)
+   {
+     case 2:   /* YM2612 */
+     {
+-      int temp = fm_read(mcycles_68k, address & 3);
+-      return (temp << 8 | temp);
++      unsigned int data = fm_read(mcycles_68k, address & 3);
++      return (data << 8 | data);
+     }
+ 
+-    case 3:   /* MISC */
++    case 3:   /* Misc */
++    {
+       if ((address & 0xff00) == 0x7f00)
+-        return m68k_lockup_r_16(address); /* VDP */
++      {
++        /* VDP (through 68k bus) */
++        return m68k_lockup_r_16(address);
++      }
+       return (m68k_read_bus_16(address) | 0xffff);
++    }
+ 
+     default:  /* ZRAM */
+     {
+-      int temp = zram[address & 0x1fff];
+-      return (temp << 8 | temp);
++      unsigned int data = zram[address & 0x1fff];
++      return (data << 8 | data);
+     }
+   }
+ }
+ 
+ void z80_write_byte(uint32 address, uint32 data)
+ {
+-  /* Z80 bus is available ? */
+-  if (zstate ^ 3)
+-  {
+-    m68k_unused_8_w(address, data);
+-    return;
+-  }
+-      
+   switch ((address >> 13) & 3)
+   {
+     case 2: /* YM2612 */
++    {
+       fm_write(mcycles_68k, address & 3, data);
+       return;
+-      
++    }
++
+     case 3:
++    {
+       switch ((address >> 8) & 0x7f)
+       {
+         case 0x60:  /* Bank register */
+-          gen_bank_w(data & 1);
++          gen_zbank_w(data & 1);
+           return;
+ 
+         case 0x7f:  /* VDP */
+@@ -220,86 +235,128 @@
+           m68k_unused_8_w(address, data);
+           return;
+       }
++    }
+       
+     default: /* ZRAM */
++    {
+       zram[address & 0x1fff] = data;
+-      mcycles_68k+=8; /* Z80 bus latency (Pacman 2: New Adventures) */
++      mcycles_68k += 8; /* Z80 bus latency (fixes Pacman 2: New Adventures) */
+       return;
++    }
+   }
+ }
+ 
+ void z80_write_word(uint32 address, uint32 data)
+ {
+-  /* Z80 bus is available ? */
+-  if (zstate ^ 3)
+-  {
+-    m68k_unused_16_w(address, data);
+-    return;
+-  }
+-
+   switch ((address >> 13) & 3)
+   {
+     case 2: /* YM2612 */
+-      fm_write (mcycles_68k, address & 3, data >> 8);
++    {
++      fm_write(mcycles_68k, address & 3, data >> 8);
+       return;
++    }
+ 
+     case 3:
++    {
+       switch ((address >> 8) & 0x7f)
+       {
+         case 0x60:  /* Bank register */
+-          gen_bank_w ((data >> 8) & 1);
++        {
++          gen_zbank_w((data >> 8) & 1);
+           return;
++        }
+ 
+         case 0x7f:  /* VDP */
++        {
+           m68k_lockup_w_16(address, data);
+           return;
+-        
++        }
++
+         default:
++        {
+           m68k_unused_16_w(address, data);
+           return;
++        }
+       }
++    }
+ 
+     default: /* ZRAM */
++    {
+       zram[address & 0x1fff] = data >> 8;
+       return;
++    }
+   }
+ }
+ 
+ 
+-/******* I/O & CTRL ******************************************/
+-
++/*--------------------------------------------------------------------------*/
++/* I/O Control                                                              */
++/*--------------------------------------------------------------------------*/
+ uint32 ctrl_io_read_byte(uint32 address)
+ {
+   switch ((address >> 8) & 0xff)
+   {
+     case 0x00:  /* I/O chip */
++    {
+       if (address & 0xe0)
++      {
+         return m68k_read_bus_8(address);
+-      return (io_read((address >> 1) & 0x0f));
++      }
++      return io_read((address >> 1) & 0x0f);
++    }
+ 
+     case 0x11:  /* BUSACK */
++    {
+       if (address & 1)
++      {
+         return m68k_read_bus_8(address);
++      }
++      unsigned int data = m68k_read_pcrelative_8(REG_PC) & 0xfe;
+       if (zstate ^ 3)
+-        return (m68k_read_pcrelative_8(REG_PC) | 0x01);
+-      return (m68k_read_pcrelative_8(REG_PC) & 0xfe);
++      {
++        return (data | 0x01);
++      }
++      return data;
++    }
+ 
+     case 0x30:  /* TIME */
+-      if (cart.hw.time_r)
+-        return ((address & 1) ? (cart.hw.time_r(address) & 0xff) : (cart.hw.time_r(address) >> 8));
+-      return m68k_read_bus_8(address);
++    {
++      if (!cart.hw.time_r)
++      {
++        return m68k_read_bus_8(address);
++      }
++      unsigned int data = cart.hw.time_r(address);
++      if (address & 1)
++      {
++        return (data & 0xff);
++      }
++      return (data >> 8);
++    }
+ 
++    case 0x41:  /* OS ROM */
++    {
++      if (!(address & 1))
++      {
++        return m68k_read_bus_8(address);
++      }
++      unsigned int data = m68k_read_pcrelative_8(REG_PC) & 0xfe;
++      return (gen_bankswitch_r() | data);
++    }
++
+     case 0x10:  /* MEMORY MODE */
+     case 0x12:  /* RESET */
+     case 0x20:  /* MEGA-CD */
+     case 0x40:  /* TMSS */
+-    case 0x41:  /* BOOTROM */
+     case 0x44:  /* RADICA */
+     case 0x50:  /* SVP REGISTERS */
++    {
+       return m68k_read_bus_8(address);
++    }
+ 
+     default:  /* Invalid address */
++    {
+       return m68k_lockup_r_8(address);
++    }
+   }
+ }
+ 
+@@ -310,45 +367,70 @@
+     case 0x00:  /* I/O chip */
+     {
+       if (address & 0xe0)
+-        return m68k_read_bus_16(address);
+-      int temp = io_read((address >> 1) & 0x0f);
+-      return (temp << 8 | temp);
++      {
++        return m68k_read_bus_16(address); 
++      }
++      unsigned int data = io_read((address >> 1) & 0x0f);
++      return (data << 8 | data);
+     }
+ 
+     case 0x11:  /* BUSACK */
++    {
++      unsigned int data = m68k_read_pcrelative_16(REG_PC) & 0xfeff;
+       if (zstate ^ 3)
+-        return (m68k_read_pcrelative_16(REG_PC) | 0x100);
+-      return (m68k_read_pcrelative_16(REG_PC) & 0xfeff);
++      {
++        return data | 0x0100;
++      }
++      return data;
++    }
+ 
+     case 0x30:  /* TIME */
+-      if (cart.hw.time_r)
+-        return cart.hw.time_r(address);
+-      return m68k_read_bus_16(address);
+-
++    {
++      if (!cart.hw.time_r)
++      {
++        return m68k_read_bus_16(address); 
++      }
++      return cart.hw.time_r(address);
++    }
++      
+     case 0x50:  /* SVP */
+-      if (svp)
++    {
++      switch (address & 0xfe)
+       {
+-        if ((address & 0xfd) == 0)
++        case 0:
++        case 2:
++        {
+           return svp->ssp1601.gr[SSP_XST].h;
+-        if ((address & 0xff) == 4)
++        }
++
++        case 4:
+         {
+           uint32 temp = svp->ssp1601.gr[SSP_PM0].h;
+           svp->ssp1601.gr[SSP_PM0].h &= ~1;
+           return temp;
+         }
++
++        default:
++        {
++          return m68k_read_bus_16(address);
++        }
+       }
+-      return m68k_read_bus_16(address);
++    }
+ 
+     case 0x10:  /* MEMORY MODE */
+     case 0x12:  /* RESET */
+     case 0x20:  /* MEGA-CD */
+     case 0x40:  /* TMSS */
+-    case 0x41:  /* BOOTROM */
++    case 0x41:  /* OS ROM */
+     case 0x44:  /* RADICA */
++    {
+       return m68k_read_bus_16(address);
++    }
+ 
+     default:  /* Invalid address */
++    {
+       return m68k_lockup_r_16(address);
++    }
+   }
+ }
+ 
+@@ -357,60 +439,71 @@
+   switch ((address >> 8) & 0xff)
+   {
+     case 0x00:  /* I/O chip */
+-      if ((address & 0xe1) == 0x01)
+-        io_write((address >> 1) & 0x0f, data); /* get /LWR only */
+-      else
++    {
++      if ((address & 0xe1) != 0x01)
++      {
++        /* get /LWR only */
+         m68k_unused_8_w(address, data);
++        return;
++      }
++      io_write((address >> 1) & 0x0f, data);
+       return;
++    }
+ 
+     case 0x11:  /* BUSREQ */
++    {
+       if (address & 1)
++      {
+         m68k_unused_8_w(address, data);
+-      else
+-        gen_busreq_w(data & 1, mcycles_68k);
++        return;
++      }
++      gen_zbusreq_w(data & 1, mcycles_68k);
+       return;
++    }
+ 
+     case 0x12:  /* RESET */
++    {
+       if (address & 1)
++      {
+         m68k_unused_8_w(address, data);
+-      else
+-        gen_reset_w(data & 1, mcycles_68k);
++        return;
++      }
++      gen_zreset_w(data & 1, mcycles_68k);
+       return;
++    }
+ 
+     case 0x30:  /* TIME */
++    {
+       cart.hw.time_w(address, data);
+       return;
++    }
+ 
+-    case 0x41:  /* BOOTROM */
+-      if (address & 1)
++    case 0x41:  /* OS ROM */
++    {
++      if (!(address & 1))
+       {
+-        m68k_memory_map[0].base = (data & 1) ?  cart.base : bios_rom;
+-
+-        /* autodetect BIOS ROM file */
+-        if (!(config.bios_enabled & 2))
+-        {
+-          config.bios_enabled |= 2;
+-          memcpy(bios_rom, cart.rom, 0x800);
+-          memset(cart.rom, 0xff, cart.romsize);
+-        }
++        m68k_unused_8_w(address, data);
++        return;
+       }
+-      else
+-      {
+-         m68k_unused_8_w (address, data);
+-      }
++      gen_bankswitch_w(data & 1);
+       return;
++    }
+ 
+     case 0x10:  /* MEMORY MODE */
+     case 0x20:  /* MEGA-CD */
+     case 0x40:  /* TMSS */
+     case 0x44:  /* RADICA */
+     case 0x50:  /* SVP REGISTERS */
++    {
+       m68k_unused_8_w(address, data);
+       return;
++    }
+ 
+     default:  /* Invalid address */
++    {
+       m68k_lockup_w_8(address, data);
+       return;
++    }
+   }
+ }
+ 
+@@ -419,107 +512,123 @@
+   switch ((address >> 8) & 0xff)
+   {
+     case 0x00:  /* I/O chip */
++    {
+       if (address & 0xe0)
+-        m68k_unused_16_w (address, data);
+-      else
+-        io_write ((address >> 1) & 0x0f, data & 0xff);
++      {
++        m68k_unused_16_w(address, data);
++        return;
++      }
++      io_write((address >> 1) & 0x0f, data & 0xff);
+       return;
++    }
+ 
+     case 0x11:  /* BUSREQ */
+-      gen_busreq_w ((data >> 8) & 1, mcycles_68k);
++    {
++      gen_zbusreq_w((data >> 8) & 1, mcycles_68k);
+       return;
++    }
+ 
+     case 0x12:  /* RESET */
+-      gen_reset_w ((data >> 8) & 1, mcycles_68k);
++    {
++      gen_zreset_w((data >> 8) & 1, mcycles_68k);
+       return;
++    }
+ 
+-    case 0x50:  /* SVP REGISTERS */
+-      if (svp)
+-      {
+-        if (address & 0xfd)
+-        {
+-          m68k_unused_16_w(address, data);
+-        }
+-        else
+-        {
+-          /* just guessing here (Notaz) */
+-          svp->ssp1601.gr[SSP_XST].h = data;
+-          svp->ssp1601.gr[SSP_PM0].h |= 2;
+-          svp->ssp1601.emu_status &= ~SSP_WAIT_PM0;
+-        }
+-      }
+-      else
+-      {
+-        m68k_unused_16_w (address, data);
+-      }
+-      return;
+-
+     case 0x30:  /* TIME */
++    {
+       cart.hw.time_w(address & 0xfe, data >> 8);
+       cart.hw.time_w(address, data & 0xff);
+       return;
+-          
+-    case 0x41:  /* BOOTROM */
+-                
+-      m68k_memory_map[0].base = (data & 1) ?   cart.base : bios_rom;
++    }
+ 
+-      /* autodetect BIOS ROM file */
+-      if (!(config.bios_enabled & 2))
++    case 0x40:  /* TMSS */
++    {
++      gen_tmss_w(address & 3, data);
++      break;
++    }
++
++    case 0x50:  /* SVP REGISTERS */
++    {
++      if (address & 0xfd)
+       {
+-        config.bios_enabled |= 2;
+-        memcpy(bios_rom, cart.rom, 0x800);
+-        memset(cart.rom, 0xff, cart.romsize);
++        m68k_unused_16_w(address, data);
++        return;
+       }
++      svp->ssp1601.gr[SSP_XST].h = data;
++      svp->ssp1601.gr[SSP_PM0].h |= 2;
++      svp->ssp1601.emu_status &= ~SSP_WAIT_PM0;
+       return;
++    }
+ 
+     case 0x10:  /* MEMORY MODE */
+     case 0x20:  /* MEGA-CD */
+-    case 0x40:  /* TMSS */
++    case 0x41:  /* OS ROM */
+     case 0x44:  /* RADICA */
++    {
+       m68k_unused_16_w (address, data);
+       return;
++    }
+             
+-    default:  /* Unused */
++    default:  /* Invalid address */
++    {
+       m68k_lockup_w_16 (address, data);
+       return;
++    }
+   }
+ }
+ 
+ 
+-/******* VDP *************************************************/
+-
++/*--------------------------------------------------------------------------*/
++/* VDP                                                                      */
++/*--------------------------------------------------------------------------*/
+ uint32 vdp_read_byte(uint32 address)
+ {
+   switch (address & 0xfd)
+   {
+     case 0x00:  /* DATA */
++    {
+       return (vdp_data_r() >> 8);
++    }
+ 
+     case 0x01:  /* DATA */
++    {
+       return (vdp_data_r() & 0xff);
++    }
+ 
+     case 0x04:  /* CTRL */
+-      return ((m68k_read_pcrelative_8(REG_PC) & 0xfc) | ((vdp_ctrl_r(mcycles_68k) >> 8) & 3));
++    {
++      return (((vdp_ctrl_r(mcycles_68k) >> 8) & 3) | (m68k_read_pcrelative_8(REG_PC) & 0xfc));
++    }
+ 
+     case 0x05:  /* CTRL */
++    {
+       return (vdp_ctrl_r(mcycles_68k) & 0xff);
++    }
+ 
+     case 0x08:  /* HVC */
+     case 0x0c:
++    {
+       return (vdp_hvc_r(mcycles_68k) >> 8);
++    }
+ 
+     case 0x09:  /* HVC */
+     case 0x0d:
++    {
+       return (vdp_hvc_r(mcycles_68k) & 0xff);
++    }
+ 
+     case 0x18:  /* Unused */
+     case 0x19:
+     case 0x1c:
+     case 0x1d:
++    {
+       return m68k_read_bus_8(address);
++    }
+ 
+     default:    /* Invalid address */
++    {
+       return m68k_lockup_r_8(address);
++    }
+   }
+ }
+ 
+@@ -528,21 +637,31 @@
+   switch (address & 0xfc)
+   {
+     case 0x00:  /* DATA */
++    {
+       return vdp_data_r();
++    }
+ 
+     case 0x04:  /* CTRL */
+-      return ((vdp_ctrl_r(mcycles_68k) & 0x3FF) | (m68k_read_pcrelative_16(REG_PC) & 0xFC00));
++    {
++     return ((vdp_ctrl_r(mcycles_68k) & 0x3FF) | (m68k_read_pcrelative_16(REG_PC) & 0xFC00));
++    }
+ 
+     case 0x08:  /* HVC */
+     case 0x0c:
++    {
+       return vdp_hvc_r(mcycles_68k);
++    }
+ 
+     case 0x18:  /* Unused */
+     case 0x1c:
++    {
+       return m68k_read_bus_16(address);
++    }
+ 
+     default:    /* Invalid address */
++    {
+       return m68k_lockup_r_16(address);
++    }
+   }
+ }
+ 
+@@ -551,32 +670,46 @@
+   switch (address & 0xfc)
+   {
+     case 0x00:  /* Data port */
++    {
+       vdp_data_w(data << 8 | data);
+       return;
++    }
+ 
+     case 0x04:  /* Control port */
++    {
+       vdp_ctrl_w(data << 8 | data);
+       return;
++    }
+ 
+     case 0x10:  /* PSG */
+     case 0x14:
+-      if (address & 1)
+-        psg_write(mcycles_68k, data);
+-      else
++    {
++      if (!(address & 1))
++      {
+         m68k_unused_8_w(address, data);
++        return;
++      }
++      psg_write(mcycles_68k, data);
+       return;
++    }
+ 
+     case 0x18: /* Unused */
++    {
+       m68k_unused_8_w(address, data);
+       return;
++    }
+ 
+     case 0x1c:  /* TEST register */
++    {
+       vdp_test_w(data << 8 | data);
+       return;
++    }
+ 
+     default:  /* Invalid address */
++    {
+       m68k_lockup_w_8(address, data);
+       return;
++    }
+   }
+ }
+ 
+@@ -585,29 +718,41 @@
+   switch (address & 0xfc)
+   {
+     case 0x00:  /* DATA */
++    {
+       vdp_data_w(data);
+       return;
++    }
+ 
+     case 0x04:  /* CTRL */
++    {
+       vdp_ctrl_w(data);
+       return;
++    }
+ 
+     case 0x10:  /* PSG */
+     case 0x14:
++    {
+       psg_write(mcycles_68k, data & 0xff);
+       return;
++    }
+ 
+     case 0x18:  /* Unused */
++    {
+       m68k_unused_16_w(address, data);
+       return;
++    }
+     
+     case 0x1c:  /* Test register */
++    {
+       vdp_test_w(data);
+       return;
++    }
+ 
+     default:  /* Invalid address */
++    {
+       m68k_lockup_w_16 (address, data);
+       return;
++    }
+   }
+ }
+ 
+@@ -620,7 +765,9 @@
+   switch (address & 0xff)
+   {
+     case 0x01:  /* VERSION register */
+-      return (0x40);
++    {
++      return 0x40;
++    }
+ 
+     case 0x03:  /* IO register */
+     {
+@@ -637,32 +784,43 @@
+     }
+ 
+     case 0x05:  /* MSB PEN X coordinate */
++    {
+       return (input.analog[0][0] >> 8);
++    }
+ 
+     case 0x07:  /* LSB PEN X coordinate */
++    {
+       return (input.analog[0][0] & 0xff);
++    }
+ 
+     case 0x09:  /* MSB PEN Y coordinate */
++    {
+       return (input.analog[0][1] >> 8);
++    }
+ 
+     case 0x0b:  /* LSB PEN Y coordinate */
++    {
+       return (input.analog[0][1] & 0xff);
++    }
+ 
+-    case 0x0d:  /* PAGE register */
+-      return pico_page[pico_current]; /* TODO */
++    case 0x0d:  /* PAGE register (TODO) */
++    {
++      return pico_page[pico_current];
++    }
+ 
+-    case 0x10:  /* PCM registers */
+-    case 0x11:
+-    case 0x12:
+-    case 0x13:
+-      return 0x80; /* TODO */
++    case 0x10:  /* PCM registers (TODO) */
++    {
++      return 0x80;
++    }
+ 
+     default:
++    {
+       return m68k_read_bus_8(address);
++    }
+   }
+ }
+ 
+ uint32 pico_read_word(uint32 address)
+ {
+-  return ((m68k_read_bus_8(address) << 8) | pico_read_byte(address | 1));
++  return (pico_read_byte(address | 1) | (m68k_read_bus_8(address) << 8));
+ }
+Index: source/mem68k.h
+===================================================================
+--- source/mem68k.h	(revision 459)
++++ source/mem68k.h	(revision 460)
+@@ -64,6 +64,4 @@
+ extern uint32 pico_read_byte(uint32 address);
+ extern uint32 pico_read_word(uint32 address);
+ 
+-uint32 pico_current;
+-
+ #endif /* _MEM68K_H_ */
+Index: source/render.c
+===================================================================
+--- source/render.c	(revision 459)
++++ source/render.c	(revision 460)
+@@ -926,7 +926,6 @@
+ /*--------------------------------------------------------------------------*/
+ /* Layers render functions                                                  */
+ /*--------------------------------------------------------------------------*/
+-
+ static void render_bg(int line, int width)
+ {
+   uint32 column, atex, atbuf, *src, *dst;
+@@ -1723,9 +1722,8 @@
+ 
+ void render_line(int line)
+ {
+-  /* display OFF */
+-  if (reg[0] & 0x01)
+-    return;
++  /* display disabled */
++  if (reg[0] & 0x01) return;
+ 
+   uint8 *lb     = tmp_buf;
+   int width     = bitmap.viewport.w;
+Index: source/memz80.c
+===================================================================
+--- source/memz80.c	(revision 459)
++++ source/memz80.c	(revision 460)
+@@ -1,6 +1,6 @@
+ /***************************************************************************************
+  *  Genesis Plus
+- *  Z80 bus arbitration (Genesis mode)
++ *  Z80 bus address decoding (Genesis mode)
+  *
+  *  Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003  Charles Mac Donald (original code)
+  *  Eke-Eke (2007,2008,2009), additional code & fixes for the GCN/Wii port
+@@ -66,78 +66,6 @@
+   return 0xff;
+ }
+ /*
+-    VDP access
+-*/
+-static inline unsigned int z80_vdp_r(unsigned int address)
+-{
+-  switch (address & 0xfd)
+-  {
+-    case 0x00:  /* DATA */
+-      return (vdp_data_r() >> 8);
+-
+-    case 0x01:  /* DATA */
+-      return (vdp_data_r() & 0xff);
+-
+-    case 0x04:  /* CTRL */
+-      return (0xfc | (vdp_ctrl_r(mcycles_z80) >> 8));
+-
+-    case 0x05:  /* CTRL */
+-      return (vdp_ctrl_r(mcycles_z80) & 0xff);
+-
+-    case 0x08:  /* HVC */
+-    case 0x0c:
+-      return (vdp_hvc_r(mcycles_z80) >> 8);
+-
+-    case 0x09:  /* HVC */
+-    case 0x0d:
+-      return (vdp_hvc_r(mcycles_z80) & 0xff);
+-
+-    case 0x18: /* Unused */
+-    case 0x19:
+-    case 0x1c:
+-    case 0x1d:
+-      return z80_unused_r(address);
+-
+-    default:    /* Invalid address */
+-      return z80_lockup_r(address);
+-  }
+-}
+-
+-static inline void z80_vdp_w(unsigned int address, unsigned int data)
+-{
+-  switch (address & 0xfc)
+-  {
+-    case 0x00:  /* Data port */
+-      vdp_data_w(data << 8 | data);
+-      return;
+-
+-    case 0x04:  /* Control port */
+-      vdp_ctrl_w(data << 8 | data);
+-      return;
+-
+-    case 0x10:  /* PSG */
+-    case 0x14:
+-      if (address & 1)
+-        psg_write(mcycles_z80, data);
+-      else
+-        z80_unused_w(address, data);
+-      return;
+-
+-    case 0x18: /* Unused */
+-      z80_unused_w(address, data);
+-      return;
+-
+-    case 0x1c: /* Test register */
+-      vdp_test_w(data << 8 | data);
+-      return;
+-
+-    default:  /* Invalid address */
+-      z80_lockup_w(address, data);
+-      return;
+-  }
+-}
+-
+-/*
+     Z80 memory handlers
+ */
+ unsigned int cpu_readmem16(unsigned int address)
+@@ -146,23 +74,33 @@
+   {
+     case 0: /* Work RAM */
+     case 1:
++    {
+       return zram[address & 0x1fff];
++    }
+ 
+     case 2: /* YM2612 */
++    {
+       return fm_read(mcycles_68k, address & 3);
++    }
+ 
+     case 3: /* VDP */
+-      if ((address >> 8) == 0x7f)
+-        return z80_vdp_r (address);
+-      return z80_unused_r(address);
+-
++    {
++      if ((address >> 8) != 0x7f)
++      {
++        return z80_unused_r(address);
++      }
++      return (*zbank_memory_map[0xc0].read)(address);
++    }
++      
+     default: /* V-bus bank */
+     {
+       address = zbank | (address & 0x7fff);
+-      int slot = address >> 16;
++      unsigned int slot = address >> 16;
+       if (zbank_memory_map[slot].read)
++      {
+         return (*zbank_memory_map[slot].read)(address);
+-      return READ_BYTE(m68k_memory_map[slot].base, address&0xffff);
++      }
++      return READ_BYTE(m68k_memory_map[slot].base, address & 0xffff);
+     }
+   }
+ }
+@@ -174,38 +112,51 @@
+   {
+     case 0: /* Work RAM */
+     case 1: 
++    {
+       zram[address & 0x1fff] = data;
+       return;
++    }
+ 
+     case 2: /* YM2612 */
++    {
+       fm_write(mcycles_z80, address & 3, data);
+       return;
++    }
+ 
+     case 3: /* Bank register and VDP */
++    {
+       switch(address >> 8)
+       {
+         case 0x60:
+-          gen_bank_w(data & 1);
++        {
++          gen_zbank_w(data & 1);
+           return;
++        }
+ 
+         case 0x7f:
+-          z80_vdp_w(address, data);
++        {
++          (*zbank_memory_map[0xc0].write)(address, data);
+           return;
++        }
+ 
+         default:
++        {
+           z80_unused_w(address, data);
+           return;
++        }
+       }
+-      return;
++    }
+ 
+     default: /* V-bus bank */
+     {
+       address = zbank | (address & 0x7fff);
+-      int slot = address >> 16;
++      unsigned int slot = address >> 16;
+       if (zbank_memory_map[slot].write)
++      {
+         (*zbank_memory_map[slot].write)(address, data);
+-      else
+-        WRITE_BYTE(m68k_memory_map[slot].base, address&0xffff, data);
++        return;
++      }
++      WRITE_BYTE(m68k_memory_map[slot].base, address & 0xffff, data);
+       return;
+     }
+   }
+@@ -223,7 +174,7 @@
+ #if LOGERROR
+   error("Z80 read port %04X\n", port);
+ #endif
+-  return 0xFF;
++  return 0xff;
+ }
+ 
+ void cpu_writeport16(unsigned int port, unsigned int data)
+Index: source/unused/win/config.c
+===================================================================
+--- source/unused/win/config.c	(revision 459)
++++ source/unused/win/config.c	(revision 460)
+@@ -27,7 +27,7 @@
+   config.region_detect  = 0;
+   config.force_dtack    = 0;
+   config.addr_error     = 1;
+-  config.bios_enabled   = 0;
++  config.tmss           = 0;
+   config.lock_on        = 0;
+   config.romtype        = 0;
+ 
+@@ -42,6 +42,7 @@
+   config.gun_cursor[1]  = 1;
+   config.invert_mouse   = 0;
+   for (i=0;i<MAX_INPUTS;i++)
++  {
+     config.input[i].padtype = DEVICE_3BUTTON;
++  }
+ }
+-
+Index: source/unused/win/config.h
+===================================================================
+--- source/unused/win/config.h	(revision 459)
++++ source/unused/win/config.h	(revision 460)
+@@ -9,35 +9,36 @@
+ typedef struct 
+ {
+   uint8 padtype;
+-} t_input_c;
++} t_input_config;
+ 
+ typedef struct 
+ {
+   uint8 hq_fm;
++  uint8 filter;
+   uint8 psgBoostNoise;
+-  int32 psg_preamp;
+-  int32 fm_preamp;
+-  uint8 filter;
+-  uint16 low_freq;
+-  uint16 high_freq;
+-  uint8 lp_range;
+-  float lg;
+-  float mg;
+-  float hg;
++  uint8 dac_bits;
++  int16 psg_preamp;
++  int16 fm_preamp;
++  int16 lp_range;
++  int16 low_freq;
++  int16 high_freq;
++  int16 lg;
++  int16 mg;
++  int16 hg;
+   float rolloff;
+-  uint8 dac_bits;
+   uint8 region_detect;
+   uint8 force_dtack;
+   uint8 addr_error;
+-  uint8 bios_enabled;
++  uint8 tmss;
+   uint8 lock_on;
++  uint8 hot_swap;
+   uint8 romtype;
++  uint8 invert_mouse;
++  uint8 gun_cursor[2];
+   uint8 overscan;
++  uint8 ntsc;
+   uint8 render;
+-  uint8 ntsc;
+-  t_input_c input[MAX_INPUTS];
+-  uint8 gun_cursor[2];
+-  uint8 invert_mouse;
++  t_input_config input[MAX_INPUTS];
+ } t_config;
+ 
+ /* Global variables */
+Index: source/macros.h
+===================================================================
+--- source/macros.h	(revision 459)
++++ source/macros.h	(revision 460)
+@@ -10,7 +10,7 @@
+ #define READ_WORD_LONG(BASE, ADDR) (((BASE)[(ADDR)+1]<<24) |      \
+                                     ((BASE)[(ADDR)]<<16) |  \
+                                     ((BASE)[(ADDR)+3]<<8) |   \
+-                                    (BASE)[(ADDR)+1])
++                                    (BASE)[(ADDR)+2])
+ 
+ #define WRITE_BYTE(BASE, ADDR, VAL) (BASE)[(ADDR)^1] = (VAL)&0xff
+ 
+@@ -25,8 +25,8 @@
+ #else
+ 
+ #define READ_BYTE(BASE, ADDR) (BASE)[ADDR]
+-#define READ_WORD(BASE, ADDR) *(uint16 *)((BASE) + (ADDR));
+-#define READ_WORD_LONG(BASE, ADDR) *(uint32 *)((BASE) + (ADDR));
++#define READ_WORD(BASE, ADDR) *(uint16 *)((BASE) + (ADDR))
++#define READ_WORD_LONG(BASE, ADDR) *(uint32 *)((BASE) + (ADDR))
+ #define WRITE_BYTE(BASE, ADDR, VAL) (BASE)[ADDR] = VAL & 0xff
+ #define WRITE_WORD(BASE, ADDR, VAL) *(uint16 *)((BASE) + (ADDR)) = VAL & 0xffff
+ #define WRITE_WORD_LONG(BASE, ADDR, VAL) *(uint32 *)((BASE) + (ADDR)) = VAL & 0xffffffff
+Index: source/gx/gui/menu.c
+===================================================================
+--- source/gx/gui/menu.c	(revision 459)
++++ source/gx/gui/menu.c	(revision 460)
+@@ -1009,7 +1009,7 @@
+ 
+   sprintf (items[1].text, "System Lockups: %s", config.force_dtack ? "OFF" : "ON");
+   sprintf (items[2].text, "68k Address Error: %s", config.addr_error ? "ON" : "OFF");
+-  sprintf (items[3].text, "System BIOS: %s", (config.bios_enabled & 1) ? "ON":"OFF");
++  sprintf (items[3].text, "System TMSS: %s", (config.tmss & 1) ? "ON":"OFF");
+ 
+   if (config.lock_on == TYPE_GG)
+     sprintf (items[4].text, "Lock-On: GAME GENIE");
+@@ -1106,8 +1106,8 @@
+ 
+ 
+       case 3:  /*** BIOS support ***/
+-        config.bios_enabled ^= 1;
+-        sprintf (items[3].text, "System BIOS: %s", (config.bios_enabled & 1) ? "ON":"OFF");
++        config.tmss ^= 1;
++        sprintf (items[3].text, "System TMSS: %s", (config.tmss & 1) ? "ON":"OFF");
+         if (cart.romsize) 
+         {
+           system_init();
+Index: source/gx/config.c
+===================================================================
+--- source/gx/config.c	(revision 459)
++++ source/gx/config.c	(revision 460)
+@@ -85,7 +85,7 @@
+   config.region_detect  = 0;
+   config.force_dtack    = 0;
+   config.addr_error     = 1;
+-  config.bios_enabled   = 0;
++  config.tmss           = 0;
+   config.lock_on        = 0;
+   config.romtype        = 0;
+   config.hot_swap       = 0;
+Index: source/gx/config.h
+===================================================================
+--- source/gx/config.h	(revision 459)
++++ source/gx/config.h	(revision 460)
+@@ -47,7 +47,7 @@
+   uint8 region_detect;
+   uint8 force_dtack;
+   uint8 addr_error;
+-  uint8 bios_enabled;
++  uint8 tmss;
+   uint8 lock_on;
+   uint8 hot_swap;
+   uint8 romtype;
+Index: source/gx/main.c
+===================================================================
+--- source/gx/main.c	(revision 459)
++++ source/gx/main.c	(revision 460)
+@@ -104,8 +104,8 @@
+  ***************************************************************************/
+ static void load_bios(void)
+ {
+-  /* reset BIOS found flag */
+-  config.bios_enabled &= ~2;
++  /* reset BIOS flag */
++  config.tmss &= ~2;
+ 
+   /* open BIOS file */
+   FILE *fp = fopen(OS_ROM, "rb");
+@@ -116,7 +116,7 @@
+   fclose(fp);
+ 
+   /* update BIOS flags */
+-  config.bios_enabled |= 2;
++  config.tmss |= 2;
+ }
+ 
+ static void init_machine(void)
