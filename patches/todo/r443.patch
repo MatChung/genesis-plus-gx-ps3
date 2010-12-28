@@ -1,62 +1,7 @@
-Index: HISTORY.txt
+Index: src/genplusgx/loadrom.h
 ===================================================================
---- HISTORY.txt	(revision 442)
-+++ HISTORY.txt	(revision 443)
-@@ -14,7 +14,7 @@
- * fixed YM2612 context saving/loading.
- * fixed YM2612 state on reset.
- * removed outdated & less accurate Gens YM2612 core
--* added preliminar emulation of YM2612 DAC original resolution (configurable).
-+* added configurable YM2612 DAC resolution emulation.
- * added configurable & faster FIR resampler (thanks to Blargg & AamirM), dropped libsamplerate support.
- * added configurable Low-Pass filtering
- * added configurable 3-Band Equalizer (thanks to Neil C).
-@@ -25,7 +25,9 @@
- ---------------
- * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
- * added support for 2-Cell vertical scrolling in Interlaced 2 mode
-+* fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
- * fixed VBLANK transition line checks
-+* improved VDP FIFO timings accuracy: fixes Sol Deace intro
- * improved sprite masking accuracy (thanks to Nemesis for his sprite test program)
- * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
- * improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
-@@ -48,9 +50,9 @@
- * added Action Replay hardware emulation (Action replay ROM is now fully supported).
- * added S&K "Lock-On" hardware emulation (you can "lock" any games to Sonic & Knuckles).
- * added Cartridge "hot swap" feature.
--* fixed Backup Memory support in some games that were actually using serial EEPROM.
-+* added EEPROM support in some games requiring it.
- * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
--* fixed lightgun auto detection: fixes cursor position in Lethal Enforcers II.
-+* fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
- * lots of code cleanup, bugfixes & optimization.
- 
- 
-@@ -63,11 +65,18 @@
- * improved reset button behavior, now works more like the real Genesis reset button.
- * improved lightgun cursors layout.
- * fixed stability issues and memory leaks.
--* compiled with devkitPPC r19 & libOGC 1.8.1 (SDHC support, new DVDX, etc)
- 
-+[Wii only]
-+---------------
-+* added USB2 support through Hermes cIOS/mload (cIOS 202 is required)
-+* added Video Hardware Gamma control
-+* added Video Hardware "Trap Filter" control
-+* improved Mouse emulation through the Wiimote
-+* compiled with devkitPPC r21 & libOGC 1.8.3 (SDHC support, DVDX v2 support)
- 
- 
- 
-+
- ---------------------------------------------------------------------------------------------------------
- Genesis Plus GX 1.3.1 (20/12/2008) (Eke-Eke)
- ---------------------------------------------------------------------------------------------------------
-Index: source/loadrom.h
-===================================================================
---- source/loadrom.h	(revision 442)
-+++ source/loadrom.h	(revision 443)
+--- src/genplusgx/loadrom.h	(revision 442)
++++ src/genplusgx/loadrom.h	(revision 443)
 @@ -64,6 +64,7 @@
  extern PERIPHERALINFO peripheralinfo[14];
  extern uint16 realchecksum;
@@ -65,10 +10,10 @@ Index: source/loadrom.h
  
  /* Function prototypes */
  extern int load_rom(char *filename);
-Index: source/cart_hw/sram.c
+Index: src/genplusgx/cart_hw/sram.c
 ===================================================================
---- source/cart_hw/sram.c	(revision 442)
-+++ source/cart_hw/sram.c	(revision 443)
+--- src/genplusgx/cart_hw/sram.c	(revision 442)
++++ src/genplusgx/cart_hw/sram.c	(revision 443)
 @@ -43,7 +43,7 @@
  {
    memset (&sram, 0, sizeof (T_SRAM));
@@ -78,10 +23,10 @@ Index: source/cart_hw/sram.c
  
    if ((READ_BYTE(cart.rom,0x1b0) == 0x52) && (READ_BYTE(cart.rom,0x1b1) == 0x41))
    {
-Index: source/loadrom.c
+Index: src/genplusgx/loadrom.c
 ===================================================================
---- source/loadrom.c	(revision 442)
-+++ source/loadrom.c	(revision 443)
+--- src/genplusgx/loadrom.c	(revision 442)
++++ src/genplusgx/loadrom.c	(revision 443)
 @@ -60,7 +60,9 @@
  uint16 peripherals;
  uint16 realchecksum;
@@ -92,10 +37,10 @@ Index: source/loadrom.c
  /***************************************************************************
    * Genesis ROM Manufacturers
    *
-Index: source/gx/gui/ggentry.c
+Index: src/genplusgx/gx/gui/ggentry.c
 ===================================================================
---- source/gx/gui/ggentry.c	(revision 442)
-+++ source/gx/gui/ggentry.c	(revision 443)
+--- src/genplusgx/gx/gui/ggentry.c	(revision 442)
++++ src/genplusgx/gx/gui/ggentry.c	(revision 443)
 @@ -28,8 +28,6 @@
  
  #define MAXCODES 8
@@ -122,10 +67,10 @@ Index: source/gx/gui/ggentry.c
    GGSelectLine ();
  
    /* Apply Game Genie patches */
-Index: source/gx/gui/filesel.c
+Index: src/genplusgx/gx/gui/filesel.c
 ===================================================================
---- source/gx/gui/filesel.c	(revision 442)
-+++ source/gx/gui/filesel.c	(revision 443)
+--- src/genplusgx/gx/gui/filesel.c	(revision 442)
++++ src/genplusgx/gx/gui/filesel.c	(revision 443)
 @@ -23,11 +23,13 @@
   ********************************************************************************/
  
@@ -500,10 +445,10 @@ Index: source/gx/gui/filesel.c
                return size;
              }
  
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 442)
-+++ source/gx/gui/menu.c	(revision 443)
+--- src/genplusgx/gx/gui/menu.c	(revision 442)
++++ src/genplusgx/gx/gui/menu.c	(revision 443)
 @@ -22,16 +22,24 @@
   ***************************************************************************/
  
@@ -1646,10 +1591,10 @@ Index: source/gx/gui/menu.c
          quit = 1;
          break;
  
-Index: source/gx/gui/gui.c
+Index: src/genplusgx/gx/gui/gui.c
 ===================================================================
---- source/gx/gui/gui.c	(revision 442)
-+++ source/gx/gui/gui.c	(revision 443)
+--- src/genplusgx/gx/gui/gui.c	(revision 442)
++++ src/genplusgx/gx/gui/gui.c	(revision 443)
 @@ -219,36 +219,45 @@
  
      if (button->state & BUTTON_VISIBLE)
@@ -2299,10 +2244,10 @@ Index: source/gx/gui/gui.c
    }
  
    return 1;
-Index: source/gx/gui/legal.c
+Index: src/genplusgx/gx/gui/legal.c
 ===================================================================
---- source/gx/gui/legal.c	(revision 442)
-+++ source/gx/gui/legal.c	(revision 443)
+--- src/genplusgx/gx/gui/legal.c	(revision 442)
++++ src/genplusgx/gx/gui/legal.c	(revision 443)
 @@ -24,6 +24,7 @@
  
  #include "shared.h"
@@ -2311,10 +2256,10 @@ Index: source/gx/gui/legal.c
  #include "gui.h"
  
  /* 
-Index: source/gx/gui/font.c
+Index: src/genplusgx/gx/gui/font.c
 ===================================================================
---- source/gx/gui/font.c	(revision 442)
-+++ source/gx/gui/font.c	(revision 443)
+--- src/genplusgx/gx/gui/font.c	(revision 442)
++++ src/genplusgx/gx/gui/font.c	(revision 443)
 @@ -24,7 +24,7 @@
  
  #include "shared.h"
@@ -2324,10 +2269,10 @@ Index: source/gx/gui/font.c
  
  #define _SHIFTR(v, s, w)	\
      ((u32)(((u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
-Index: source/gx/gui/menu.h
+Index: src/genplusgx/gx/gui/menu.h
 ===================================================================
---- source/gx/gui/menu.h	(revision 0)
-+++ source/gx/gui/menu.h	(revision 443)
+--- src/genplusgx/gx/gui/menu.h	(revision 0)
++++ src/genplusgx/gx/gui/menu.h	(revision 443)
 @@ -0,0 +1,110 @@
 +/****************************************************************************
 + *  menu.c
@@ -2439,10 +2384,10 @@ Index: source/gx/gui/menu.h
 +
 +#endif
 +
-Index: source/gx/gui/gui.h
+Index: src/genplusgx/gx/gui/gui.h
 ===================================================================
---- source/gx/gui/gui.h	(revision 442)
-+++ source/gx/gui/gui.h	(revision 443)
+--- src/genplusgx/gx/gui/gui.h	(revision 442)
++++ src/genplusgx/gx/gui/gui.h	(revision 443)
 @@ -33,7 +33,8 @@
  /*****************************************************************************/
  #define BUTTON_VISIBLE       0x01
@@ -2589,10 +2534,10 @@ Index: source/gx/gui/gui.h
  extern u8 SILENT;
  
  extern void GUI_InitMenu(gui_menu *menu);
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 442)
-+++ source/gx/gx_video.c	(revision 443)
+--- src/genplusgx/gx/gx_video.c	(revision 442)
++++ src/genplusgx/gx/gx_video.c	(revision 443)
 @@ -826,7 +826,6 @@
  void gxCopyScreenshot(gx_texture *texture)
  {
@@ -2601,10 +2546,10 @@ Index: source/gx/gx_video.c
    GXTexObj texobj;
    GX_InitTexObj(&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    GX_LoadTexObj(&texobj, GX_TEXMAP0);
-Index: source/gx/config.c
+Index: src/genplusgx/gx/config.c
 ===================================================================
---- source/gx/config.c	(revision 442)
-+++ source/gx/config.c	(revision 443)
+--- src/genplusgx/gx/config.c	(revision 442)
++++ src/genplusgx/gx/config.c	(revision 443)
 @@ -79,7 +79,7 @@
    config.mg             = 1.0;
    config.hg             = 1.0;
@@ -2630,10 +2575,10 @@ Index: source/gx/config.c
    config.bg_color     = 0;
    config.bg_overlay   = 0;
    config.screen_w     = 658;
-Index: source/gx/config.h
+Index: src/genplusgx/gx/config.h
 ===================================================================
---- source/gx/config.h	(revision 442)
-+++ source/gx/config.h	(revision 443)
+--- src/genplusgx/gx/config.h	(revision 442)
++++ src/genplusgx/gx/config.h	(revision 443)
 @@ -70,8 +70,9 @@
    uint16 pad_keymap[4][MAX_KEYS];
    uint32 wpad_keymap[4*3][MAX_KEYS];
@@ -2646,42 +2591,42 @@ Index: source/gx/config.h
    int8 bg_color;
    int8 bg_overlay;
    int16 screen_w;
-Index: source/gx/images/Overlay_item.png
+Index: src/genplusgx/gx/images/Overlay_item.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
-Index: source/gx/images/Progress_bar.png
+Index: src/genplusgx/gx/images/Progress_bar.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
-Index: source/gx/images/Overlay_item_over.png
+Index: src/genplusgx/gx/images/Overlay_item_over.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
-Index: source/gx/images/Button_save.png
+Index: src/genplusgx/gx/images/Button_save.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
 
-Property changes on: source/gx/images/Button_save.png
+Property changes on: src/genplusgx/gx/images/Button_save.png
 ___________________________________________________________________
 Added: svn:mime-type
    + application/octet-stream
 
-Index: source/gx/images/Button_save_over.png
+Index: src/genplusgx/gx/images/Button_save_over.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
 
-Property changes on: source/gx/images/Button_save_over.png
+Property changes on: src/genplusgx/gx/images/Button_save_over.png
 ___________________________________________________________________
 Added: svn:mime-type
    + application/octet-stream
 
-Index: source/gx/main.c
+Index: src/genplusgx/gx/main.c
 ===================================================================
---- source/gx/main.c	(revision 442)
-+++ source/gx/main.c	(revision 443)
+--- src/genplusgx/gx/main.c	(revision 442)
++++ src/genplusgx/gx/main.c	(revision 443)
 @@ -28,6 +28,7 @@
  #include "history.h"
  #include "aram.h"
@@ -2708,10 +2653,10 @@ Index: source/gx/main.c
    system_shutdown();
    audio_shutdown();
    free(cart.rom);
-Index: source/gx/fileio/file_mem.h
+Index: src/genplusgx/gx/fileio/file_mem.h
 ===================================================================
---- source/gx/fileio/file_mem.h	(revision 442)
-+++ source/gx/fileio/file_mem.h	(revision 443)
+--- src/genplusgx/gx/fileio/file_mem.h	(revision 442)
++++ src/genplusgx/gx/fileio/file_mem.h	(revision 443)
 @@ -1,35 +0,0 @@
 -/*
 - *  file_mem.c
@@ -2748,10 +2693,10 @@ Index: source/gx/fileio/file_mem.h
 -extern char rom_filename[256];
 -
 -#endif
-Index: source/gx/fileio/file_mem.c
+Index: src/genplusgx/gx/fileio/file_mem.c
 ===================================================================
---- source/gx/fileio/file_mem.c	(revision 442)
-+++ source/gx/fileio/file_mem.c	(revision 443)
+--- src/genplusgx/gx/fileio/file_mem.c	(revision 442)
++++ src/genplusgx/gx/fileio/file_mem.c	(revision 443)
 @@ -1,637 +0,0 @@
 -/*
 - *  file_mem.c
@@ -3390,10 +3335,10 @@ Index: source/gx/fileio/file_mem.c
 -  GUI_WaitPrompt("Error","Unable to mount memory card !");
 -  return 0;
 -}
-Index: source/gx/fileio/file_slot.c
+Index: src/genplusgx/gx/fileio/file_slot.c
 ===================================================================
---- source/gx/fileio/file_slot.c	(revision 0)
-+++ source/gx/fileio/file_slot.c	(revision 443)
+--- src/genplusgx/gx/fileio/file_slot.c	(revision 0)
++++ src/genplusgx/gx/fileio/file_slot.c	(revision 443)
 @@ -0,0 +1,569 @@
 +/*
 + *  file_slot.c
@@ -3964,10 +3909,10 @@ Index: source/gx/fileio/file_slot.c
 +  GUI_MsgBoxClose();
 +  return 1;
 +}
-Index: source/gx/fileio/file_slot.h
+Index: src/genplusgx/gx/fileio/file_slot.h
 ===================================================================
---- source/gx/fileio/file_slot.h	(revision 0)
-+++ source/gx/fileio/file_slot.h	(revision 443)
+--- src/genplusgx/gx/fileio/file_slot.h	(revision 0)
++++ src/genplusgx/gx/fileio/file_slot.h	(revision 443)
 @@ -0,0 +1,45 @@
 +/*
 + *  file_slot.c
@@ -4014,10 +3959,10 @@ Index: source/gx/fileio/file_slot.h
 +extern int slot_save(int slot, int device);
 +
 +#endif
-Index: source/gx/fileio/file_fat.c
+Index: src/genplusgx/gx/fileio/file_fat.c
 ===================================================================
---- source/gx/fileio/file_fat.c	(revision 442)
-+++ source/gx/fileio/file_fat.c	(revision 443)
+--- src/genplusgx/gx/fileio/file_fat.c	(revision 442)
++++ src/genplusgx/gx/fileio/file_fat.c	(revision 443)
 @@ -227,8 +227,8 @@
    int max = 0;
    char root[10] = "";
@@ -4028,10 +3973,10 @@ Index: source/gx/fileio/file_fat.c
    if (type == TYPE_SD) sprintf (root, "sd:");
    else if (type == TYPE_USB) sprintf (root, "usb:");
  #endif
-Index: source/gx/osd.h
+Index: src/genplusgx/gx/osd.h
 ===================================================================
---- source/gx/osd.h	(revision 442)
-+++ source/gx/osd.h	(revision 443)
+--- src/genplusgx/gx/osd.h	(revision 442)
++++ src/genplusgx/gx/osd.h	(revision 443)
 @@ -24,7 +24,6 @@
  #include "gx_audio.h"
  #include "gx_video.h"

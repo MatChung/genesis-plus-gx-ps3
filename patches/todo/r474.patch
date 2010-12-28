@@ -1,7 +1,7 @@
-Index: source/system.h
+Index: src/genplusgx/system.h
 ===================================================================
---- source/system.h	(revision 473)
-+++ source/system.h	(revision 474)
+--- src/genplusgx/system.h	(revision 473)
++++ src/genplusgx/system.h	(revision 474)
 @@ -80,14 +80,14 @@
  extern uint8 system_hw;
  
@@ -24,10 +24,10 @@ Index: source/system.h
  extern void system_frame(int do_skip);
  
  #endif /* _SYSTEM_H_ */
-Index: source/z80/z80.c
+Index: src/genplusgx/z80/z80.c
 ===================================================================
---- source/z80/z80.c	(revision 473)
-+++ source/z80/z80.c	(revision 474)
+--- src/genplusgx/z80/z80.c	(revision 473)
++++ src/genplusgx/z80/z80.c	(revision 474)
 @@ -131,16 +131,12 @@
  #define LOG(x)
  #endif
@@ -132,10 +132,10 @@ Index: source/z80/z80.c
 +  }
  }
  
-Index: source/m68k/m68kcpu.h
+Index: src/genplusgx/m68k/m68kcpu.h
 ===================================================================
---- source/m68k/m68kcpu.h	(revision 473)
-+++ source/m68k/m68kcpu.h	(revision 474)
+--- src/genplusgx/m68k/m68kcpu.h	(revision 473)
++++ src/genplusgx/m68k/m68kcpu.h	(revision 474)
 @@ -917,13 +917,19 @@
  extern unsigned int mcycles_68k;
  
@@ -263,10 +263,10 @@ Index: source/m68k/m68kcpu.h
    m68ki_jump_vector(EXCEPTION_ILLEGAL_INSTRUCTION);
  
    /* Use up some clock cycles and undo the instruction's cycles */
-Index: source/m68k/m68k.h
+Index: src/genplusgx/m68k/m68k.h
 ===================================================================
---- source/m68k/m68k.h	(revision 473)
-+++ source/m68k/m68k.h	(revision 474)
+--- src/genplusgx/m68k/m68k.h	(revision 473)
++++ src/genplusgx/m68k/m68k.h	(revision 474)
 @@ -180,7 +180,7 @@
  
  /* Read data immediately following the PC */
@@ -276,10 +276,10 @@ Index: source/m68k/m68k.h
  
  /* Read data relative to the PC */
  #define m68k_read_pcrelative_8(address)  READ_BYTE(m68k_memory_map[((address)>>16)&0xff].base, (address) & 0xffff)
-Index: source/m68k/m68kcpu.c
+Index: src/genplusgx/m68k/m68kcpu.c
 ===================================================================
---- source/m68k/m68kcpu.c	(revision 473)
-+++ source/m68k/m68kcpu.c	(revision 474)
+--- src/genplusgx/m68k/m68kcpu.c	(revision 473)
++++ src/genplusgx/m68k/m68kcpu.c	(revision 474)
 @@ -32,21 +32,31 @@
  /* ================================ INCLUDES ============================== */
  /* ======================================================================== */
@@ -437,10 +437,10 @@ Index: source/m68k/m68kcpu.c
    CPU_RUN_MODE = RUN_MODE_BERR_AERR_RESET;
  
    /* Turn off tracing */
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 473)
-+++ source/render.c	(revision 474)
+--- src/genplusgx/render.c	(revision 473)
++++ src/genplusgx/render.c	(revision 474)
 @@ -1923,7 +1923,7 @@
      size = q[link + 1] >> 8;
      height = sizetab[size & 3];

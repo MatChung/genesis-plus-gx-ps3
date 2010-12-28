@@ -1,19 +1,7 @@
-Index: HISTORY.txt
+Index: src/genplusgx/system.c
 ===================================================================
---- HISTORY.txt	(revision 477)
-+++ HISTORY.txt	(revision 478)
-@@ -56,6 +56,7 @@
- * added accurate TMSS emulation (VDP lock-out)
- * fixed Realtec mapper emulation: fixes missing sound in Balloon Boy / Funny World.
- * fixed lightgun auto-detection: fixes default cursor position in Lethal Enforcers II.
-+* enabled simultaneous use of multitap & J-CART (Super Skidmarks 6-player mode)
- * lots of code cleanup, bugfixes & optimization.
- 
- 
-Index: source/system.c
-===================================================================
---- source/system.c	(revision 477)
-+++ source/system.c	(revision 478)
+--- src/genplusgx/system.c	(revision 477)
++++ src/genplusgx/system.c	(revision 478)
 @@ -395,8 +395,8 @@
      /* update VCounter */
      v_counter = line;
@@ -25,10 +13,10 @@ Index: source/system.c
  
      /* update VDP DMA */
      if (dma_length) vdp_update_dma();
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 477)
-+++ source/gen_input.c	(revision 478)
+--- src/genplusgx/gen_input.c	(revision 477)
++++ src/genplusgx/gen_input.c	(revision 478)
 @@ -609,8 +609,8 @@
  
  void jcart_write(unsigned int address, unsigned int data)
@@ -98,10 +86,10 @@ Index: source/gen_input.c
      }
    }
  }
-Index: source/gen_input.h
+Index: src/genplusgx/gen_input.h
 ===================================================================
---- source/gen_input.h	(revision 477)
-+++ source/gen_input.h	(revision 478)
+--- src/genplusgx/gen_input.h	(revision 477)
++++ src/genplusgx/gen_input.h	(revision 478)
 @@ -72,8 +72,7 @@
  /* Function prototypes */
  extern void input_init(void);
@@ -112,10 +100,10 @@ Index: source/gen_input.h
  extern void input_autodetect(void);
  
  /* Peripherals specific */
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 477)
-+++ source/gx/gui/menu.c	(revision 478)
+--- src/genplusgx/gx/gui/menu.c	(revision 477)
++++ src/genplusgx/gx/gui/menu.c	(revision 478)
 @@ -1472,53 +1472,70 @@
    }
  

@@ -1,7 +1,7 @@
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 538)
-+++ source/sound/ym2612.c	(revision 539)
+--- src/genplusgx/sound/ym2612.c	(revision 538)
++++ src/genplusgx/sound/ym2612.c	(revision 539)
 @@ -1868,10 +1868,6 @@
      }
    }
@@ -24,10 +24,10 @@ Index: source/sound/ym2612.c
    /* build LFO PM modulation table */
    for(i = 0; i < 8; i++) /* 8 PM depths */
    {
-Index: source/sound/Fir_Resampler.c
+Index: src/genplusgx/sound/Fir_Resampler.c
 ===================================================================
---- source/sound/Fir_Resampler.c	(revision 538)
-+++ source/sound/Fir_Resampler.c	(revision 539)
+--- src/genplusgx/sound/Fir_Resampler.c	(revision 538)
++++ src/genplusgx/sound/Fir_Resampler.c	(revision 539)
 @@ -3,8 +3,8 @@
  /* C Conversion by Eke-Eke for use in Genesis Plus (2009). */
  

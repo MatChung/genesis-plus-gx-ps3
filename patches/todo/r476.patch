@@ -1,7 +1,7 @@
-Index: source/m68k/m68kcpu.c
+Index: src/genplusgx/m68k/m68kcpu.c
 ===================================================================
---- source/m68k/m68kcpu.c	(revision 475)
-+++ source/m68k/m68kcpu.c	(revision 476)
+--- src/genplusgx/m68k/m68kcpu.c	(revision 475)
++++ src/genplusgx/m68k/m68kcpu.c	(revision 476)
 @@ -870,7 +870,7 @@
          USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
        }
@@ -11,10 +11,10 @@ Index: source/m68k/m68kcpu.c
  #endif
        /* update internal interrupt level */
        m68ki_check_interrupts();
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 475)
-+++ source/gen_input.c	(revision 476)
+--- src/genplusgx/gen_input.c	(revision 475)
++++ src/genplusgx/gen_input.c	(revision 476)
 @@ -85,6 +85,13 @@
  
  static void lightgun_update(int num)

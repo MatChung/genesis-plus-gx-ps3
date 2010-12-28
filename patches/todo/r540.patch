@@ -1,7 +1,7 @@
-Index: source/cart_hw/ggenie.c
+Index: src/genplusgx/cart_hw/ggenie.c
 ===================================================================
---- source/cart_hw/ggenie.c	(revision 539)
-+++ source/cart_hw/ggenie.c	(revision 540)
+--- src/genplusgx/cart_hw/ggenie.c	(revision 539)
++++ src/genplusgx/cart_hw/ggenie.c	(revision 540)
 @@ -34,10 +34,11 @@
    uint32 addr[6];
  } ggenie;
@@ -196,10 +196,10 @@ Index: source/cart_hw/ggenie.c
 -  return ggenie.regs[(address >> 1) & 0x1f];
 -}
 -
-Index: source/cart_hw/areplay.h
+Index: src/genplusgx/cart_hw/areplay.h
 ===================================================================
---- source/cart_hw/areplay.h	(revision 539)
-+++ source/cart_hw/areplay.h	(revision 540)
+--- src/genplusgx/cart_hw/areplay.h	(revision 539)
++++ src/genplusgx/cart_hw/areplay.h	(revision 540)
 @@ -28,7 +28,7 @@
  
  extern void areplay_init(void);
@@ -209,10 +209,10 @@ Index: source/cart_hw/areplay.h
  extern void areplay_set_status(int status);
  extern int areplay_get_status(void);
  
-Index: source/cart_hw/ggenie.h
+Index: src/genplusgx/cart_hw/ggenie.h
 ===================================================================
---- source/cart_hw/ggenie.h	(revision 539)
-+++ source/cart_hw/ggenie.h	(revision 540)
+--- src/genplusgx/cart_hw/ggenie.h	(revision 539)
++++ src/genplusgx/cart_hw/ggenie.h	(revision 540)
 @@ -28,7 +28,7 @@
  /* Function prototypes */
  extern void ggenie_init(void);
@@ -222,10 +222,10 @@ Index: source/cart_hw/ggenie.h
  extern void ggenie_switch(int enable);
  
  #endif
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 539)
-+++ source/cart_hw/cart_hw.c	(revision 540)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 539)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 540)
 @@ -3,7 +3,7 @@
   *  Genesis Plus
   *  Cartridge Hardware support
@@ -915,10 +915,10 @@ Index: source/cart_hw/cart_hw.c
 +  /* write regs */
 +  default_regs_w(address, data);
 +}
-Index: source/cart_hw/cart_hw.h
+Index: src/genplusgx/cart_hw/cart_hw.h
 ===================================================================
---- source/cart_hw/cart_hw.h	(revision 539)
-+++ source/cart_hw/cart_hw.h	(revision 540)
+--- src/genplusgx/cart_hw/cart_hw.h	(revision 539)
++++ src/genplusgx/cart_hw/cart_hw.h	(revision 540)
 @@ -2,7 +2,7 @@
   *  Genesis Plus
   *  Cartridge Hardware support
@@ -950,10 +950,10 @@ Index: source/cart_hw/cart_hw.h
  
  #endif
  
-Index: source/cart_hw/areplay.c
+Index: src/genplusgx/cart_hw/areplay.c
 ===================================================================
---- source/cart_hw/areplay.c	(revision 539)
-+++ source/cart_hw/areplay.c	(revision 540)
+--- src/genplusgx/cart_hw/areplay.c	(revision 539)
++++ src/genplusgx/cart_hw/areplay.c	(revision 540)
 @@ -151,23 +151,26 @@
    action_replay.enabled = 0;
  }
@@ -993,10 +993,10 @@ Index: source/cart_hw/areplay.c
      }
    }
  }
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 539)
-+++ source/sound/sound.c	(revision 540)
+--- src/genplusgx/sound/sound.c	(revision 539)
++++ src/genplusgx/sound/sound.c	(revision 540)
 @@ -157,6 +157,35 @@
    psg_cycles_count = 0;
  }
@@ -1033,10 +1033,10 @@ Index: source/sound/sound.c
  /* End of frame update, return the number of samples run so far.  */
  int sound_update(unsigned int cycles)
  {
-Index: source/sound/sound.h
+Index: src/genplusgx/sound/sound.h
 ===================================================================
---- source/sound/sound.h	(revision 539)
-+++ source/sound/sound.h	(revision 540)
+--- src/genplusgx/sound/sound.h	(revision 539)
++++ src/genplusgx/sound/sound.h	(revision 540)
 @@ -27,6 +27,8 @@
  /* Function prototypes */
  extern void sound_init(void);
@@ -1046,10 +1046,10 @@ Index: source/sound/sound.h
  extern int sound_update(unsigned int cycles);
  extern void fm_reset(unsigned int cycles);
  extern void fm_write(unsigned int cycles, unsigned int address, unsigned int data);
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 539)
-+++ source/system.c	(revision 540)
+--- src/genplusgx/system.c	(revision 539)
++++ src/genplusgx/system.c	(revision 540)
 @@ -288,7 +288,7 @@
  void system_reset (void)
  {
@@ -1498,10 +1498,10 @@ Index: source/system.c
  
    /* adjust cpu cycle count for next frame */
    mcycles_68k -= mcycles_vdp;
-Index: source/hvc.h
+Index: src/genplusgx/hvc.h
 ===================================================================
---- source/hvc.h	(revision 539)
-+++ source/hvc.h	(revision 540)
+--- src/genplusgx/hvc.h	(revision 539)
++++ src/genplusgx/hvc.h	(revision 540)
 @@ -123,144 +123,6 @@
  #ifndef _HVC_H_
  #define _HVC_H_
@@ -1681,10 +1681,10 @@ Index: source/hvc.h
  
  #endif /* _HVC_H_ */
  
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 539)
-+++ source/vdp.c	(revision 540)
+--- src/genplusgx/vdp.c	(revision 539)
++++ src/genplusgx/vdp.c	(revision 540)
 @@ -42,16 +42,12 @@
  uint8 cram[0x80];     /* On-chip color RAM (64x9) */
  uint8 vsram[0x80];    /* On-chip vertical scroll RAM (40x11) */
@@ -2522,10 +2522,10 @@ Index: source/vdp.c
 -  reg[20] = (length >> 8) & 0xFF;
 -  dmafill = 0;
  }
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 539)
-+++ source/genesis.c	(revision 540)
+--- src/genplusgx/genesis.c	(revision 539)
++++ src/genplusgx/genesis.c	(revision 540)
 @@ -142,37 +142,44 @@
    mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
  
@@ -2590,10 +2590,10 @@ Index: source/genesis.c
    }
  }
  
-Index: source/vdp.h
+Index: src/genplusgx/vdp.h
 ===================================================================
---- source/vdp.h	(revision 539)
-+++ source/vdp.h	(revision 540)
+--- src/genplusgx/vdp.h	(revision 539)
++++ src/genplusgx/vdp.h	(revision 540)
 @@ -30,15 +30,11 @@
  extern uint8 cram[0x80];
  extern uint8 vsram[0x80];
@@ -2648,10 +2648,10 @@ Index: source/vdp.h
  extern void vdp_ctrl_w(unsigned int data);
  extern unsigned int vdp_ctrl_r(unsigned int cycles);
  extern void vdp_data_w(unsigned int data);
-Index: source/m68k/m68kcpu.c
+Index: src/genplusgx/m68k/m68kcpu.c
 ===================================================================
---- source/m68k/m68kcpu.c	(revision 539)
-+++ source/m68k/m68kcpu.c	(revision 540)
+--- src/genplusgx/m68k/m68kcpu.c	(revision 539)
++++ src/genplusgx/m68k/m68kcpu.c	(revision 540)
 @@ -862,7 +862,7 @@
        CPU_INT_LEVEL = (irq_status & 6) << 8;
  
@@ -2661,10 +2661,10 @@ Index: source/m68k/m68kcpu.c
        {
          /* one instruction latency */
          REG_IR = m68ki_read_imm_16();
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 539)
-+++ source/mem68k.c	(revision 540)
+--- src/genplusgx/mem68k.c	(revision 539)
++++ src/genplusgx/mem68k.c	(revision 540)
 @@ -476,8 +476,7 @@
  
      case 0x30:  /* TIME */
@@ -2675,10 +2675,10 @@ Index: source/mem68k.c
        return;
      }
  
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 539)
-+++ source/render.c	(revision 540)
+--- src/genplusgx/render.c	(revision 539)
++++ src/genplusgx/render.c	(revision 540)
 @@ -1754,13 +1754,8 @@
    int width     = bitmap.viewport.w;
    int x_offset  = bitmap.viewport.x;
@@ -2723,10 +2723,10 @@ Index: source/render.c
    if (config.render && interlaced)
      line = (line << 1) + odd_frame;
  
-Index: source/state.c
+Index: src/genplusgx/state.c
 ===================================================================
---- source/state.c	(revision 539)
-+++ source/state.c	(revision 540)
+--- src/genplusgx/state.c	(revision 539)
++++ src/genplusgx/state.c	(revision 540)
 @@ -22,16 +22,6 @@
  
  #include "shared.h"
@@ -2882,10 +2882,10 @@ Index: source/state.c
    /* compress state file */
    unsigned long inbytes   = bufferptr;
    unsigned long outbytes  = STATE_SIZE;
-Index: source/state.h
+Index: src/genplusgx/state.h
 ===================================================================
---- source/state.h	(revision 539)
-+++ source/state.h	(revision 540)
+--- src/genplusgx/state.h	(revision 539)
++++ src/genplusgx/state.h	(revision 540)
 @@ -23,8 +23,17 @@
  #ifndef _STATE_H_
  #define _STATE_H_
@@ -2905,10 +2905,10 @@ Index: source/state.h
  /* Function prototypes */
  extern int state_load(unsigned char *buffer);
  extern int state_save(unsigned char *buffer);
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 539)
-+++ source/gen_input.c	(revision 540)
+--- src/genplusgx/gen_input.c	(revision 539)
++++ src/genplusgx/gen_input.c	(revision 540)
 @@ -99,7 +99,9 @@
      {
        /* External Interrupt ? */
@@ -2951,10 +2951,10 @@ Index: source/gen_input.c
         TH = 1 : ?1CBRLDU    3-button pad return value
         TH = 0 : ?0SA00DU    3-button pad return value
         TH = 1 : ?1CBRLDU    3-button pad return value
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 539)
-+++ source/gx/gx_video.c	(revision 540)
+--- src/genplusgx/gx/gx_video.c	(revision 539)
++++ src/genplusgx/gx/gx_video.c	(revision 540)
 @@ -458,9 +458,14 @@
    {
      /* vertical borders */

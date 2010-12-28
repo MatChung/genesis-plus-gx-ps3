@@ -1,7 +1,7 @@
-Index: source/sound/sn76489.c
+Index: src/genplusgx/sound/sn76489.c
 ===================================================================
---- source/sound/sn76489.c	(revision 483)
-+++ source/sound/sn76489.c	(revision 484)
+--- src/genplusgx/sound/sn76489.c	(revision 483)
++++ src/genplusgx/sound/sn76489.c	(revision 484)
 @@ -114,7 +114,6 @@
      SN76489_Context *p = &SN76489;
      p->dClock=PSGClockValue/16.0/SamplingRate;
@@ -10,10 +10,10 @@ Index: source/sound/sn76489.c
  }
  
  void SN76489_Reset(void)
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 483)
-+++ source/sound/sound.c	(revision 484)
+--- src/genplusgx/sound/sound.c	(revision 483)
++++ src/genplusgx/sound/sound.c	(revision 484)
 @@ -178,17 +178,20 @@
      int avail = Fir_Resampler_avail();
  
@@ -42,10 +42,10 @@ Index: source/sound/sound.c
      }
    }
  
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 483)
-+++ source/system.c	(revision 484)
+--- src/genplusgx/system.c	(revision 483)
++++ src/genplusgx/system.c	(revision 484)
 @@ -334,7 +334,7 @@
      {
        im2_flag = ((reg[12] & 6) == 6);
@@ -55,10 +55,10 @@ Index: source/system.c
      }
  
      /* active screen height */
-Index: source/gx/gx_audio.c
+Index: src/genplusgx/gx/gx_audio.c
 ===================================================================
---- source/gx/gx_audio.c	(revision 483)
-+++ source/gx/gx_audio.c	(revision 484)
+--- src/genplusgx/gx/gx_audio.c	(revision 483)
++++ src/genplusgx/gx/gx_audio.c	(revision 484)
 @@ -71,7 +71,10 @@
      stat(fname, &filestat);
      Bg_music_ogg_size = filestat.st_size;
@@ -123,10 +123,10 @@ Index: source/gx/gx_audio.c
    /* reset emulation audio processing */
    memset(soundbuffer, 0, 2 * 3840);
    audioStarted = 0;
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 483)
-+++ source/gx/gui/menu.c	(revision 484)
+--- src/genplusgx/gx/gui/menu.c	(revision 483)
++++ src/genplusgx/gx/gui/menu.c	(revision 484)
 @@ -988,7 +988,7 @@
  
      switch (ret)
@@ -232,10 +232,10 @@ Index: source/gx/gui/menu.c
            if (config.tv_mode == 0)
              sprintf (items[1].text, "TV Mode: 60HZ");
            else if (config.tv_mode == 1)
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 483)
-+++ source/gx/gx_video.c	(revision 484)
+--- src/genplusgx/gx/gx_video.c	(revision 483)
++++ src/genplusgx/gx/gx_video.c	(revision 484)
 @@ -1306,9 +1306,13 @@
  {
    /* 50Hz/60Hz mode */
@@ -399,10 +399,10 @@ Index: source/gx/gx_video.c
    }
  }
  
-Index: source/gx/main.c
+Index: src/genplusgx/gx/main.c
 ===================================================================
---- source/gx/main.c	(revision 483)
-+++ source/gx/main.c	(revision 484)
+--- src/genplusgx/gx/main.c	(revision 483)
++++ src/genplusgx/gx/main.c	(revision 484)
 @@ -105,7 +105,7 @@
   ***************************************************************************/
  static void load_bios(void)

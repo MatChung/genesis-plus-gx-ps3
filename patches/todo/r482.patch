@@ -1,7 +1,7 @@
-Index: source/m68k/m68kCycleAccurate.h
+Index: src/genplusgx/m68k/m68kCycleAccurate.h
 ===================================================================
---- source/m68k/m68kCycleAccurate.h	(revision 481)
-+++ source/m68k/m68kCycleAccurate.h	(revision 482)
+--- src/genplusgx/m68k/m68kCycleAccurate.h	(revision 481)
++++ src/genplusgx/m68k/m68kCycleAccurate.h	(revision 482)
 @@ -169,12 +169,10 @@
  
  INLINE unsigned getMulu68kCycles( WORD source)

@@ -1,7 +1,7 @@
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 493)
-+++ source/sound/ym2612.c	(revision 494)
+--- src/genplusgx/sound/ym2612.c	(revision 493)
++++ src/genplusgx/sound/ym2612.c	(revision 494)
 @@ -549,7 +549,7 @@
  
  typedef struct
@@ -29,10 +29,10 @@ Index: source/sound/ym2612.c
    int rate = ym2612.OPN.ST.rate;
  
    /* restore internal state */
-Index: source/sound/sn76489.c
+Index: src/genplusgx/sound/sn76489.c
 ===================================================================
---- source/sound/sn76489.c	(revision 493)
-+++ source/sound/sn76489.c	(revision 494)
+--- src/genplusgx/sound/sn76489.c	(revision 493)
++++ src/genplusgx/sound/sn76489.c	(revision 494)
 @@ -21,342 +21,318 @@
  
     25/04/07 Eke-Eke (Genesis Plus GX)
@@ -606,10 +606,10 @@ Index: source/sound/sn76489.c
 +  blip_end_frame(blip, clock_length);
 +  blip_read_samples(blip, buffer, length, 0);
  }
-Index: source/sound/ym2612.h
+Index: src/genplusgx/sound/ym2612.h
 ===================================================================
---- source/sound/ym2612.h	(revision 493)
-+++ source/sound/ym2612.h	(revision 494)
+--- src/genplusgx/sound/ym2612.h	(revision 493)
++++ src/genplusgx/sound/ym2612.h	(revision 494)
 @@ -19,7 +19,7 @@
  #endif
  
@@ -619,10 +619,10 @@ Index: source/sound/ym2612.h
  extern int YM2612ResetChip(void);
  extern void YM2612Update(long int *buffer, int length);
  extern void YM2612Write(unsigned int a, unsigned int v);
-Index: source/sound/sn76489.h
+Index: src/genplusgx/sound/sn76489.h
 ===================================================================
---- source/sound/sn76489.h	(revision 493)
-+++ source/sound/sn76489.h	(revision 494)
+--- src/genplusgx/sound/sn76489.h	(revision 493)
++++ src/genplusgx/sound/sn76489.h	(revision 494)
 @@ -16,7 +16,7 @@
  #define _SN76489_H_
  
@@ -640,10 +640,10 @@ Index: source/sound/sn76489.h
  
  #endif /* _SN76489_H_ */
  
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 493)
-+++ source/sound/sound.c	(revision 494)
+--- src/genplusgx/sound/sound.c	(revision 493)
++++ src/genplusgx/sound/sound.c	(revision 494)
 @@ -230,8 +230,7 @@
  /* Write FM chip */
  void fm_write(unsigned int cycles, unsigned int address, unsigned int data)
@@ -654,10 +654,10 @@ Index: source/sound/sound.c
    YM2612Write(address, data);
  }
  
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 493)
-+++ source/system.c	(revision 494)
+--- src/genplusgx/system.c	(revision 493)
++++ src/genplusgx/system.c	(revision 494)
 @@ -311,6 +311,7 @@
    gen_shutdown ();
    vdp_shutdown ();

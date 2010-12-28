@@ -1,7 +1,7 @@
-Index: source/cart_hw/datel.h
+Index: src/genplusgx/cart_hw/datel.h
 ===================================================================
---- source/cart_hw/datel.h	(revision 524)
-+++ source/cart_hw/datel.h	(revision 525)
+--- src/genplusgx/cart_hw/datel.h	(revision 524)
++++ src/genplusgx/cart_hw/datel.h	(revision 525)
 @@ -1,30 +0,0 @@
 -/****************************************************************************
 - *  Genesis Plus
@@ -33,10 +33,10 @@ Index: source/cart_hw/datel.h
 -extern void datel_switch(int enable);
 -
 -#endif
-Index: source/cart_hw/datel.c
+Index: src/genplusgx/cart_hw/datel.c
 ===================================================================
---- source/cart_hw/datel.c	(revision 524)
-+++ source/cart_hw/datel.c	(revision 525)
+--- src/genplusgx/cart_hw/datel.c	(revision 524)
++++ src/genplusgx/cart_hw/datel.c	(revision 525)
 @@ -1,333 +0,0 @@
 -/****************************************************************************
 - *  Genesis Plus
@@ -371,10 +371,10 @@ Index: source/cart_hw/datel.c
 -  if (((address & 0xff) == 0x78) && (data == 0xffff))
 -    m68k_memory_map[0].base = cart.rom;
 -}
-Index: source/cart_hw/areplay.h
+Index: src/genplusgx/cart_hw/areplay.h
 ===================================================================
---- source/cart_hw/areplay.h	(revision 0)
-+++ source/cart_hw/areplay.h	(revision 525)
+--- src/genplusgx/cart_hw/areplay.h	(revision 0)
++++ src/genplusgx/cart_hw/areplay.h	(revision 525)
 @@ -0,0 +1,35 @@
 +/****************************************************************************
 + *  Genesis Plus
@@ -411,10 +411,10 @@ Index: source/cart_hw/areplay.h
 +extern int areplay_get_status(void);
 +
 +#endif
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 524)
-+++ source/cart_hw/cart_hw.c	(revision 525)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 524)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 525)
 @@ -302,9 +302,9 @@
            LOCK-ON 
    ***********************************************/
@@ -445,10 +445,10 @@ Index: source/cart_hw/cart_hw.c
        break;
  
      case TYPE_SK:
-Index: source/cart_hw/areplay.c
+Index: src/genplusgx/cart_hw/areplay.c
 ===================================================================
---- source/cart_hw/areplay.c	(revision 0)
-+++ source/cart_hw/areplay.c	(revision 525)
+--- src/genplusgx/cart_hw/areplay.c	(revision 0)
++++ src/genplusgx/cart_hw/areplay.c	(revision 525)
 @@ -0,0 +1,299 @@
 +/****************************************************************************
 + *  Genesis Plus
@@ -749,10 +749,10 @@ Index: source/cart_hw/areplay.c
 +  *(uint16 *)(action_replay.ram + (address & 0xfffe)) = (data | (data << 8));
 +}
 +
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 524)
-+++ source/genesis.c	(revision 525)
+--- src/genplusgx/genesis.c	(revision 524)
++++ src/genplusgx/genesis.c	(revision 525)
 @@ -168,9 +168,11 @@
    }
    else
@@ -768,10 +768,10 @@ Index: source/genesis.c
  
      /* 68k & Z80 could restart anywhere in VDP frame (Bonkers, Eternal Champions, X-Men 2) */
      mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
-Index: source/shared.h
+Index: src/genplusgx/shared.h
 ===================================================================
---- source/shared.h	(revision 524)
-+++ source/shared.h	(revision 525)
+--- src/genplusgx/shared.h	(revision 524)
++++ src/genplusgx/shared.h	(revision 525)
 @@ -27,7 +27,7 @@
  #include "eeprom.h"
  #include "sram.h"

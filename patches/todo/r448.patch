@@ -1,7 +1,7 @@
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 447)
-+++ source/system.c	(revision 448)
+--- src/genplusgx/system.c	(revision 447)
++++ src/genplusgx/system.c	(revision 448)
 @@ -42,9 +42,9 @@
  void audio_set_equalizer(void)
  {
@@ -15,10 +15,10 @@ Index: source/system.c
  }
  
  /****************************************************************
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 447)
-+++ source/gx/gui/menu.c	(revision 448)
+--- src/genplusgx/gx/gui/menu.c	(revision 447)
++++ src/genplusgx/gx/gui/menu.c	(revision 448)
 @@ -703,6 +703,9 @@
    float fm_volume = (float)config.fm_preamp/100.0;
    float psg_volume = (float)config.psg_preamp/100.0;
@@ -178,10 +178,10 @@ Index: source/gx/gui/menu.c
  }
  
  /***************************************************************************
-Index: source/gx/config.h
+Index: src/genplusgx/gx/config.h
 ===================================================================
---- source/gx/config.h	(revision 447)
-+++ source/gx/config.h	(revision 448)
+--- src/genplusgx/gx/config.h	(revision 447)
++++ src/genplusgx/gx/config.h	(revision 448)
 @@ -31,19 +31,19 @@
  typedef struct 
  {
@@ -257,10 +257,10 @@ Index: source/gx/config.h
    char usbdir[MAXPATHLEN];
  #endif
  } t_config;
-Index: source/gx/fileio/file_slot.c
+Index: src/genplusgx/gx/fileio/file_slot.c
 ===================================================================
---- source/gx/fileio/file_slot.c	(revision 447)
-+++ source/gx/fileio/file_slot.c	(revision 448)
+--- src/genplusgx/gx/fileio/file_slot.c	(revision 447)
++++ src/genplusgx/gx/fileio/file_slot.c	(revision 448)
 @@ -251,8 +251,8 @@
      if (fp)
      {
@@ -272,10 +272,10 @@ Index: source/gx/fileio/file_slot.c
        fseek(fp, 0, SEEK_SET);
  
        /* Read into buffer (2k blocks) */
-Index: source/gx/fileio/unzip.c
+Index: src/genplusgx/gx/fileio/unzip.c
 ===================================================================
---- source/gx/fileio/unzip.c	(revision 447)
-+++ source/gx/fileio/unzip.c	(revision 448)
+--- src/genplusgx/gx/fileio/unzip.c	(revision 447)
++++ src/genplusgx/gx/fileio/unzip.c	(revision 448)
 @@ -123,11 +123,11 @@
    if (fatfile)
    {
@@ -306,10 +306,10 @@ Index: source/gx/fileio/unzip.c
      }
    }
    while (res != Z_STREAM_END);
-Index: source/gx/osd.h
+Index: src/genplusgx/gx/osd.h
 ===================================================================
---- source/gx/osd.h	(revision 447)
-+++ source/gx/osd.h	(revision 448)
+--- src/genplusgx/gx/osd.h	(revision 447)
++++ src/genplusgx/gx/osd.h	(revision 448)
 @@ -33,9 +33,9 @@
  #define SK_UPMEM      "/genplus/sk2chip.bin"
  

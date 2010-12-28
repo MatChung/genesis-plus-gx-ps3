@@ -1,7 +1,7 @@
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 488)
-+++ source/system.c	(revision 489)
+--- src/genplusgx/system.c	(revision 488)
++++ src/genplusgx/system.c	(revision 489)
 @@ -408,9 +408,14 @@
        if (!do_skip && ((line < end) || (line >= start)))
          render_line(line);

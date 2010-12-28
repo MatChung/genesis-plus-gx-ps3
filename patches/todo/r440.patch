@@ -1,7 +1,7 @@
-Index: source/sound/Fir_Resampler.h
+Index: src/genplusgx/sound/Fir_Resampler.h
 ===================================================================
---- source/sound/Fir_Resampler.h	(revision 439)
-+++ source/sound/Fir_Resampler.h	(revision 440)
+--- src/genplusgx/sound/Fir_Resampler.h	(revision 439)
++++ src/genplusgx/sound/Fir_Resampler.h	(revision 440)
 @@ -10,7 +10,7 @@
  #define WRITE_OFFSET  (WIDTH * STEREO) - STEREO
  #define GAIN          1.0
@@ -11,10 +11,10 @@ Index: source/sound/Fir_Resampler.h
  
  extern int Fir_Resampler_initialize( int new_size );
  extern void Fir_Resampler_shutdown( void );
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 439)
-+++ source/sound/ym2612.c	(revision 440)
+--- src/genplusgx/sound/ym2612.c	(revision 439)
++++ src/genplusgx/sound/ym2612.c	(revision 440)
 @@ -2028,7 +2028,7 @@
  }
  
@@ -24,10 +24,10 @@ Index: source/sound/ym2612.c
  {
    int i;
    long int lt,rt;
-Index: source/sound/ym2612.h
+Index: src/genplusgx/sound/ym2612.h
 ===================================================================
---- source/sound/ym2612.h	(revision 439)
-+++ source/sound/ym2612.h	(revision 440)
+--- src/genplusgx/sound/ym2612.h	(revision 439)
++++ src/genplusgx/sound/ym2612.h	(revision 440)
 @@ -21,7 +21,7 @@
  
  extern int YM2612Init(float clock, int rate);
@@ -37,10 +37,10 @@ Index: source/sound/ym2612.h
  extern void YM2612Write(unsigned int a, unsigned int v);
  extern unsigned int YM2612Read(void);
  extern unsigned char *YM2612GetContextPtr(void);
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 439)
-+++ source/sound/sound.c	(revision 440)
+--- src/genplusgx/sound/sound.c	(revision 439)
++++ src/genplusgx/sound/sound.c	(revision 440)
 @@ -54,7 +54,7 @@
      }
  
@@ -50,10 +50,10 @@ Index: source/sound/sound.c
      if (buffer)
      {
        Fir_Resampler_write(cnt << 1);
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 439)
-+++ source/system.c	(revision 440)
+--- src/genplusgx/system.c	(revision 439)
++++ src/genplusgx/system.c	(revision 440)
 @@ -64,7 +64,7 @@
    uint32 factora  = (config.lp_range << 16) / 100;
    uint32 factorb  = 0x10000 - factora;
@@ -103,10 +103,10 @@ Index: source/system.c
  }
  
  /****************************************************************
-Index: source/system.h
+Index: src/genplusgx/system.h
 ===================================================================
---- source/system.h	(revision 439)
-+++ source/system.h	(revision 440)
+--- src/genplusgx/system.h	(revision 439)
++++ src/genplusgx/system.h	(revision 440)
 @@ -61,8 +61,8 @@
    int16 *buffer[2]; /* Signed 16-bit stereo sound data */
    struct

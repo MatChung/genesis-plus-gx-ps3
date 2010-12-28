@@ -1,7 +1,7 @@
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 436)
-+++ source/render.c	(revision 437)
+--- src/genplusgx/render.c	(revision 436)
++++ src/genplusgx/render.c	(revision 437)
 @@ -809,39 +809,36 @@
  
  static inline void remap_8(uint8 *src, uint8 *dst, uint8 *table, int length)
@@ -243,10 +243,10 @@ Index: source/render.c
    }
 +  while (--total);
  }
-Index: source/render.h
+Index: src/genplusgx/render.h
 ===================================================================
---- source/render.h	(revision 436)
-+++ source/render.h	(revision 437)
+--- src/genplusgx/render.h	(revision 436)
++++ src/genplusgx/render.h	(revision 437)
 @@ -31,10 +31,10 @@
  extern void render_init(void);
  extern void render_reset(void);
@@ -261,10 +261,10 @@ Index: source/render.h
  
  void (*color_update)(int index, uint16 data);
  
-Index: source/loadrom.c
+Index: src/genplusgx/loadrom.c
 ===================================================================
---- source/loadrom.c	(revision 436)
-+++ source/loadrom.c	(revision 437)
+--- src/genplusgx/loadrom.c	(revision 436)
++++ src/genplusgx/loadrom.c	(revision 437)
 @@ -238,11 +238,10 @@
  }
  

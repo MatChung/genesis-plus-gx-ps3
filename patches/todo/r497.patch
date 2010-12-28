@@ -1,7 +1,7 @@
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 496)
-+++ source/cart_hw/cart_hw.c	(revision 497)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 496)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 497)
 @@ -27,7 +27,7 @@
  
  #include "shared.h"
@@ -20,10 +20,10 @@ Index: source/cart_hw/cart_hw.c
  /* Lion King 3 */
    {0x0000,0x507c,0x60,0x7f,{{0x00,0x00,0x00,0x00},{0xf0000e,0xf0000e,0xf0000e,0x000000},{0x600000,0x600002,0x600004,0x000000},0,1,NULL,NULL,default_regs_r,special_regs_w}},
  /* Super King Kong 99 */
-Index: source/m68k/m68kcpu.c
+Index: src/genplusgx/m68k/m68kcpu.c
 ===================================================================
---- source/m68k/m68kcpu.c	(revision 496)
-+++ source/m68k/m68kcpu.c	(revision 497)
+--- src/genplusgx/m68k/m68kcpu.c	(revision 496)
++++ src/genplusgx/m68k/m68kcpu.c	(revision 497)
 @@ -870,7 +870,7 @@
          USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
        }

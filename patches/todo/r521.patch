@@ -1,7 +1,7 @@
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 520)
-+++ source/sound/ym2612.c	(revision 521)
+--- src/genplusgx/sound/ym2612.c	(revision 520)
++++ src/genplusgx/sound/ym2612.c	(revision 521)
 @@ -1731,8 +1731,8 @@
            CH->ams = lfo_ams_depth_shift[(v>>4) & 0x03];
  

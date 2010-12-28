@@ -1,7 +1,7 @@
-Index: source/gen_io.c
+Index: src/genplusgx/gen_io.c
 ===================================================================
---- source/gen_io.c	(revision 459)
-+++ source/gen_io.c	(revision 460)
+--- src/genplusgx/gen_io.c	(revision 459)
++++ src/genplusgx/gen_io.c	(revision 460)
 @@ -117,7 +117,7 @@
  void io_reset(void)
  {
@@ -11,10 +11,10 @@ Index: source/gen_io.c
    io_reg[0x01] = 0x7F;
    io_reg[0x02] = 0x7F;
    io_reg[0x03] = 0x7F;
-Index: source/cart_hw/cart_hw.h
+Index: src/genplusgx/cart_hw/cart_hw.h
 ===================================================================
---- source/cart_hw/cart_hw.h	(revision 459)
-+++ source/cart_hw/cart_hw.h	(revision 460)
+--- src/genplusgx/cart_hw/cart_hw.h	(revision 459)
++++ src/genplusgx/cart_hw/cart_hw.h	(revision 460)
 @@ -50,11 +50,11 @@
  typedef struct
  {
@@ -31,10 +31,10 @@ Index: source/cart_hw/cart_hw.h
    T_CART_HW hw;     /* Extra hardware */
  } T_CART;
  
-Index: source/membnk.c
+Index: src/genplusgx/membnk.c
 ===================================================================
---- source/membnk.c	(revision 459)
-+++ source/membnk.c	(revision 460)
+--- src/genplusgx/membnk.c	(revision 459)
++++ src/genplusgx/membnk.c	(revision 460)
 @@ -1,6 +1,6 @@
  /***************************************************************************************
   *  Genesis Plus
@@ -323,10 +323,10 @@ Index: source/membnk.c
 +    }
    }
  }
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 459)
-+++ source/vdp.c	(revision 460)
+--- src/genplusgx/vdp.c	(revision 459)
++++ src/genplusgx/vdp.c	(revision 460)
 @@ -215,8 +215,8 @@
    if (config.overscan & 2)
      bitmap.viewport.x = 12;
@@ -347,10 +347,10 @@ Index: source/vdp.c
    {
      /* update VDP FIFO */
      fifo_update(mcycles_68k);
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 459)
-+++ source/genesis.c	(revision 460)
+--- src/genplusgx/genesis.c	(revision 459)
++++ src/genplusgx/genesis.c	(revision 460)
 @@ -23,12 +23,17 @@
  
  #include "shared.h"
@@ -622,10 +622,10 @@ Index: source/genesis.c
  {
    zbank = ((zbank >> 1) | ((state & 1) << 23)) & 0xFF8000;
  }
-Index: source/genesis.h
+Index: src/genplusgx/genesis.h
 ===================================================================
---- source/genesis.h	(revision 459)
-+++ source/genesis.h	(revision 460)
+--- src/genplusgx/genesis.h	(revision 459)
++++ src/genplusgx/genesis.h	(revision 460)
 @@ -25,20 +25,26 @@
  #define _GENESIS_H_
  
@@ -658,10 +658,10 @@ Index: source/genesis.h
  extern int z80_irq_callback(int param);
  
  #endif /* _GEN_H_ */
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 459)
-+++ source/mem68k.c	(revision 460)
+--- src/genplusgx/mem68k.c	(revision 459)
++++ src/genplusgx/mem68k.c	(revision 460)
 @@ -1,6 +1,6 @@
  /***************************************************************************************
   *  Genesis Plus
@@ -1595,10 +1595,10 @@ Index: source/mem68k.c
 -  return ((m68k_read_bus_8(address) << 8) | pico_read_byte(address | 1));
 +  return (pico_read_byte(address | 1) | (m68k_read_bus_8(address) << 8));
  }
-Index: source/mem68k.h
+Index: src/genplusgx/mem68k.h
 ===================================================================
---- source/mem68k.h	(revision 459)
-+++ source/mem68k.h	(revision 460)
+--- src/genplusgx/mem68k.h	(revision 459)
++++ src/genplusgx/mem68k.h	(revision 460)
 @@ -64,6 +64,4 @@
  extern uint32 pico_read_byte(uint32 address);
  extern uint32 pico_read_word(uint32 address);
@@ -1606,10 +1606,10 @@ Index: source/mem68k.h
 -uint32 pico_current;
 -
  #endif /* _MEM68K_H_ */
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 459)
-+++ source/render.c	(revision 460)
+--- src/genplusgx/render.c	(revision 459)
++++ src/genplusgx/render.c	(revision 460)
 @@ -926,7 +926,6 @@
  /*--------------------------------------------------------------------------*/
  /* Layers render functions                                                  */
@@ -1630,10 +1630,10 @@ Index: source/render.c
  
    uint8 *lb     = tmp_buf;
    int width     = bitmap.viewport.w;
-Index: source/memz80.c
+Index: src/genplusgx/memz80.c
 ===================================================================
---- source/memz80.c	(revision 459)
-+++ source/memz80.c	(revision 460)
+--- src/genplusgx/memz80.c	(revision 459)
++++ src/genplusgx/memz80.c	(revision 460)
 @@ -1,6 +1,6 @@
  /***************************************************************************************
   *  Genesis Plus
@@ -1828,10 +1828,10 @@ Index: source/memz80.c
  }
  
  void cpu_writeport16(unsigned int port, unsigned int data)
-Index: source/unused/win/config.c
+Index: src/genplusgx/unused/win/config.c
 ===================================================================
---- source/unused/win/config.c	(revision 459)
-+++ source/unused/win/config.c	(revision 460)
+--- src/genplusgx/unused/win/config.c	(revision 459)
++++ src/genplusgx/unused/win/config.c	(revision 460)
 @@ -27,7 +27,7 @@
    config.region_detect  = 0;
    config.force_dtack    = 0;
@@ -1850,10 +1850,10 @@ Index: source/unused/win/config.c
 +  }
  }
 -
-Index: source/unused/win/config.h
+Index: src/genplusgx/unused/win/config.h
 ===================================================================
---- source/unused/win/config.h	(revision 459)
-+++ source/unused/win/config.h	(revision 460)
+--- src/genplusgx/unused/win/config.h	(revision 459)
++++ src/genplusgx/unused/win/config.h	(revision 460)
 @@ -9,35 +9,36 @@
  typedef struct 
  {
@@ -1907,10 +1907,10 @@ Index: source/unused/win/config.h
  } t_config;
  
  /* Global variables */
-Index: source/macros.h
+Index: src/genplusgx/macros.h
 ===================================================================
---- source/macros.h	(revision 459)
-+++ source/macros.h	(revision 460)
+--- src/genplusgx/macros.h	(revision 459)
++++ src/genplusgx/macros.h	(revision 460)
 @@ -10,7 +10,7 @@
  #define READ_WORD_LONG(BASE, ADDR) (((BASE)[(ADDR)+1]<<24) |      \
                                      ((BASE)[(ADDR)]<<16) |  \
@@ -1931,10 +1931,10 @@ Index: source/macros.h
  #define WRITE_BYTE(BASE, ADDR, VAL) (BASE)[ADDR] = VAL & 0xff
  #define WRITE_WORD(BASE, ADDR, VAL) *(uint16 *)((BASE) + (ADDR)) = VAL & 0xffff
  #define WRITE_WORD_LONG(BASE, ADDR, VAL) *(uint32 *)((BASE) + (ADDR)) = VAL & 0xffffffff
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 459)
-+++ source/gx/gui/menu.c	(revision 460)
+--- src/genplusgx/gx/gui/menu.c	(revision 459)
++++ src/genplusgx/gx/gui/menu.c	(revision 460)
 @@ -1009,7 +1009,7 @@
  
    sprintf (items[1].text, "System Lockups: %s", config.force_dtack ? "OFF" : "ON");
@@ -1955,10 +1955,10 @@ Index: source/gx/gui/menu.c
          if (cart.romsize) 
          {
            system_init();
-Index: source/gx/config.c
+Index: src/genplusgx/gx/config.c
 ===================================================================
---- source/gx/config.c	(revision 459)
-+++ source/gx/config.c	(revision 460)
+--- src/genplusgx/gx/config.c	(revision 459)
++++ src/genplusgx/gx/config.c	(revision 460)
 @@ -85,7 +85,7 @@
    config.region_detect  = 0;
    config.force_dtack    = 0;
@@ -1968,10 +1968,10 @@ Index: source/gx/config.c
    config.lock_on        = 0;
    config.romtype        = 0;
    config.hot_swap       = 0;
-Index: source/gx/config.h
+Index: src/genplusgx/gx/config.h
 ===================================================================
---- source/gx/config.h	(revision 459)
-+++ source/gx/config.h	(revision 460)
+--- src/genplusgx/gx/config.h	(revision 459)
++++ src/genplusgx/gx/config.h	(revision 460)
 @@ -47,7 +47,7 @@
    uint8 region_detect;
    uint8 force_dtack;
@@ -1981,10 +1981,10 @@ Index: source/gx/config.h
    uint8 lock_on;
    uint8 hot_swap;
    uint8 romtype;
-Index: source/gx/main.c
+Index: src/genplusgx/gx/main.c
 ===================================================================
---- source/gx/main.c	(revision 459)
-+++ source/gx/main.c	(revision 460)
+--- src/genplusgx/gx/main.c	(revision 459)
++++ src/genplusgx/gx/main.c	(revision 460)
 @@ -104,8 +104,8 @@
   ***************************************************************************/
  static void load_bios(void)

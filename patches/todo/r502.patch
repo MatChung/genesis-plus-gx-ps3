@@ -1,7 +1,7 @@
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 501)
-+++ source/sound/ym2612.c	(revision 502)
+--- src/genplusgx/sound/ym2612.c	(revision 501)
++++ src/genplusgx/sound/ym2612.c	(revision 502)
 @@ -1827,10 +1827,14 @@
    signed int n;
    double o,m;

@@ -1,7 +1,7 @@
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 522)
-+++ source/system.c	(revision 523)
+--- src/genplusgx/system.c	(revision 522)
++++ src/genplusgx/system.c	(revision 523)
 @@ -447,6 +447,7 @@
            bitmap.viewport.oh = bitmap.viewport.h;
            bitmap.viewport.changed |= 1;
@@ -10,10 +10,10 @@ Index: source/system.c
          if (bitmap.viewport.w != bitmap.viewport.ow)
          {
            bitmap.viewport.ow = bitmap.viewport.w;
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 522)
-+++ source/vdp.c	(revision 523)
+--- src/genplusgx/vdp.c	(revision 522)
++++ src/genplusgx/vdp.c	(revision 523)
 @@ -972,33 +972,18 @@
          /* Update clipping */
          window_clip();

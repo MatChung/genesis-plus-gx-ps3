@@ -1,7 +1,7 @@
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 463)
-+++ source/genesis.c	(revision 464)
+--- src/genplusgx/genesis.c	(revision 463)
++++ src/genplusgx/genesis.c	(revision 464)
 @@ -138,15 +138,15 @@
      m68k_memory_map[0].base = bios_rom;
    }

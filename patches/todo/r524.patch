@@ -1,7 +1,7 @@
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 523)
-+++ source/gen_input.c	(revision 524)
+--- src/genplusgx/gen_input.c	(revision 523)
++++ src/genplusgx/gen_input.c	(revision 524)
 @@ -297,7 +297,8 @@
  
  static inline void gamepad_reset(int i)

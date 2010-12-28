@@ -1,7 +1,7 @@
-Index: source/cart_hw/svp/svp.c
+Index: src/genplusgx/cart_hw/svp/svp.c
 ===================================================================
---- source/cart_hw/svp/svp.c	(revision 521)
-+++ source/cart_hw/svp/svp.c	(revision 522)
+--- src/genplusgx/cart_hw/svp/svp.c	(revision 521)
++++ src/genplusgx/cart_hw/svp/svp.c	(revision 522)
 @@ -13,7 +13,7 @@
  #include "shared.h"
  

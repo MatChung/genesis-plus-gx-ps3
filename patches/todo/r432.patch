@@ -1,7 +1,7 @@
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 431)
-+++ source/vdp.c	(revision 432)
+--- src/genplusgx/vdp.c	(revision 431)
++++ src/genplusgx/vdp.c	(revision 432)
 @@ -127,12 +127,12 @@
  /*--------------------------------------------------------------------------*/
  /* Functions prototype                                                      */

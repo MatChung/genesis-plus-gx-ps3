@@ -1,19 +1,7 @@
-Index: HISTORY.txt
+Index: src/genplusgx/m68k/m68kops.c
 ===================================================================
---- HISTORY.txt	(revision 480)
-+++ HISTORY.txt	(revision 481)
-@@ -44,6 +44,7 @@
- * improved Z80 interrupt accuracy
- * improved 68k accuracy (initial Reset timing + auto-vectored interrupts handling).
- * improved 68k timing accuracy for DIVU/DVIS (thanks to Jorge Cwik) & MULU/MULS instructions.
-+* implemented 68k undocumented flags behavior for DIVU/DIVS instructions (Bloodshot / Battle Frenzy)
- * improved Z80 & 68k cpu execution/synchronization accuracy by using Master Clock as common reference (now run exactly 3420 M-Cycles per line).
- * modified Z80 & 68k cores to directly use external cycle count instead of intermediate counters.
- 
-Index: source/m68k/m68kops.c
-===================================================================
---- source/m68k/m68kops.c	(revision 480)
-+++ source/m68k/m68kops.c	(revision 481)
+--- src/genplusgx/m68k/m68kops.c	(revision 480)
++++ src/genplusgx/m68k/m68kops.c	(revision 481)
 @@ -12652,8 +12652,11 @@
        return;
      }

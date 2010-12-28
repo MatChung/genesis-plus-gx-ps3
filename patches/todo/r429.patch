@@ -1,7 +1,7 @@
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 428)
-+++ source/vdp.c	(revision 429)
+--- src/genplusgx/vdp.c	(revision 428)
++++ src/genplusgx/vdp.c	(revision 429)
 @@ -438,7 +438,7 @@
    if (!(reg[1] & 0x40))
      temp |= 0x08; 
@@ -61,10 +61,10 @@ Index: source/vdp.c
        break;
  
      case 7:
-Index: source/gx/gx_input.c
+Index: src/genplusgx/gx/gx_input.c
 ===================================================================
---- source/gx/gx_input.c	(revision 428)
-+++ source/gx/gx_input.c	(revision 429)
+--- src/genplusgx/gx/gx_input.c	(revision 428)
++++ src/genplusgx/gx/gx_input.c	(revision 429)
 @@ -455,9 +455,6 @@
    VIDEO_Flush();
  }

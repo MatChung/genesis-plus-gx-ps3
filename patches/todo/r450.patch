@@ -1,31 +1,7 @@
-Index: HISTORY.txt
+Index: src/genplusgx/vdp.c
 ===================================================================
---- HISTORY.txt	(revision 449)
-+++ HISTORY.txt	(revision 450)
-@@ -25,6 +25,7 @@
- ---------------
- * added support for CRAM writes during horizontal blanking (Striker, Zero the Kamikaze Squirrel,...)
- * added support for 2-Cell vertical scrolling in Interlaced 2 mode
-+* added proper HV Counter latch support (fixes Sunset Riders intro)
- * fixed left-most column vertical scrolling when horizontally scrolled (Gynoug, F1) 
- * fixed VBLANK transition line checks
- * improved VDP FIFO timings accuracy: fixes Sol Deace intro
-@@ -32,9 +33,10 @@
- * improved HBLANK flag timing accuracy: fixes Mega Turrican (Sky level)
- * improved sprites processing accuracy: fixes (un)masked sprites in Mickey Mania (3D level), Sonic 2 (VS mode).
- * improved horizontal blanking & HINT/VINT occurence timing accuracy, as measured on real hardware.
--* improved H-Counter accuracy in 40-cell mode, as measured on real hardware.
-+* improved HCounter accuracy in 40-cell mode, as measured on real hardware.
- * improved color accuracy in VDP highlight mode to match results observed on real hardware.
- 
-+
- [Core/CPU]
- ---------------
- * updated Z80 core to last version (fixes interrupt Mode 0 timing and some BIT instructions).
-Index: source/vdp.c
-===================================================================
---- source/vdp.c	(revision 449)
-+++ source/vdp.c	(revision 450)
+--- src/genplusgx/vdp.c	(revision 449)
++++ src/genplusgx/vdp.c	(revision 450)
 @@ -66,8 +66,8 @@
  uint8 playfield_shift;            /* Width of planes A, B (in bits) */
  uint8 playfield_col_mask;         /* Vertical scroll mask */
@@ -76,10 +52,10 @@ Index: source/vdp.c
        break;
  
      case 1: /* CTRL #2 */
-Index: source/vdp.h
+Index: src/genplusgx/vdp.h
 ===================================================================
---- source/vdp.h	(revision 449)
-+++ source/vdp.h	(revision 450)
+--- src/genplusgx/vdp.h	(revision 449)
++++ src/genplusgx/vdp.h	(revision 450)
 @@ -54,8 +54,8 @@
  extern uint8 playfield_shift;
  extern uint8 playfield_col_mask;
@@ -90,10 +66,10 @@ Index: source/vdp.h
  extern uint32 dma_length;
  extern int32 fifo_write_cnt;
  extern uint32 fifo_lastwrite;
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 449)
-+++ source/gen_input.c	(revision 450)
+--- src/genplusgx/gen_input.c	(revision 449)
++++ src/genplusgx/gen_input.c	(revision 450)
 @@ -90,16 +90,17 @@
        if (reg[11] & 0x08) 
          irq_status = (irq_status & ~0x40) | 0x12;

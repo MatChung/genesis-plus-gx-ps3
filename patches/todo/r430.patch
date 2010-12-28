@@ -1,7 +1,7 @@
-Index: source/cart_hw/sram.c
+Index: src/genplusgx/cart_hw/sram.c
 ===================================================================
---- source/cart_hw/sram.c	(revision 429)
-+++ source/cart_hw/sram.c	(revision 430)
+--- src/genplusgx/cart_hw/sram.c	(revision 429)
++++ src/genplusgx/cart_hw/sram.c	(revision 430)
 @@ -67,9 +67,10 @@
    }
  
@@ -15,10 +15,10 @@ Index: source/cart_hw/sram.c
    if (strstr(rominfo.product,"T-113016") != NULL)
    {
      /* Pugsy (try accessing unmapped area for copy protection) */
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 429)
-+++ source/cart_hw/cart_hw.c	(revision 430)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 429)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 430)
 @@ -233,7 +233,7 @@
    }
  
@@ -143,10 +143,10 @@ Index: source/cart_hw/cart_hw.c
        }
        return;
      }
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 429)
-+++ source/system.c	(revision 430)
+--- src/genplusgx/system.c	(revision 429)
++++ src/genplusgx/system.c	(revision 430)
 @@ -270,15 +270,15 @@
   ****************************************************************/
  void system_init (void)
@@ -166,10 +166,10 @@ Index: source/system.c
    /* Sound Chips hardware */
    sound_init();
  }
-Index: source/loadrom.c
+Index: src/genplusgx/loadrom.c
 ===================================================================
---- source/loadrom.c	(revision 429)
-+++ source/loadrom.c	(revision 430)
+--- src/genplusgx/loadrom.c	(revision 429)
++++ src/genplusgx/loadrom.c	(revision 430)
 @@ -369,8 +369,10 @@
    else region_code = REGION_USA;
  

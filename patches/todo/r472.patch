@@ -1,7 +1,7 @@
-Index: source/cart_hw/eeprom.c
+Index: src/genplusgx/cart_hw/eeprom.c
 ===================================================================
---- source/cart_hw/eeprom.c	(revision 471)
-+++ source/cart_hw/eeprom.c	(revision 472)
+--- src/genplusgx/cart_hw/eeprom.c	(revision 471)
++++ src/genplusgx/cart_hw/eeprom.c	(revision 472)
 @@ -152,26 +152,26 @@
    }
  }
@@ -45,10 +45,10 @@ Index: source/cart_hw/eeprom.c
  {
    uint8 sda_out = eeprom.sda;
  
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 471)
-+++ source/cart_hw/cart_hw.c	(revision 472)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 471)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 472)
 @@ -171,7 +171,7 @@
    ******************************************************************************************************************/
    
@@ -58,10 +58,10 @@ Index: source/cart_hw/cart_hw.c
    while (cart.romsize > size)
      size <<= 1;
  
-Index: source/cart_hw/eeprom.h
+Index: src/genplusgx/cart_hw/eeprom.h
 ===================================================================
---- source/cart_hw/eeprom.h	(revision 471)
-+++ source/cart_hw/eeprom.h	(revision 472)
+--- src/genplusgx/cart_hw/eeprom.h	(revision 471)
++++ src/genplusgx/cart_hw/eeprom.h	(revision 472)
 @@ -86,7 +86,7 @@
  
  /* Function prototypes */
@@ -72,10 +72,10 @@ Index: source/cart_hw/eeprom.h
 +extern unsigned int eeprom_read(int word_access);
  
  #endif
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 471)
-+++ source/sound/ym2612.c	(revision 472)
+--- src/genplusgx/sound/ym2612.c	(revision 471)
++++ src/genplusgx/sound/ym2612.c	(revision 472)
 @@ -955,7 +955,7 @@
  }
  
@@ -94,10 +94,10 @@ Index: source/sound/ym2612.c
        break;
  
      case 0x50:  /* KS, AR */
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 471)
-+++ source/vdp.c	(revision 472)
+--- src/genplusgx/vdp.c	(revision 471)
++++ src/genplusgx/vdp.c	(revision 472)
 @@ -280,7 +280,7 @@
    if (left_cycles < 0) left_cycles = 0;
  
@@ -149,10 +149,10 @@ Index: source/vdp.c
  #endif
        }
        break;
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 471)
-+++ source/genesis.c	(revision 472)
+--- src/genplusgx/genesis.c	(revision 471)
++++ src/genplusgx/genesis.c	(revision 472)
 @@ -45,7 +45,7 @@
    /* initialize CPUs */
    m68k_set_cpu_type(M68K_CPU_TYPE_68000);
@@ -162,10 +162,10 @@ Index: source/genesis.c
  
    /* initialize 68k mapped memory */
    /* $000000-$7fffff is affected to cartridge area (see cart_hw.c) */
-Index: source/vdp.h
+Index: src/genplusgx/vdp.h
 ===================================================================
---- source/vdp.h	(revision 471)
-+++ source/vdp.h	(revision 472)
+--- src/genplusgx/vdp.h	(revision 471)
++++ src/genplusgx/vdp.h	(revision 472)
 @@ -84,7 +84,7 @@
  extern void vdp_data_w(unsigned int data);
  extern unsigned int vdp_data_r(void);
@@ -175,10 +175,10 @@ Index: source/vdp.h
  extern int vdp_int_ack_callback(int int_level);
  
  #endif /* _VDP_H_ */
-Index: source/z80/z80.c
+Index: src/genplusgx/z80/z80.c
 ===================================================================
---- source/z80/z80.c	(revision 471)
-+++ source/z80/z80.c	(revision 472)
+--- src/genplusgx/z80/z80.c	(revision 471)
++++ src/genplusgx/z80/z80.c	(revision 472)
 @@ -3270,7 +3270,7 @@
  /****************************************************************************
   * Processor initialization
@@ -206,10 +206,10 @@ Index: source/z80/z80.c
  {
    if( cycles > 0 )
    {
-Index: source/z80/z80.h
+Index: src/genplusgx/z80/z80.h
 ===================================================================
---- source/z80/z80.h	(revision 471)
-+++ source/z80/z80.h	(revision 472)
+--- src/genplusgx/z80/z80.h	(revision 471)
++++ src/genplusgx/z80/z80.h	(revision 472)
 @@ -43,11 +43,11 @@
  
  extern Z80_Regs Z80;
@@ -225,10 +225,10 @@ Index: source/z80/z80.h
  void z80_get_context (void *dst);
  void z80_set_context (void *src);
  void z80_set_irq_line(int irqline, int state);
-Index: source/m68k/m68kcpu.c
+Index: src/genplusgx/m68k/m68kcpu.c
 ===================================================================
---- source/m68k/m68kcpu.c	(revision 471)
-+++ source/m68k/m68kcpu.c	(revision 472)
+--- src/genplusgx/m68k/m68kcpu.c	(revision 471)
++++ src/genplusgx/m68k/m68kcpu.c	(revision 472)
 @@ -72,7 +72,7 @@
  #endif /* M68K_LOG_ENABLE */
  
@@ -238,10 +238,10 @@ Index: source/m68k/m68kcpu.c
  
  #if M68K_EMULATE_ADDRESS_ERROR
  #include <setjmp.h>
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 471)
-+++ source/mem68k.c	(revision 472)
+--- src/genplusgx/mem68k.c	(revision 471)
++++ src/genplusgx/mem68k.c	(revision 472)
 @@ -117,7 +117,7 @@
  {
    if (address == eeprom.type.sda_out_adr)
@@ -260,10 +260,10 @@ Index: source/mem68k.c
    }
    return *(uint16 *)(cart.rom + address);
  }
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 471)
-+++ source/render.c	(revision 472)
+--- src/genplusgx/render.c	(revision 471)
++++ src/genplusgx/render.c	(revision 472)
 @@ -907,7 +907,7 @@
    }
  }
@@ -321,10 +321,10 @@ Index: source/render.c
    object *obj_info = object_info[object_which^1];
  
    do
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 471)
-+++ source/gen_input.c	(revision 472)
+--- src/genplusgx/gen_input.c	(revision 471)
++++ src/genplusgx/gen_input.c	(revision 472)
 @@ -77,13 +77,13 @@
  static int x_offset;
  static int y_offset;
@@ -341,10 +341,10 @@ Index: source/gen_input.c
  {
    if ((input.analog[num][1] == v_counter + y_offset))
    {
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 471)
-+++ source/gx/gx_video.c	(revision 472)
+--- src/genplusgx/gx/gx_video.c	(revision 471)
++++ src/genplusgx/gx/gx_video.c	(revision 472)
 @@ -499,7 +499,7 @@
  }
  

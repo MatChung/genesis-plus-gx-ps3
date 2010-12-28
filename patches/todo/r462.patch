@@ -1,7 +1,7 @@
-Index: source/membnk.c
+Index: src/genplusgx/membnk.c
 ===================================================================
---- source/membnk.c	(revision 461)
-+++ source/membnk.c	(revision 462)
+--- src/genplusgx/membnk.c	(revision 461)
++++ src/genplusgx/membnk.c	(revision 462)
 @@ -74,11 +74,11 @@
    {
      case 0x00:  /* I/O chip */
@@ -130,10 +130,10 @@ Index: source/membnk.c
        return;
      }
               
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 461)
-+++ source/genesis.c	(revision 462)
+--- src/genplusgx/genesis.c	(revision 461)
++++ src/genplusgx/genesis.c	(revision 462)
 @@ -134,7 +134,9 @@
    /* TMSS + OS ROM support */
    memset(tmss, 0x00, sizeof(tmss));
@@ -208,10 +208,10 @@ Index: source/genesis.c
    }
  
    /* reset YM2612 */
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 461)
-+++ source/mem68k.c	(revision 462)
+--- src/genplusgx/mem68k.c	(revision 461)
++++ src/genplusgx/mem68k.c	(revision 462)
 @@ -115,40 +115,40 @@
  /*--------------------------------------------------------------------------*/
  unsigned int eeprom_read_byte(unsigned int address)
@@ -527,10 +527,10 @@ Index: source/mem68k.c
        return;
      }
  
-Index: source/memz80.c
+Index: src/genplusgx/memz80.c
 ===================================================================
---- source/memz80.c	(revision 461)
-+++ source/memz80.c	(revision 462)
+--- src/genplusgx/memz80.c	(revision 461)
++++ src/genplusgx/memz80.c	(revision 462)
 @@ -65,6 +65,8 @@
    }
    return 0xff;
@@ -555,10 +555,10 @@ Index: source/memz80.c
      }
        
      default: /* V-bus bank */
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 461)
-+++ source/gx/gui/menu.c	(revision 462)
+--- src/genplusgx/gx/gui/menu.c	(revision 461)
++++ src/genplusgx/gx/gui/menu.c	(revision 462)
 @@ -1088,8 +1088,8 @@
            hctab = (reg[12] & 1) ? cycle2hc40 : cycle2hc32;
  
@@ -578,10 +578,10 @@ Index: source/gx/gui/menu.c
              bg_saves[0].h = bg_saves[0].texture->height * 2;
              bg_saves[0].x = (vmode->fbWidth - bg_saves[0].w) / 2;
              bg_saves[0].y = (vmode->efbHeight - bg_saves[0].h) / 2;
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 461)
-+++ source/gx/gx_video.c	(revision 462)
+--- src/genplusgx/gx/gx_video.c	(revision 461)
++++ src/genplusgx/gx/gx_video.c	(revision 462)
 @@ -454,21 +454,24 @@
    /* the following values have been deducted from comparison with a real 50/60hz Mega Drive */
    if (config.aspect)

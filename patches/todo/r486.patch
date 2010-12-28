@@ -1,7 +1,7 @@
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 485)
-+++ source/sound/sound.c	(revision 486)
+--- src/genplusgx/sound/sound.c	(revision 485)
++++ src/genplusgx/sound/sound.c	(revision 486)
 @@ -124,7 +124,7 @@
    /* For better accuracy, sound chips run in synchronization with 68k and Z80 cpus        */
    /* These values give the exact number of M-cycles between 2 rendered samples.           */

@@ -1,7 +1,7 @@
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 427)
-+++ source/gx/gui/menu.c	(revision 428)
+--- src/genplusgx/gx/gui/menu.c	(revision 427)
++++ src/genplusgx/gx/gui/menu.c	(revision 428)
 @@ -705,11 +705,12 @@
    int offset;
    float fm_volume = (float)config.fm_preamp/100.0;
@@ -36,10 +36,10 @@ Index: source/gx/gui/menu.c
          ret = 255;
          if (cart.romsize) 
          {
-Index: source/gx/gui/gui.c
+Index: src/genplusgx/gx/gui/gui.c
 ===================================================================
---- source/gx/gui/gui.c	(revision 427)
-+++ source/gx/gui/gui.c	(revision 428)
+--- src/genplusgx/gx/gui/gui.c	(revision 427)
++++ src/genplusgx/gx/gui/gui.c	(revision 428)
 @@ -1278,8 +1278,8 @@
      else
      {
@@ -51,10 +51,10 @@ Index: source/gx/gui/gui.c
      }
  
      /* draw option text */
-Index: source/gx/vi_encoder.c
+Index: src/genplusgx/gx/vi_encoder.c
 ===================================================================
---- source/gx/vi_encoder.c	(revision 427)
-+++ source/gx/vi_encoder.c	(revision 428)
+--- src/genplusgx/gx/vi_encoder.c	(revision 427)
++++ src/genplusgx/gx/vi_encoder.c	(revision 428)
 @@ -28,6 +28,8 @@
  #include <ogcsys.h>
  #include <ogc/machine/processor.h>
@@ -64,10 +64,10 @@ Index: source/gx/vi_encoder.c
  /****************************************************************************
   *  I2C driver by Hector Martin (marcan)
   *
-Index: source/gx/vi_encoder.h
+Index: src/genplusgx/gx/vi_encoder.h
 ===================================================================
---- source/gx/vi_encoder.h	(revision 427)
-+++ source/gx/vi_encoder.h	(revision 428)
+--- src/genplusgx/gx/vi_encoder.h	(revision 427)
++++ src/genplusgx/gx/vi_encoder.h	(revision 428)
 @@ -23,7 +23,42 @@
   ***************************************************************************/
  #if defined(HW_RVL)
@@ -111,14 +111,14 @@ Index: source/gx/vi_encoder.h
  
 +
  #endif
-Index: source/gx/images/Snap_empty.png
+Index: src/genplusgx/gx/images/Snap_empty.png
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
-Index: source/gx/osd.h
+Index: src/genplusgx/gx/osd.h
 ===================================================================
---- source/gx/osd.h	(revision 427)
-+++ source/gx/osd.h	(revision 428)
+--- src/genplusgx/gx/osd.h	(revision 427)
++++ src/genplusgx/gx/osd.h	(revision 428)
 @@ -17,6 +17,7 @@
  
  #ifdef HW_RVL
@@ -127,29 +127,3 @@ Index: source/gx/osd.h
  #endif
  
  #include "gx_input.h"
-Index: Makefile.wii
-===================================================================
---- Makefile.wii	(revision 427)
-+++ Makefile.wii	(revision 428)
-@@ -26,7 +26,7 @@
- # options for code generation
- #---------------------------------------------------------------------------------
- 
--CFLAGS	= -O3 -g -fomit-frame-pointer -mrvl -Wall $(MACHDEP) -Wno-strict-aliasing $(INCLUDE) -DWORDS_BIGENDIAN -DNGC="1" -DHW_RVL
-+CFLAGS  = -O3 -fomit-frame-pointer -Wall -Wno-strict-aliasing $(MACHDEP) $(INCLUDE) -DWORDS_BIGENDIAN -DNGC -DHW_RVL
- CXXFLAGS	=	$(CFLAGS)
- 
- LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
-Index: Makefile.gc
-===================================================================
---- Makefile.gc	(revision 427)
-+++ Makefile.gc	(revision 428)
-@@ -26,7 +26,7 @@
- # options for code generation
- #---------------------------------------------------------------------------------
- 
--CFLAGS	= -O3 -fomit-frame-pointer -Wall  -Wno-strict-aliasing  $(MACHDEP) $(INCLUDE) -DWORDS_BIGENDIAN -DNGC="1" -DHW_DOL
-+CFLAGS	= -O3 -fomit-frame-pointer -Wall -Wno-strict-aliasing $(MACHDEP) $(INCLUDE) -DWORDS_BIGENDIAN -DNGC -DHW_DOL
- CXXFLAGS	=	$(CFLAGS)
- 
- LDFLAGS	=	$(MACHDEP) -Wl,-Map,$(notdir $@).map

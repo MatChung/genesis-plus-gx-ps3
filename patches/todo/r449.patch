@@ -1,7 +1,7 @@
-Index: source/cart_hw/eeprom.c
+Index: src/genplusgx/cart_hw/eeprom.c
 ===================================================================
---- source/cart_hw/eeprom.c	(revision 448)
-+++ source/cart_hw/eeprom.c	(revision 449)
+--- src/genplusgx/cart_hw/eeprom.c	(revision 448)
++++ src/genplusgx/cart_hw/eeprom.c	(revision 449)
 @@ -21,7 +21,7 @@
  
  #include "shared.h"

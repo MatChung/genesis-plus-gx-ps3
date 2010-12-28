@@ -1,7 +1,7 @@
-Index: source/sound/ym2612.c
+Index: src/genplusgx/sound/ym2612.c
 ===================================================================
---- source/sound/ym2612.c	(revision 440)
-+++ source/sound/ym2612.c	(revision 441)
+--- src/genplusgx/sound/ym2612.c	(revision 440)
++++ src/genplusgx/sound/ym2612.c	(revision 441)
 @@ -2028,7 +2028,7 @@
  }
  
@@ -11,10 +11,10 @@ Index: source/sound/ym2612.c
  {
    int i;
    long int lt,rt;
-Index: source/sound/ym2612.h
+Index: src/genplusgx/sound/ym2612.h
 ===================================================================
---- source/sound/ym2612.h	(revision 440)
-+++ source/sound/ym2612.h	(revision 441)
+--- src/genplusgx/sound/ym2612.h	(revision 440)
++++ src/genplusgx/sound/ym2612.h	(revision 441)
 @@ -21,7 +21,7 @@
  
  extern int YM2612Init(float clock, int rate);
@@ -24,10 +24,10 @@ Index: source/sound/ym2612.h
  extern void YM2612Write(unsigned int a, unsigned int v);
  extern unsigned int YM2612Read(void);
  extern unsigned char *YM2612GetContextPtr(void);
-Index: source/gx/vi_encoder.c
+Index: src/genplusgx/gx/vi_encoder.c
 ===================================================================
---- source/gx/vi_encoder.c	(revision 440)
-+++ source/gx/vi_encoder.c	(revision 441)
+--- src/genplusgx/gx/vi_encoder.c	(revision 440)
++++ src/genplusgx/gx/vi_encoder.c	(revision 441)
 @@ -1,549 +0,0 @@
 -/****************************************************************************
 - *  vi_encoder.c
@@ -578,10 +578,10 @@ Index: source/gx/vi_encoder.c
 -}
 -
 -#endif
-Index: source/gx/vi_encoder.h
+Index: src/genplusgx/gx/vi_encoder.h
 ===================================================================
---- source/gx/vi_encoder.h	(revision 440)
-+++ source/gx/vi_encoder.h	(revision 441)
+--- src/genplusgx/gx/vi_encoder.h	(revision 440)
++++ src/genplusgx/gx/vi_encoder.h	(revision 441)
 @@ -1,64 +0,0 @@
 -/****************************************************************************
 - *  vi_encoder.c
@@ -647,10 +647,10 @@ Index: source/gx/vi_encoder.h
 -
 -
 -#endif
-Index: source/gx/gui/oggplayer.h
+Index: src/genplusgx/gx/gui/oggplayer.h
 ===================================================================
---- source/gx/gui/oggplayer.h	(revision 440)
-+++ source/gx/gui/oggplayer.h	(revision 441)
+--- src/genplusgx/gx/gui/oggplayer.h	(revision 440)
++++ src/genplusgx/gx/gui/oggplayer.h	(revision 441)
 @@ -1,176 +0,0 @@
 -/*
 - Copyright (c) 2008 Francisco Muñoz 'Hermes' <www.elotrolado.net>
@@ -828,10 +828,10 @@ Index: source/gx/gui/oggplayer.h
 -#endif
 -
 -#endif
-Index: source/gx/gui/oggplayer.c
+Index: src/genplusgx/gx/gui/oggplayer.c
 ===================================================================
---- source/gx/gui/oggplayer.c	(revision 440)
-+++ source/gx/gui/oggplayer.c	(revision 441)
+--- src/genplusgx/gx/gui/oggplayer.c	(revision 440)
++++ src/genplusgx/gx/gui/oggplayer.c	(revision 441)
 @@ -1,536 +0,0 @@
 -/*
 - Copyright (c) 2008 Francisco Muñoz 'Hermes' <www.elotrolado.net>
@@ -1369,10 +1369,10 @@ Index: source/gx/gui/oggplayer.c
 -    private_ogg.seek_time = time_pos;
 -}
 -
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 440)
-+++ source/gx/gui/menu.c	(revision 441)
+--- src/genplusgx/gx/gui/menu.c	(revision 440)
++++ src/genplusgx/gx/gui/menu.c	(revision 441)
 @@ -127,7 +127,7 @@
    {NULL,Banner_top_png,IMAGE_VISIBLE,0,0,640,108,255},
    {NULL,Banner_bottom_png,IMAGE_VISIBLE,0,380,640,100,255},
@@ -1382,10 +1382,10 @@ Index: source/gx/gui/menu.c
  };
  
  /*****************************************************************************/
-Index: source/gx/utils/oggplayer.h
+Index: src/genplusgx/gx/utils/oggplayer.h
 ===================================================================
---- source/gx/utils/oggplayer.h	(revision 0)
-+++ source/gx/utils/oggplayer.h	(revision 441)
+--- src/genplusgx/gx/utils/oggplayer.h	(revision 0)
++++ src/genplusgx/gx/utils/oggplayer.h	(revision 441)
 @@ -0,0 +1,176 @@
 +/*
 + Copyright (c) 2008 Francisco Muñoz 'Hermes' <www.elotrolado.net>
@@ -1563,18 +1563,18 @@ Index: source/gx/utils/oggplayer.h
 +#endif
 +
 +#endif
-Index: source/gx/utils/ehcmodule_elf.h
+Index: src/genplusgx/gx/utils/ehcmodule_elf.h
 ===================================================================
---- source/gx/utils/ehcmodule_elf.h	(revision 0)
-+++ source/gx/utils/ehcmodule_elf.h	(revision 441)
+--- src/genplusgx/gx/utils/ehcmodule_elf.h	(revision 0)
++++ src/genplusgx/gx/utils/ehcmodule_elf.h	(revision 441)
 @@ -0,0 +1,3 @@
 +extern const u8 ehcmodule_elf_end[];
 +extern const u8 ehcmodule_elf[];
 +extern const u32 ehcmodule_elf_size;
-Index: source/gx/utils/usb2storage.c
+Index: src/genplusgx/gx/utils/usb2storage.c
 ===================================================================
---- source/gx/utils/usb2storage.c	(revision 0)
-+++ source/gx/utils/usb2storage.c	(revision 441)
+--- src/genplusgx/gx/utils/usb2storage.c	(revision 0)
++++ src/genplusgx/gx/utils/usb2storage.c	(revision 441)
 @@ -0,0 +1,455 @@
 +/*-------------------------------------------------------------
 +
@@ -2031,10 +2031,10 @@ Index: source/gx/utils/usb2storage.c
 +	(FN_MEDIUM_SHUTDOWN) & __usb2storage_Shutdown
 +};
 +#endif
-Index: source/gx/utils/mload.h
+Index: src/genplusgx/gx/utils/mload.h
 ===================================================================
---- source/gx/utils/mload.h	(revision 0)
-+++ source/gx/utils/mload.h	(revision 441)
+--- src/genplusgx/gx/utils/mload.h	(revision 0)
++++ src/genplusgx/gx/utils/mload.h	(revision 441)
 @@ -0,0 +1,33 @@
 +/* mload.c (for PPC) (c) 2009, Hermes 
 +
@@ -2069,10 +2069,10 @@ Index: source/gx/utils/mload.h
 +#endif
 +
 +#endif
-Index: source/gx/utils/vi_encoder.h
+Index: src/genplusgx/gx/utils/vi_encoder.h
 ===================================================================
---- source/gx/utils/vi_encoder.h	(revision 0)
-+++ source/gx/utils/vi_encoder.h	(revision 441)
+--- src/genplusgx/gx/utils/vi_encoder.h	(revision 0)
++++ src/genplusgx/gx/utils/vi_encoder.h	(revision 441)
 @@ -0,0 +1,64 @@
 +/****************************************************************************
 + *  vi_encoder.c
@@ -2138,10 +2138,10 @@ Index: source/gx/utils/vi_encoder.h
 +
 +
 +#endif
-Index: source/gx/utils/usb2storage.h
+Index: src/genplusgx/gx/utils/usb2storage.h
 ===================================================================
---- source/gx/utils/usb2storage.h	(revision 0)
-+++ source/gx/utils/usb2storage.h	(revision 441)
+--- src/genplusgx/gx/utils/usb2storage.h	(revision 0)
++++ src/genplusgx/gx/utils/usb2storage.h	(revision 441)
 @@ -0,0 +1,16 @@
 +
 +#ifndef __USB2STORAGE_H__
@@ -2159,10 +2159,10 @@ Index: source/gx/utils/usb2storage.h
 +
 +
 +#endif
-Index: source/gx/utils/oggplayer.c
+Index: src/genplusgx/gx/utils/oggplayer.c
 ===================================================================
---- source/gx/utils/oggplayer.c	(revision 0)
-+++ source/gx/utils/oggplayer.c	(revision 441)
+--- src/genplusgx/gx/utils/oggplayer.c	(revision 0)
++++ src/genplusgx/gx/utils/oggplayer.c	(revision 441)
 @@ -0,0 +1,536 @@
 +/*
 + Copyright (c) 2008 Francisco Muñoz 'Hermes' <www.elotrolado.net>
@@ -2700,10 +2700,10 @@ Index: source/gx/utils/oggplayer.c
 +    private_ogg.seek_time = time_pos;
 +}
 +
-Index: source/gx/utils/mload.c
+Index: src/genplusgx/gx/utils/mload.c
 ===================================================================
---- source/gx/utils/mload.c	(revision 0)
-+++ source/gx/utils/mload.c	(revision 441)
+--- src/genplusgx/gx/utils/mload.c	(revision 0)
++++ src/genplusgx/gx/utils/mload.c	(revision 441)
 @@ -0,0 +1,281 @@
 +/* mload.c (for PPC) (c) 2009, Hermes 
 +
@@ -2986,10 +2986,10 @@ Index: source/gx/utils/mload.c
 +}
 +
 +#endif
-Index: source/gx/utils/vi_encoder.c
+Index: src/genplusgx/gx/utils/vi_encoder.c
 ===================================================================
---- source/gx/utils/vi_encoder.c	(revision 0)
-+++ source/gx/utils/vi_encoder.c	(revision 441)
+--- src/genplusgx/gx/utils/vi_encoder.c	(revision 0)
++++ src/genplusgx/gx/utils/vi_encoder.c	(revision 441)
 @@ -0,0 +1,549 @@
 +/****************************************************************************
 + *  vi_encoder.c
@@ -3540,10 +3540,10 @@ Index: source/gx/utils/vi_encoder.c
 +}
 +
 +#endif
-Index: source/gx/main.c
+Index: src/genplusgx/gx/main.c
 ===================================================================
---- source/gx/main.c	(revision 440)
-+++ source/gx/main.c	(revision 441)
+--- src/genplusgx/gx/main.c	(revision 440)
++++ src/genplusgx/gx/main.c	(revision 441)
 @@ -29,6 +29,11 @@
  #include "aram.h"
  #include "dvd.h"
@@ -3710,47 +3710,3 @@ Index: source/gx/main.c
    legal();
    config_default();
    history_default();
-Index: Makefile.wii
-===================================================================
---- Makefile.wii	(revision 440)
-+++ Makefile.wii	(revision 441)
-@@ -18,9 +18,10 @@
- TARGET		:=	genplus_wii
- BUILD		:=	build_wii
- SOURCES		:=	source source/m68k source/z80 source/sound source/ntsc source/cart_hw source/cart_hw/svp \
--			source/gx source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
-+			source/gx source/gx/utils source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
- INCLUDES	:=	source source/m68k source/z80 source/sound source/ntsc source/cart_hw source/cart_hw/svp \
--			build_wii source/gx source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
-+			source/gx source/gx/utils source/gx/gui source/gx/fileio source/gx/images source/gx/sounds \
-+			$(BUILD) 
- 
- #---------------------------------------------------------------------------------
- # options for code generation
-@@ -80,7 +81,8 @@
- export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
- 			$(PNGFILES:.png=.png.o) $(PCMFILES:.pcm=.pcm.o) $(OGGFILES:.ogg=.ogg.o) \
- 			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) \
--			$(sFILES:.s=.o) $(SFILES:.S=.o)
-+			$(sFILES:.s=.o) $(SFILES:.S=.o) \
-+			$(CURDIR)/source/gx/utils/ehcmodule.elf.o
- 
- #---------------------------------------------------------------------------------
- # build a list of include paths
-Index: Makefile.gc
-===================================================================
---- Makefile.gc	(revision 440)
-+++ Makefile.gc	(revision 441)
-@@ -18,9 +18,10 @@
- TARGET		:=	genplus_cube
- BUILD		:=	build_cube
- SOURCES		:=	source source/m68k source/z80 source/sound source/ntsc source/cart_hw source/cart_hw/svp \
--			source/gx source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
-+			source/gx source/gx/utils source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
- INCLUDES	:=	source source/m68k source/z80 source/sound source/ntsc source/cart_hw source/cart_hw/svp \
--			build_cube source/gx source/gx/gui source/gx/fileio source/gx/images source/gx/sounds
-+			source/gx source/gx/utils source/gx/gui source/gx/fileio source/gx/images source/gx/sounds \
-+			$(BUILD)
- 
- #---------------------------------------------------------------------------------
- # options for code generation

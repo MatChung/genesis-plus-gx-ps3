@@ -1,7 +1,7 @@
-Index: source/sound/sound.c
+Index: src/genplusgx/sound/sound.c
 ===================================================================
---- source/sound/sound.c	(revision 462)
-+++ source/sound/sound.c	(revision 463)
+--- src/genplusgx/sound/sound.c	(revision 462)
++++ src/genplusgx/sound/sound.c	(revision 463)
 @@ -42,10 +42,10 @@
      fm_cycles_count += cycles;
  
@@ -28,10 +28,10 @@ Index: source/sound/sound.c
      if (remain)
      {
        /* one sample ahead */
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 462)
-+++ source/system.c	(revision 463)
+--- src/genplusgx/system.c	(revision 462)
++++ src/genplusgx/system.c	(revision 463)
 @@ -80,7 +80,7 @@
    if (config.hq_fm)
    {
@@ -82,10 +82,10 @@ Index: source/system.c
    if (!snd.fm.buffer)
      return (-1);
  
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 462)
-+++ source/genesis.c	(revision 463)
+--- src/genplusgx/genesis.c	(revision 462)
++++ src/genplusgx/genesis.c	(revision 463)
 @@ -258,18 +258,19 @@
    -----------------------------------------------------------------------*/
  void gen_zbusreq_w(unsigned int state, unsigned int cycles)

@@ -1,7 +1,7 @@
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 495)
-+++ source/genesis.c	(revision 496)
+--- src/genplusgx/genesis.c	(revision 495)
++++ src/genplusgx/genesis.c	(revision 496)
 @@ -138,8 +138,8 @@
      m68k_memory_map[0].base = bios_rom;
    }
@@ -22,10 +22,10 @@ Index: source/genesis.c
      mcycles_68k = mcycles_z80 = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
  
      /* Reset 68k, Z80 & YM2612 */
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 495)
-+++ source/mem68k.c	(revision 496)
+--- src/genplusgx/mem68k.c	(revision 495)
++++ src/genplusgx/mem68k.c	(revision 496)
 @@ -483,8 +483,13 @@
  
      case 0x40:  /* TMSS */

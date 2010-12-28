@@ -1,7 +1,7 @@
-Index: source/sound/sn76489.c
+Index: src/genplusgx/sound/sn76489.c
 ===================================================================
---- source/sound/sn76489.c	(revision 494)
-+++ source/sound/sn76489.c	(revision 495)
+--- src/genplusgx/sound/sn76489.c	(revision 494)
++++ src/genplusgx/sound/sn76489.c	(revision 495)
 @@ -21,17 +21,17 @@
  
     25/04/07 Eke-Eke (Genesis Plus GX)
@@ -23,10 +23,10 @@ Index: source/sound/sn76489.c
  */
  
  #include "shared.h"
-Index: source/sound/blip.c
+Index: src/genplusgx/sound/blip.c
 ===================================================================
---- source/sound/blip.c	(revision 0)
-+++ source/sound/blip.c	(revision 495)
+--- src/genplusgx/sound/blip.c	(revision 0)
++++ src/genplusgx/sound/blip.c	(revision 495)
 @@ -0,0 +1,163 @@
 +/* http://www.slack.net/~ant/ */
 +
@@ -191,10 +191,10 @@ Index: source/sound/blip.c
 +	
 +	return count;
 +}
-Index: source/sound/blip.h
+Index: src/genplusgx/sound/blip.h
 ===================================================================
---- source/sound/blip.h	(revision 0)
-+++ source/sound/blip.h	(revision 495)
+--- src/genplusgx/sound/blip.h	(revision 0)
++++ src/genplusgx/sound/blip.h	(revision 495)
 @@ -0,0 +1,51 @@
 +/* Fast sound synthesis buffer for use in real-time emulators of electronic
 +sound generator chips like those in early video game consoles. Uses linear

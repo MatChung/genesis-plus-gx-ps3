@@ -1,7 +1,7 @@
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 464)
-+++ source/vdp.c	(revision 465)
+--- src/genplusgx/vdp.c	(revision 464)
++++ src/genplusgx/vdp.c	(revision 465)
 @@ -117,7 +117,7 @@
   CRAM or VSRAM for a 68K > VDP transfer, in which case it is in words.
  
@@ -70,10 +70,10 @@ Index: source/vdp.c
  
      addr = addr_latch | (data & 0x3FFF);
      code = ((code & 0x3C) | ((data >> 14) & 0x03));
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 464)
-+++ source/genesis.c	(revision 465)
+--- src/genplusgx/genesis.c	(revision 464)
++++ src/genplusgx/genesis.c	(revision 465)
 @@ -265,7 +265,7 @@
      {
        /* resynchronize with 68k */ 

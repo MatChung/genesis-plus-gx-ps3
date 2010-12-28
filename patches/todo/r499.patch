@@ -1,7 +1,7 @@
-Index: source/cart_hw/cart_hw.c
+Index: src/genplusgx/cart_hw/cart_hw.c
 ===================================================================
---- source/cart_hw/cart_hw.c	(revision 498)
-+++ source/cart_hw/cart_hw.c	(revision 499)
+--- src/genplusgx/cart_hw/cart_hw.c	(revision 498)
++++ src/genplusgx/cart_hw/cart_hw.c	(revision 499)
 @@ -27,7 +27,7 @@
  
  #include "shared.h"

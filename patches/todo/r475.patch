@@ -1,7 +1,7 @@
-Index: source/gen_io.c
+Index: src/genplusgx/gen_io.c
 ===================================================================
---- source/gen_io.c	(revision 474)
-+++ source/gen_io.c	(revision 475)
+--- src/genplusgx/gen_io.c	(revision 474)
++++ src/genplusgx/gen_io.c	(revision 475)
 @@ -28,10 +28,19 @@
  
  static struct port_t
@@ -155,10 +155,10 @@ Index: source/gen_io.c
 +      return io_reg[offset];
    }
  }
-Index: source/gen_io.h
+Index: src/genplusgx/gen_io.h
 ===================================================================
---- source/gen_io.h	(revision 474)
-+++ source/gen_io.h	(revision 475)
+--- src/genplusgx/gen_io.h	(revision 474)
++++ src/genplusgx/gen_io.h	(revision 475)
 @@ -37,8 +37,8 @@
  /* Function prototypes */
  extern void io_init(void);
@@ -170,10 +170,10 @@ Index: source/gen_io.h
  
  #endif /* _IO_H_ */
  
-Index: source/gen_input.c
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/gen_input.c	(revision 474)
-+++ source/gen_input.c	(revision 475)
+--- src/genplusgx/gen_input.c	(revision 474)
++++ src/genplusgx/gen_input.c	(revision 475)
 @@ -110,10 +110,10 @@
  }
  
@@ -656,10 +656,10 @@ Index: source/gen_input.c
  {
    gamepad_write(5, (data&1) << 6);
    gamepad_write(6, (data&1) << 6);
-Index: source/gen_input.h
+Index: src/genplusgx/gen_input.h
 ===================================================================
---- source/gen_input.h	(revision 474)
-+++ source/gen_input.h	(revision 475)
+--- src/genplusgx/gen_input.h	(revision 474)
++++ src/genplusgx/gen_input.h	(revision 475)
 @@ -37,15 +37,15 @@
  
  /* Input bitmasks */
