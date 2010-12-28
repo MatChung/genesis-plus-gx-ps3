@@ -1,0 +1,120 @@
+Index: src/genplusgx/sound/Fir_Resampler.h
+===================================================================
+--- src/genplusgx/sound/Fir_Resampler.h	(revision 438)
++++ src/genplusgx/sound/Fir_Resampler.h	(revision 439)
+@@ -10,7 +10,7 @@
+ #define WRITE_OFFSET  (WIDTH * STEREO) - STEREO
+ #define GAIN          1.0
+ 
+-typedef long int sample_t;
++typedef short int sample_t;
+ 
+ extern int Fir_Resampler_initialize( int new_size );
+ extern void Fir_Resampler_shutdown( void );
+Index: src/genplusgx/sound/ym2612.c
+===================================================================
+--- src/genplusgx/sound/ym2612.c	(revision 438)
++++ src/genplusgx/sound/ym2612.c	(revision 439)
+@@ -2028,7 +2028,7 @@
+ }
+ 
+ /* Generate 16 bits samples for ym2612 */
+-void YM2612Update(long int *buffer, int length)
++void YM2612Update(short int *buffer, int length)
+ {
+   int i;
+   long int lt,rt;
+Index: src/genplusgx/sound/ym2612.h
+===================================================================
+--- src/genplusgx/sound/ym2612.h	(revision 438)
++++ src/genplusgx/sound/ym2612.h	(revision 439)
+@@ -21,7 +21,7 @@
+ 
+ extern int YM2612Init(float clock, int rate);
+ extern int YM2612ResetChip(void);
+-extern void YM2612Update(long int *buffer, int length);
++extern void YM2612Update(short int *buffer, int length);
+ extern void YM2612Write(unsigned int a, unsigned int v);
+ extern unsigned int YM2612Read(void);
+ extern unsigned char *YM2612GetContextPtr(void);
+Index: src/genplusgx/sound/sound.c
+===================================================================
+--- src/genplusgx/sound/sound.c	(revision 438)
++++ src/genplusgx/sound/sound.c	(revision 439)
+@@ -54,7 +54,7 @@
+     }
+ 
+     /* select input sample buffer */
+-    int32 *buffer = Fir_Resampler_buffer();
++    int16 *buffer = Fir_Resampler_buffer();
+     if (buffer)
+     {
+       Fir_Resampler_write(cnt << 1);
+Index: src/genplusgx/sound/Fir_Resampler.c
+===================================================================
+--- src/genplusgx/sound/Fir_Resampler.c	(revision 438)
++++ src/genplusgx/sound/Fir_Resampler.c	(revision 439)
+@@ -4,7 +4,7 @@
+ 
+ #include "Fir_Resampler.h"
+ 
+-#include <assert.h>
++//#include <assert.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+@@ -229,7 +229,7 @@
+ void Fir_Resampler_write( long count )
+ {
+   write_pos += count;
+-  assert( write_pos <= ( buffer + buffer_size ) );
++ // assert( write_pos <= ( buffer + buffer_size ) );
+ }
+ 
+ int Fir_Resampler_read( sample_t* out, long count )
+Index: src/genplusgx/system.c
+===================================================================
+--- src/genplusgx/system.c	(revision 438)
++++ src/genplusgx/system.c	(revision 439)
+@@ -64,7 +64,7 @@
+   uint32 factora  = (config.lp_range << 16) / 100;
+   uint32 factorb  = 0x10000 - factora;
+ 
+-  int32 *fm       = snd.fm.buffer;
++  int16 *fm       = snd.fm.buffer;
+   int16 *psg      = snd.psg.buffer;
+ 
+ #ifdef NGC
+@@ -196,7 +196,7 @@
+     return (-1);
+ 
+   /* YM2612 stream buffers */
+-  snd.fm.buffer = (int32 *) malloc(snd.buffer_size * sizeof(int32) * 2);
++  snd.fm.buffer = (int32 *) malloc(snd.buffer_size * sizeof(int16) * 2);
+   if (!snd.fm.buffer)
+     return (-1);
+ 
+@@ -241,7 +241,7 @@
+   if (snd.psg.buffer)
+     memset (snd.psg.buffer, 0, snd.buffer_size * sizeof(int16));
+   if (snd.fm.buffer)
+-    memset (snd.fm.buffer, 0, snd.buffer_size * sizeof(int32) * 2);
++    memset (snd.fm.buffer, 0, snd.buffer_size * sizeof(int16) * 2);
+ }
+ 
+ /****************************************************************
+Index: src/genplusgx/system.h
+===================================================================
+--- src/genplusgx/system.h	(revision 438)
++++ src/genplusgx/system.h	(revision 439)
+@@ -61,8 +61,8 @@
+   int16 *buffer[2]; /* Signed 16-bit stereo sound data */
+   struct
+   {
+-    int32 *pos;
+-    int32 *buffer;
++    int16 *pos;
++    int16 *buffer;
+   } fm;
+   struct
+   {
