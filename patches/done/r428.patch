@@ -1,0 +1,129 @@
+Index: src/genplusgx/gx/gui/menu.c
+===================================================================
+--- src/genplusgx/gx/gui/menu.c	(revision 427)
++++ src/genplusgx/gx/gui/menu.c	(revision 428)
+@@ -705,11 +705,12 @@
+   int offset;
+   float fm_volume = (float)config.fm_preamp/100.0;
+   float psg_volume = (float)config.psg_preamp/100.0;
++  float rolloff = config.rolloff * 100.0;
+   
+   if (config.hq_fm)
+   {
+     sprintf (items[0].text, "High-Quality FM: ON");
+-    sprintf (items[1].text, "FM Roll-off: %1.3f",config.rolloff);
++    sprintf (items[1].text, "FM Roll-off: %1.2f %%",rolloff);
+     strcpy  (items[1].comment, "Adjust FIR low-pass filtering");
+     offset = 2;
+   }
+@@ -783,6 +784,7 @@
+   gui_item *items = m->items;
+   float fm_volume = (float)config.fm_preamp/100.0;
+   float psg_volume = (float)config.psg_preamp/100.0;
++  float rolloff = config.rolloff * 100.0;
+   int offset = update_snd_items();
+   GUI_InitMenu(m);
+   GUI_SlideMenuTitle(m,strlen("Audio "));
+@@ -796,8 +798,9 @@
+     {
+       if (ret == 1)
+       {
+-        GUI_OptionBox(m,0,"FM Roll-off",(void *)&config.rolloff,0.001,0.800,1.000,0);
+-        sprintf (items[1].text, "FM Roll-off: %1.3f",config.rolloff);
++        GUI_OptionBox(m,0,"FM Roll-off",(void *)&rolloff,0.1,95.0,99.9,0);
++        sprintf (items[1].text, "FM Roll-off: %1.2f %%",rolloff);
++        config.rolloff = rolloff / 100.0;
+         ret = 255;
+         if (cart.romsize) 
+         {
+Index: src/genplusgx/gx/gui/gui.c
+===================================================================
+--- src/genplusgx/gx/gui/gui.c	(revision 427)
++++ src/genplusgx/gx/gui/gui.c	(revision 428)
+@@ -1278,8 +1278,8 @@
+     else
+     {
+       /* float type */
+-      if (*(float *)option < 0.0) sprintf(msg,"-%1.3f",fabs(*(float *)option));
+-      else sprintf(msg,"%1.3f",fabs(*(float *)option));
++      if (*(float *)option < 0.0) sprintf(msg,"-%1.2f",fabs(*(float *)option));
++      else sprintf(msg,"%1.2f",fabs(*(float *)option));
+     }
+ 
+     /* draw option text */
+Index: src/genplusgx/gx/vi_encoder.c
+===================================================================
+--- src/genplusgx/gx/vi_encoder.c	(revision 427)
++++ src/genplusgx/gx/vi_encoder.c	(revision 428)
+@@ -28,6 +28,8 @@
+ #include <ogcsys.h>
+ #include <ogc/machine/processor.h>
+ 
++#include "vi_encoder.h"
++
+ /****************************************************************************
+  *  I2C driver by Hector Martin (marcan)
+  *
+Index: src/genplusgx/gx/vi_encoder.h
+===================================================================
+--- src/genplusgx/gx/vi_encoder.h	(revision 427)
++++ src/genplusgx/gx/vi_encoder.h	(revision 428)
+@@ -23,7 +23,42 @@
+  ***************************************************************************/
+ #if defined(HW_RVL)
+ 
++typedef enum
++{
++    VI_GM_0_1=1,
++    VI_GM_0_2,
++    VI_GM_0_3,
++    VI_GM_0_4,
++    VI_GM_0_5,
++    VI_GM_0_6,
++    VI_GM_0_7,
++    VI_GM_0_8,
++    VI_GM_0_9,
++    VI_GM_1_0,
++    VI_GM_1_1,
++    VI_GM_1_2,
++    VI_GM_1_3,
++    VI_GM_1_4,
++    VI_GM_1_5,
++    VI_GM_1_6,
++    VI_GM_1_7,
++    VI_GM_1_8,
++    VI_GM_1_9,
++    VI_GM_2_0,
++    VI_GM_2_1,
++    VI_GM_2_2,
++    VI_GM_2_3,
++    VI_GM_2_4,
++    VI_GM_2_5,
++    VI_GM_2_6,
++    VI_GM_2_7,
++    VI_GM_2_8,
++    VI_GM_2_9,
++    VI_GM_3_0
++} VIGamma;
++
+ extern void VIDEO_SetGamma(VIGamma gamma);
+ extern void VIDEO_SetTrapFilter(bool enable);
+ 
++
+ #endif
+Index: src/genplusgx/gx/images/Snap_empty.png
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
+Index: src/genplusgx/gx/osd.h
+===================================================================
+--- src/genplusgx/gx/osd.h	(revision 427)
++++ src/genplusgx/gx/osd.h	(revision 428)
+@@ -17,6 +17,7 @@
+ 
+ #ifdef HW_RVL
+ #include <di/di.h>
++#include "vi_encoder.h"
+ #endif
+ 
+ #include "gx_input.h"
