@@ -129,7 +129,6 @@ void config_default()
 	config.force_dtack    = 0;
 	config.addr_error     = 1;
 	config.tmss           = 0;
-	//config.bios_enabled   = 0;
 	config.lock_on        = Settings.ExtraCart;
 	config.romtype        = 0;
 	config.hot_swap       = 0;
@@ -181,9 +180,8 @@ static void set_controller(int controllerno)
 static void load_bios(void)
 {
 	LOG_DBG("load_bios()\n");
-	char* bios;
 	// clear BIOS detection flag
-	config.bios_enabled &= ~2;
+	config.tmss &= ~2;
 
 	// open BIOS file
 	LOG_DBG("Settings.BIOS = %s\n", Settings.BIOS.c_str());
@@ -201,7 +199,7 @@ static void load_bios(void)
 	if (!strncmp((char *)(bios_rom + 0x120),"GENESIS OS", 10))
 	{
 		// valid BIOS detected
-		config.bios_enabled |= 2;
+		config.tmss |= 2;
 	}
 }
 
@@ -1080,8 +1078,15 @@ void Emulator_Start()
 	{
 		system_frame(0);
 		Graphics->Draw(bitmap.viewport.w,bitmap.viewport.h,bitmap.data);
-		Graphics->Swap();
+
 		PlaySound();
+
+		//check interlaced mode change
+		if (bitmap.viewport.changed & 4)
+		{
+			//stub
+			bitmap.viewport.changed &= ~4;
+		}
 		cellSysutilCheckCallback();
 	}
 	SaveSRAM();

@@ -4,6 +4,8 @@
 #include "cellframework/audio/audioport.hpp"
 #include "cellframework/audio/rsound.hpp"
 
+#include "ps3input.h"
+
 #define USRDIR "/dev_hdd0/game/GENP00001/USRDIR/"
 
 #define EMULATOR_VERSION "1.2"
