@@ -29,7 +29,7 @@
 #include "cart_hw/eeprom.h"
 #include "cart_hw/sram.h"
 #include "cart_hw/ggenie.h"
-#include "cart_hw/datel.h"
+#include "cart_hw/areplay.h"
 #include "cart_hw/svp/svp.h"
 
 #endif /* _SHARED_H_ */

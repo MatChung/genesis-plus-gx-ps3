@@ -54,7 +54,7 @@ PPU_SRCS := $(SRC_DIR)/GenesisPlus.cpp \
 	$(GENESIS_PLUS_API_DIR)/mem68k.c \
 	$(GENESIS_PLUS_API_DIR)/memz80.c \
 	$(GENESIS_PLUS_API_DIR)/membnk.c \
-	$(GENESIS_PLUS_API_DIR)/cart_hw/datel.c \
+	$(GENESIS_PLUS_API_DIR)/cart_hw/areplay.c \
 	$(GENESIS_PLUS_API_DIR)/cart_hw/cart_hw.c \
 	$(GENESIS_PLUS_API_DIR)/cart_hw/eeprom.c \
 	$(GENESIS_PLUS_API_DIR)/cart_hw/ggenie.c \
