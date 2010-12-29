@@ -68,6 +68,7 @@ PPU_SRCS := $(SRC_DIR)/GenesisPlus.cpp \
 	$(GENESIS_PLUS_API_DIR)/sound/sound.c \
 	$(GENESIS_PLUS_API_DIR)/sound/ym2612.c \
 	$(GENESIS_PLUS_API_DIR)/sound/sn76489.c \
+	$(GENESIS_PLUS_API_DIR)/sound/blip.c \
 	$(GENESIS_PLUS_API_DIR)/z80/z80.c \
 	$(GENESIS_PLUS_API_DIR)/m68k/m68kcpu.c \
 	$(GENESIS_PLUS_API_DIR)/m68k/m68kops.c \
