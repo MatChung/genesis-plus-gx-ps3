@@ -783,7 +783,7 @@ static int update_snd_items(void)
   float rolloff = config.rolloff * 100.0;
   float lg = (float)config.lg/100.0;
   float mg = (float)config.mg/100.0;
-  float hg = config.hg * 100.0;
+  float hg = (float)config.hg/100.0;
   
   if (config.hq_fm)
   {
@@ -856,7 +856,7 @@ static void soundmenu ()
   float rolloff = config.rolloff * 100.0;
   float lg = (float)config.lg/100.0;
   float mg = (float)config.mg/100.0;
-  float hg = config.hg * 100.0;
+  float hg = (float)config.hg/100.0;
   int offset = update_snd_items();
   GUI_InitMenu(m);
   GUI_SlideMenuTitle(m,strlen("Audio "));
