@@ -1,7 +1,7 @@
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 458)
-+++ source/render.c	(revision 459)
+--- src/genplusgx/render.c	(revision 458)
++++ src/genplusgx/render.c	(revision 459)
 @@ -1081,13 +1081,8 @@
    if(shift)
    {

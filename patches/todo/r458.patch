@@ -1,7 +1,7 @@
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 457)
-+++ source/system.c	(revision 458)
+--- src/genplusgx/system.c	(revision 457)
++++ src/genplusgx/system.c	(revision 458)
 @@ -327,19 +327,52 @@
   ****************************************************************/
  void system_frame (int do_skip)
@@ -141,10 +141,10 @@ Index: source/system.c
        }
      }
  
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 457)
-+++ source/vdp.c	(revision 458)
+--- src/genplusgx/vdp.c	(revision 457)
++++ src/genplusgx/vdp.c	(revision 458)
 @@ -50,7 +50,6 @@
  uint8 dmafill;        /* next VDP Write is DMA Fill */
  uint8 hint_pending;   /* 0= Line interrupt is pending */
@@ -354,10 +354,10 @@ Index: source/vdp.c
        /* See if the S/TE mode bit has changed */
        if (r & 0x08)
        {
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 457)
-+++ source/genesis.c	(revision 458)
+--- src/genplusgx/genesis.c	(revision 457)
++++ src/genplusgx/genesis.c	(revision 458)
 @@ -125,13 +125,15 @@
    if (config.bios_enabled == 3)
      m68k_memory_map[0].base = bios_rom;
@@ -430,10 +430,10 @@ Index: source/genesis.c
 -  z80_set_irq_line (0, CLEAR_LINE);
    return 0xFF;
  }
-Index: source/vdp.h
+Index: src/genplusgx/vdp.h
 ===================================================================
---- source/vdp.h	(revision 457)
-+++ source/vdp.h	(revision 458)
+--- src/genplusgx/vdp.h	(revision 457)
++++ src/genplusgx/vdp.h	(revision 458)
 @@ -38,7 +38,6 @@
  extern uint8 dmafill;
  extern uint8 hint_pending;
@@ -442,10 +442,10 @@ Index: source/vdp.h
  extern uint8 irq_status;
  
  /* Global variables */
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 457)
-+++ source/render.c	(revision 458)
+--- src/genplusgx/render.c	(revision 457)
++++ src/genplusgx/render.c	(revision 458)
 @@ -1490,8 +1490,9 @@
    int height;
    int v_line;
@@ -584,10 +584,10 @@ Index: source/render.c
  
    /* Clear clipping data */
    memset(&clip, 0, sizeof(clip));
-Index: source/render.h
+Index: src/genplusgx/render.h
 ===================================================================
---- source/render.h	(revision 457)
-+++ source/render.h	(revision 458)
+--- src/genplusgx/render.h	(revision 457)
++++ src/genplusgx/render.h	(revision 458)
 @@ -31,7 +31,7 @@
  extern void render_init(void);
  extern void render_reset(void);
@@ -597,10 +597,10 @@ Index: source/render.h
  extern void remap_buffer(int line,int width);
  extern void window_clip(void);
  extern void parse_satb(int line);
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 457)
-+++ source/gx/gui/menu.c	(revision 458)
+--- src/genplusgx/gx/gui/menu.c	(revision 457)
++++ src/genplusgx/gx/gui/menu.c	(revision 458)
 @@ -1050,7 +1050,7 @@
          else if (config.region_detect == 2)
            sprintf (items[0].text, "Console Region:  EUR");
@@ -644,10 +644,10 @@ Index: source/gx/gui/menu.c
          break;
  
        case VI_OFFSET+2: /*** aspect ratio ***/
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 457)
-+++ source/gx/gx_video.c	(revision 458)
+--- src/genplusgx/gx/gx_video.c	(revision 457)
++++ src/genplusgx/gx/gx_video.c	(revision 458)
 @@ -1332,25 +1332,9 @@
      tvmodes[2]->xfbMode = VI_XFBMODE_DF;
    }
@@ -716,10 +716,10 @@ Index: source/gx/gx_video.c
    }
  }
  
-Index: source/gx/config.c
+Index: src/genplusgx/gx/config.c
 ===================================================================
---- source/gx/config.c	(revision 457)
-+++ source/gx/config.c	(revision 458)
+--- src/genplusgx/gx/config.c	(revision 457)
++++ src/genplusgx/gx/config.c	(revision 458)
 @@ -96,7 +96,7 @@
    config.xscale   = 0;
    config.yscale   = 0;
@@ -729,10 +729,10 @@ Index: source/gx/config.c
    if (VIDEO_HaveComponentCable())
      config.render = 2;
    else
-Index: source/gx/fileio/file_slot.c
+Index: src/genplusgx/gx/fileio/file_slot.c
 ===================================================================
---- source/gx/fileio/file_slot.c	(revision 457)
-+++ source/gx/fileio/file_slot.c	(revision 458)
+--- src/genplusgx/gx/fileio/file_slot.c	(revision 457)
++++ src/genplusgx/gx/fileio/file_slot.c	(revision 458)
 @@ -437,7 +437,7 @@
        return 0;
      }

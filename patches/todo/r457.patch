@@ -1,7 +1,7 @@
-Index: source/cart_hw/eeprom.c
+Index: src/genplusgx/cart_hw/eeprom.c
 ===================================================================
---- source/cart_hw/eeprom.c	(revision 456)
-+++ source/cart_hw/eeprom.c	(revision 457)
+--- src/genplusgx/cart_hw/eeprom.c	(revision 456)
++++ src/genplusgx/cart_hw/eeprom.c	(revision 457)
 @@ -95,7 +95,7 @@
    sram.custom = 0;
  
@@ -27,10 +27,10 @@ Index: source/cart_hw/eeprom.c
    {
      if ((sram.end - sram.start) < 2)
      {
-Index: source/membnk.c
+Index: src/genplusgx/membnk.c
 ===================================================================
---- source/membnk.c	(revision 456)
-+++ source/membnk.c	(revision 457)
+--- src/genplusgx/membnk.c	(revision 456)
++++ src/genplusgx/membnk.c	(revision 457)
 @@ -47,7 +47,11 @@
  #ifdef LOGERROR
    error("Z80 bank lockup read %06X\n", address);
@@ -97,10 +97,10 @@ Index: source/membnk.c
          
      case 0x18:    /* Unused */
      case 0x19:
-Index: source/system.c
+Index: src/genplusgx/system.c
 ===================================================================
---- source/system.c	(revision 456)
-+++ source/system.c	(revision 457)
+--- src/genplusgx/system.c	(revision 456)
++++ src/genplusgx/system.c	(revision 457)
 @@ -300,7 +300,7 @@
    cart_hw_reset();
  
@@ -151,10 +151,10 @@ Index: source/system.c
 -
 -  return gen_running;
  }
-Index: source/hvc.h
+Index: src/genplusgx/hvc.h
 ===================================================================
---- source/hvc.h	(revision 456)
-+++ source/hvc.h	(revision 457)
+--- src/genplusgx/hvc.h	(revision 456)
++++ src/genplusgx/hvc.h	(revision 457)
 @@ -516,7 +516,7 @@
  const uint8 cycle2hc32[3420] = 
  {  
@@ -174,10 +174,10 @@ Index: source/hvc.h
  };
  
  const uint8 *vctab;
-Index: source/vdp.c
+Index: src/genplusgx/vdp.c
 ===================================================================
---- source/vdp.c	(revision 456)
-+++ source/vdp.c	(revision 457)
+--- src/genplusgx/vdp.c	(revision 456)
++++ src/genplusgx/vdp.c	(revision 457)
 @@ -50,7 +50,8 @@
  uint8 dmafill;        /* next VDP Write is DMA Fill */
  uint8 hint_pending;   /* 0= Line interrupt is pending */
@@ -298,10 +298,10 @@ Index: source/vdp.c
      if (fifo_read > 0)
      {
        fifo_write_cnt -= fifo_read;
-Index: source/system.h
+Index: src/genplusgx/system.h
 ===================================================================
---- source/system.h	(revision 456)
-+++ source/system.h	(revision 457)
+--- src/genplusgx/system.h	(revision 456)
++++ src/genplusgx/system.h	(revision 457)
 @@ -89,7 +89,7 @@
  extern void system_init (void);
  extern void system_reset (void);
@@ -311,10 +311,10 @@ Index: source/system.h
  
  #endif /* _SYSTEM_H_ */
  
-Index: source/genesis.c
+Index: src/genplusgx/genesis.c
 ===================================================================
---- source/genesis.c	(revision 456)
-+++ source/genesis.c	(revision 457)
+--- src/genplusgx/genesis.c	(revision 456)
++++ src/genplusgx/genesis.c	(revision 457)
 @@ -26,10 +26,8 @@
  uint8 bios_rom[0x10000];  /* OS ROM   */
  uint8 work_ram[0x10000];  /* 68K RAM  */
@@ -504,10 +504,10 @@ Index: source/genesis.c
  }
  
  void gen_bank_w (uint32 state)
-Index: source/vdp.h
+Index: src/genplusgx/vdp.h
 ===================================================================
---- source/vdp.h	(revision 456)
-+++ source/vdp.h	(revision 457)
+--- src/genplusgx/vdp.h	(revision 456)
++++ src/genplusgx/vdp.h	(revision 457)
 @@ -38,6 +38,7 @@
  extern uint8 dmafill;
  extern uint8 hint_pending;
@@ -529,10 +529,10 @@ Index: source/vdp.h
  extern void vdp_test_w(unsigned int value);
  extern int vdp_int_ack_callback(int int_level);
  
-Index: source/genesis.h
+Index: src/genplusgx/genesis.h
 ===================================================================
---- source/genesis.h	(revision 456)
-+++ source/genesis.h	(revision 457)
+--- src/genplusgx/genesis.h	(revision 456)
++++ src/genplusgx/genesis.h	(revision 457)
 @@ -28,21 +28,18 @@
  extern uint8 bios_rom[0x10000];
  extern uint8 work_ram[0x10000];
@@ -560,10 +560,10 @@ Index: source/genesis.h
  
  #endif /* _GEN_H_ */
  
-Index: source/mem68k.c
+Index: src/genplusgx/mem68k.c
 ===================================================================
---- source/mem68k.c	(revision 456)
-+++ source/mem68k.c	(revision 457)
+--- src/genplusgx/mem68k.c	(revision 456)
++++ src/genplusgx/mem68k.c	(revision 457)
 @@ -67,8 +67,7 @@
  #ifdef LOGERROR
    error ("Lockup %08X = %02X (%08X)\n", address, data, m68k_get_reg (NULL, M68K_REG_PC));
@@ -672,10 +672,10 @@ Index: source/mem68k.c
  
      case 0x18:  /* Unused */
      case 0x1c:
-Index: source/memz80.c
+Index: src/genplusgx/memz80.c
 ===================================================================
---- source/memz80.c	(revision 456)
-+++ source/memz80.c	(revision 457)
+--- src/genplusgx/memz80.c	(revision 456)
++++ src/genplusgx/memz80.c	(revision 457)
 @@ -46,7 +46,11 @@
  #ifdef LOGERROR
    error("Z80 lockup write %04X = %02X\n", address, data);
@@ -725,10 +725,10 @@ Index: source/memz80.c
  
      case 0x18: /* Unused */
      case 0x19:
-Index: source/unused/win/main.c
+Index: src/genplusgx/unused/win/main.c
 ===================================================================
---- source/unused/win/main.c	(revision 456)
-+++ source/unused/win/main.c	(revision 457)
+--- src/genplusgx/unused/win/main.c	(revision 456)
++++ src/genplusgx/unused/win/main.c	(revision 457)
 @@ -10,8 +10,8 @@
  #define SOUND_FREQUENCY 48000
  #define SOUND_SAMPLES_SIZE  2048
@@ -901,10 +901,10 @@ Index: source/unused/win/main.c
      fclose(f);
    }
  
-Index: source/unused/win/config.c
+Index: src/genplusgx/unused/win/config.c
 ===================================================================
---- source/unused/win/config.c	(revision 456)
-+++ source/unused/win/config.c	(revision 457)
+--- src/genplusgx/unused/win/config.c	(revision 456)
++++ src/genplusgx/unused/win/config.c	(revision 457)
 @@ -20,6 +20,8 @@
    config.mg             = 1.0;
    config.hg             = 1.0;
@@ -923,10 +923,10 @@ Index: source/unused/win/config.c
    config.render   = 0;
  
    /* controllers options */
-Index: source/unused/win/config.h
+Index: src/genplusgx/unused/win/config.h
 ===================================================================
---- source/unused/win/config.h	(revision 456)
-+++ source/unused/win/config.h	(revision 457)
+--- src/genplusgx/unused/win/config.h	(revision 456)
++++ src/genplusgx/unused/win/config.h	(revision 457)
 @@ -24,6 +24,8 @@
    float lg;
    float mg;
@@ -936,40 +936,10 @@ Index: source/unused/win/config.h
    uint8 region_detect;
    uint8 force_dtack;
    uint8 addr_error;
-Index: source/unused/win/Makefile
+Index: src/genplusgx/gen_input.c
 ===================================================================
---- source/unused/win/Makefile	(revision 456)
-+++ source/unused/win/Makefile	(revision 457)
-@@ -5,19 +5,18 @@
- # modified by Eke-Eke <eke_eke31@yahoo.fr>
- #
- # Defines :
--# LSB_FIRST : for little endian systems.
--# X86_ASM   : enable x86 assembly optimizations
--# LOGERROR
--# LOGVDP
--# LOGSOUND
-+# -DLSB_FIRST : for little endian systems.
-+# -DLOGERROR  : enable message log
-+# -DLOGVDP    : enable VDP debug messages
-+# -DLOGSOUND  : enable AUDIO debug messages
- 
- NAME	  = gen_sdl.exe
- 
- CC        = gcc
--CFLAGS    = `sdl-config --cflags` -O6 -march=i686 -fomit-frame-pointer
-+CFLAGS    = `sdl-config --cflags` -march=i686 -O6 -fomit-frame-pointer -Wall -Wno-strict-aliasing
- #-g -ggdb -pg
- #-fomit-frame-pointer
--#LDFLAGS   =  -g -ggdb -pg
-+#LDFLAGS   = -pg
- DEFINES   = -DLSB_FIRST -DX86_ASM
- 
- INCLUDES  = -I. -I.. -I../z80 -I../m68k -I../sound -I../cart_hw -I../cart_hw/svp -I../ntsc
-Index: source/gen_input.c
-===================================================================
---- source/gen_input.c	(revision 456)
-+++ source/gen_input.c	(revision 457)
+--- src/genplusgx/gen_input.c	(revision 456)
++++ src/genplusgx/gen_input.c	(revision 457)
 @@ -74,6 +74,9 @@
   * LIGHTGUN support
   *
@@ -1208,10 +1178,10 @@ Index: source/gen_input.c
    }
  
    /**********************************************
-Index: source/gen_input.h
+Index: src/genplusgx/gen_input.h
 ===================================================================
---- source/gen_input.h	(revision 456)
-+++ source/gen_input.h	(revision 457)
+--- src/genplusgx/gen_input.h	(revision 456)
++++ src/genplusgx/gen_input.h	(revision 457)
 @@ -36,18 +36,18 @@
  #define NO_DEVICE           (0x0F)  /* unconnected */
  
@@ -1262,10 +1232,10 @@ Index: source/gen_input.h
  } t_input;
  
  /* Global variables */
-Index: source/gx/gui/menu.c
+Index: src/genplusgx/gx/gui/menu.c
 ===================================================================
---- source/gx/gui/menu.c	(revision 456)
-+++ source/gx/gui/menu.c	(revision 457)
+--- src/genplusgx/gx/gui/menu.c	(revision 456)
++++ src/genplusgx/gx/gui/menu.c	(revision 457)
 @@ -334,9 +334,9 @@
  /* Main menu */
  static gui_butn buttons_main[9] =
@@ -1308,10 +1278,10 @@ Index: source/gx/gui/menu.c
      m->buttons[3].state |= (BUTTON_VISIBLE | BUTTON_ACTIVE);
      m->buttons[4].state |= (BUTTON_VISIBLE | BUTTON_ACTIVE);
      m->buttons[5].state |= (BUTTON_VISIBLE | BUTTON_ACTIVE);
-Index: source/gx/gx_video.c
+Index: src/genplusgx/gx/gx_video.c
 ===================================================================
---- source/gx/gx_video.c	(revision 456)
-+++ source/gx/gx_video.c	(revision 457)
+--- src/genplusgx/gx/gx_video.c	(revision 456)
++++ src/genplusgx/gx/gx_video.c	(revision 457)
 @@ -60,8 +60,6 @@
  /*** NTSC Filters ***/
  sms_ntsc_t *sms_ntsc;
@@ -1394,10 +1364,10 @@ Index: source/gx/gx_video.c
    /* GX emulation rendering */
    gxResetRendering(0);
  
-Index: source/gx/gx_input.c
+Index: src/genplusgx/gx/gx_input.c
 ===================================================================
---- source/gx/gx_input.c	(revision 456)
-+++ source/gx/gx_input.c	(revision 457)
+--- src/genplusgx/gx/gx_input.c	(revision 456)
++++ src/genplusgx/gx/gx_input.c	(revision 457)
 @@ -58,9 +58,6 @@
    "MODE Button"
  };
