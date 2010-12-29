@@ -1,6 +1,9 @@
 /* Input bitmasks */
 //BEGINNING OF GENESIS PLUS PS3
-#define INPUT_NONE	(0x00000900)
+#define INPUT_LOADSTATE (0x0C00)
+#define INPUT_SAVESTATE (0x0B00)
+#define INPUT_QUIT      (0x0A00)
+#define INPUT_NONE	(0x0900)
 //END OF GENESIS PLUS PS3
 #define INPUT_MODE      (0x0800)
 #define INPUT_X         (0x0400)

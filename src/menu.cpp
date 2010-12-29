@@ -513,6 +513,15 @@ char * Menu_PrintMappedButton(int mappedbutton)
 		case INPUT_NONE:
 			return "None";
 			break;
+		case INPUT_QUIT:
+			return "Exit to menu";
+			break;
+		case INPUT_SAVESTATE:
+			return "Save State";
+			break;
+		case INPUT_LOADSTATE:
+			return "Load State";
+			break;
 		default:
 			return "Unknown";
 			break;
@@ -559,10 +568,19 @@ int Menu_GetAdjacentButtonmap(int buttonmap, bool next)
 			return next ? INPUT_MODE : INPUT_Z;
 			break;
 		case INPUT_MODE:
-			return next ? INPUT_NONE : INPUT_START;
+			return next ? INPUT_SAVESTATE : INPUT_START;
+			break;
+		case INPUT_SAVESTATE:
+			return next ? INPUT_LOADSTATE : INPUT_MODE;
+			break;
+		case INPUT_LOADSTATE:
+			return next ? INPUT_QUIT : INPUT_SAVESTATE;
+			break;
+		case INPUT_QUIT:
+			return next ? INPUT_NONE : INPUT_LOADSTATE;
 			break;
 		case INPUT_NONE:
-			return next ? INPUT_UP : INPUT_MODE;
+			return next ? INPUT_UP : INPUT_QUIT;
 			break;
 		default:
 			return INPUT_NONE;
@@ -1034,7 +1052,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_ButtonR3 = INPUT_NONE;
+							Settings.ButtonL2_ButtonR3 = INPUT_LOADSTATE;
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
@@ -1056,7 +1074,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_ButtonR3 = INPUT_NONE;
+							Settings.ButtonR2_ButtonR3 = INPUT_SAVESTATE;
 						}
 							break;
 						case SETTING_CONTROLS_ANALOG_R_UP:
@@ -1358,7 +1376,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR3_ButtonL3 = INPUT_NONE;
+							Settings.ButtonR3_ButtonL3 = INPUT_QUIT;
 						}
 						break;
 						case SETTING_CONTROLS_DEFAULT_ALL:
@@ -1482,7 +1500,7 @@ if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) >= NUM_ENTRY_P
 	yPos = 0.09;
 
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: L2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == INPUT_LOADSTATE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
@@ -1527,12 +1545,12 @@ if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) >= NUM_ENTRY_P
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: R2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == INPUT_SAVESTATE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R3_BUTTON_L3 ? YELLOW : WHITE,	"Button combo: R3 & L3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR3_ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == INPUT_QUIT ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR3_ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;

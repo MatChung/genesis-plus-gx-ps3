@@ -416,6 +416,34 @@ void SaveState()
         }
 }
 
+int special_button_mappings(int controllerno, int specialbuttonmap)
+{
+	if((specialbuttonmap != INPUT_QUIT) &&
+	(specialbuttonmap != INPUT_SAVESTATE) &&
+	(specialbuttonmap != INPUT_LOADSTATE))
+	{
+		input.pad[controllerno] |= specialbuttonmap;
+	}
+	else
+	{
+		switch(specialbuttonmap)
+		{
+			case INPUT_QUIT:
+				Emulator_StopROMRunning();
+				Emulator_SwitchMode(MODE_MENU);
+				break;
+			case INPUT_SAVESTATE:
+				SaveState();
+				break;
+			case INPUT_LOADSTATE:
+				LoadState();
+				break;
+			default:
+				break;
+		}
+	}
+}
+
 int ps3_update_input(void)
 {
 	uint32_t buttons;
@@ -430,64 +458,135 @@ int ps3_update_input(void)
 
     		if (CellInput->IsButtonPressed(i, CTRL_UP) | CellInput->IsAnalogPressedUp(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= Settings.DPad_Up;
+			special_button_mappings(i,Settings.DPad_Up);
 		}
 		else if (CellInput->IsButtonPressed(i,CTRL_DOWN) | CellInput->IsAnalogPressedDown(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= Settings.DPad_Down;
+			special_button_mappings(i,Settings.DPad_Down);
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= Settings.DPad_Left;
+			special_button_mappings(i,Settings.DPad_Left);
 		}
     		else if (CellInput->IsButtonPressed(i,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(i, CTRL_LSTICK))
 		{
-			input.pad[i] |= Settings.DPad_Right;
+			special_button_mappings(i,Settings.DPad_Right);
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_SQUARE))
 		{
-			input.pad[i] |= Settings.ButtonSquare;
+			special_button_mappings(i,Settings.ButtonSquare);
 		}
 		if (CellInput->IsButtonPressed(i,CTRL_CROSS))
 		{
-			input.pad[i] |= Settings.ButtonCross;
+			special_button_mappings(i,Settings.ButtonCross);
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_CIRCLE))
 		{
-			input.pad[i] |= Settings.ButtonCircle;
-		}
-    		if (CellInput->IsButtonPressed(i,CTRL_START))
-		{
-			input.pad[i] |= Settings.ButtonStart;
+			special_button_mappings(i,Settings.ButtonCircle);
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_TRIANGLE))
 		{
-			input.pad[i] |= Settings.ButtonTriangle;
+			special_button_mappings(i,Settings.ButtonTriangle);
 		}
-		if (CellInput->IsButtonPressed(i,CTRL_L1))
+    		if (CellInput->IsButtonPressed(i,CTRL_START))
 		{
-			input.pad[i] |= Settings.ButtonL1;
-		}
-		if (CellInput->IsButtonPressed(i,CTRL_R1))
-		{
-			input.pad[i] |= Settings.ButtonR1;
+			special_button_mappings(i,Settings.ButtonStart);
 		}
     		if (CellInput->IsButtonPressed(i,CTRL_SELECT))
 		{
-			input.pad[i] |= Settings.ButtonSelect;
+			special_button_mappings(i,Settings.ButtonSelect);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L1))
+		{
+			special_button_mappings(i,Settings.ButtonL1);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L2))
+		{
+			special_button_mappings(i,Settings.ButtonL2);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L3))
+		{
+			special_button_mappings(i,Settings.ButtonL3);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R1))
+		{
+			special_button_mappings(i,Settings.ButtonR1);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R2))
+		{
+			special_button_mappings(i,Settings.ButtonR2);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R3))
+		{
+			special_button_mappings(i,Settings.ButtonR3);
 		}
 		if ((CellInput->IsButtonPressed(i,CTRL_L3) && CellInput->IsButtonPressed(i,CTRL_R3)))
 		{
-			Emulator_StopROMRunning();
-			Emulator_SwitchMode(MODE_MENU);
+			special_button_mappings(i,Settings.ButtonR3_ButtonL3);
 		}
 		if ((CellInput->IsButtonPressed(i,CTRL_R2) && CellInput->WasButtonPressed(i,CTRL_R3)))    
 		{
-			SaveState();
+			special_button_mappings(i,Settings.ButtonR2_ButtonR3);
+		}
+		if ((CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasButtonPressed(i,CTRL_R2)))
+		{
+			special_button_mappings(i,Settings.ButtonL2_ButtonR2);
 		}
 		if ((CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasButtonPressed(i,CTRL_R3)))
 		{
-			LoadState();
+			special_button_mappings(i,Settings.ButtonL2_ButtonR3);
+		}
+		if ((CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasButtonPressed(i,CTRL_L3)))
+		{
+			special_button_mappings(i,Settings.ButtonL2_ButtonL3);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasAnalogPressedRight(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonL2_AnalogR_Right);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasAnalogPressedLeft(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonL2_AnalogR_Left);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasAnalogPressedUp(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonL2_AnalogR_Up);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_L2) && CellInput->WasAnalogPressedDown(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonL2_AnalogR_Down);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R2) && CellInput->WasAnalogPressedRight(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonR2_AnalogR_Right);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R2) && CellInput->WasAnalogPressedLeft(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonR2_AnalogR_Left);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R2) && CellInput->WasAnalogPressedUp(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonR2_AnalogR_Up);
+		}
+		if (CellInput->IsButtonPressed(i,CTRL_R2) && CellInput->WasAnalogPressedDown(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.ButtonR2_AnalogR_Down);
+		}
+		if (Settings.AnalogR_Down_Type ? CellInput->IsAnalogPressedDown(i,CTRL_RSTICK) : CellInput->WasAnalogPressedDown(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.AnalogR_Down);
+		}
+		if (Settings.AnalogR_Up_Type ? CellInput->IsAnalogPressedUp(i,CTRL_RSTICK) : CellInput->WasAnalogPressedUp(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.AnalogR_Up);
+		}
+		if (Settings.AnalogR_Left_Type ? CellInput->IsAnalogPressedLeft(i,CTRL_RSTICK) : CellInput->WasAnalogPressedLeft(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.AnalogR_Left);
+		}
+		if (Settings.AnalogR_Right_Type ? CellInput->IsAnalogPressedRight(i,CTRL_RSTICK) : CellInput->WasAnalogPressedRight(i,CTRL_RSTICK))
+		{
+			special_button_mappings(i,Settings.AnalogR_Right);
 		}
 	}
 
@@ -617,7 +716,7 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			Settings.ButtonL2		= currentconfig->GetInt("PS3ButtonMappings::ButtonL2",INPUT_NONE);
 			Settings.ButtonR2		= currentconfig->GetInt("PS3ButtonMappings::ButtonR2",INPUT_NONE);
 			Settings.ButtonL2_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonL3",INPUT_NONE);
-			Settings.ButtonL2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR3",INPUT_NONE);
+			Settings.ButtonL2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR3",INPUT_LOADSTATE);
 			Settings.ButtonR3		= currentconfig->GetInt("PS3ButtonMappings::ButtonR3",INPUT_NONE);
 			Settings.ButtonL3		= currentconfig->GetInt("PS3ButtonMappings::ButtonL3",INPUT_NONE);
 			Settings.ButtonL2_ButtonR2	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR2",INPUT_NONE);
@@ -629,8 +728,8 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			Settings.ButtonR2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Left",INPUT_NONE);
 			Settings.ButtonR2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Up",INPUT_NONE);
 			Settings.ButtonR2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Down",INPUT_NONE);
-			Settings.ButtonR2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_ButtonR3",INPUT_NONE);
-			Settings.ButtonR3_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR3_ButtonL3",INPUT_NONE);
+			Settings.ButtonR2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_ButtonR3",INPUT_SAVESTATE);
+			Settings.ButtonR3_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR3_ButtonL3",INPUT_QUIT);
 			Settings.AnalogR_Up		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Up",INPUT_NONE);
 			Settings.AnalogR_Down		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Down",INPUT_NONE);
 			Settings.AnalogR_Left		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Left",INPUT_NONE);
@@ -657,7 +756,7 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			Settings.ButtonL2			= INPUT_NONE;
 			Settings.ButtonR2			= INPUT_NONE;
 			Settings.ButtonL2_ButtonL3		= INPUT_NONE;
-			Settings.ButtonL2_ButtonR3		= INPUT_NONE;	
+			Settings.ButtonL2_ButtonR3		= INPUT_LOADSTATE;	
 			Settings.ButtonR3			= INPUT_NONE;
 			Settings.ButtonL3			= INPUT_NONE;
 			Settings.ButtonL2_ButtonR2		= INPUT_NONE;
@@ -669,8 +768,8 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			Settings.ButtonR2_AnalogR_Left		= INPUT_NONE;
 			Settings.ButtonR2_AnalogR_Up		= INPUT_NONE;
 			Settings.ButtonR2_AnalogR_Down		= INPUT_NONE;
-			Settings.ButtonR2_ButtonR3		= INPUT_NONE;
-			Settings.ButtonR3_ButtonL3		= INPUT_NONE;
+			Settings.ButtonR2_ButtonR3		= INPUT_SAVESTATE;
+			Settings.ButtonR3_ButtonL3		= INPUT_QUIT;
 			Settings.AnalogR_Up			= INPUT_NONE;
 			Settings.AnalogR_Down			= INPUT_NONE;
 			Settings.AnalogR_Left			= INPUT_NONE;
@@ -1078,6 +1177,7 @@ void Emulator_Start()
 	{
 		system_frame(0);
 		Graphics->Draw(bitmap.viewport.w,bitmap.viewport.h,bitmap.data);
+		Graphics->Swap();
 
 		PlaySound();
 
