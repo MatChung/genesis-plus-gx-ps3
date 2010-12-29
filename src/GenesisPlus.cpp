@@ -420,7 +420,9 @@ int special_button_mappings(int controllerno, int specialbuttonmap)
 {
 	if((specialbuttonmap != INPUT_QUIT) &&
 	(specialbuttonmap != INPUT_SAVESTATE) &&
-	(specialbuttonmap != INPUT_LOADSTATE))
+	(specialbuttonmap != INPUT_LOADSTATE) &&
+	(specialbuttonmap != INPUT_SOFTRESET) &&
+	(specialbuttonmap != INPUT_HARDRESET))
 	{
 		input.pad[controllerno] |= specialbuttonmap;
 	}
@@ -428,6 +430,12 @@ int special_button_mappings(int controllerno, int specialbuttonmap)
 	{
 		switch(specialbuttonmap)
 		{
+			case INPUT_SOFTRESET:
+				gen_softreset(0);
+				break;
+			case INPUT_HARDRESET:
+				system_reset();
+				break;
 			case INPUT_QUIT:
 				Emulator_StopROMRunning();
 				Emulator_SwitchMode(MODE_MENU);

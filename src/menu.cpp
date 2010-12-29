@@ -522,6 +522,12 @@ char * Menu_PrintMappedButton(int mappedbutton)
 		case INPUT_LOADSTATE:
 			return "Load State";
 			break;
+		case INPUT_SOFTRESET:
+			return "Software Reset";
+			break;
+		case INPUT_HARDRESET:
+			return "Reset";
+			break;
 		default:
 			return "Unknown";
 			break;
@@ -568,10 +574,16 @@ int Menu_GetAdjacentButtonmap(int buttonmap, bool next)
 			return next ? INPUT_MODE : INPUT_Z;
 			break;
 		case INPUT_MODE:
-			return next ? INPUT_SAVESTATE : INPUT_START;
+			return next ? INPUT_HARDRESET : INPUT_START;
+			break;
+		case INPUT_HARDRESET:
+			return next ? INPUT_SOFTRESET : INPUT_MODE;
+			break;
+		case INPUT_SOFTRESET:
+			return next ? INPUT_SAVESTATE : INPUT_HARDRESET;
 			break;
 		case INPUT_SAVESTATE:
-			return next ? INPUT_LOADSTATE : INPUT_MODE;
+			return next ? INPUT_LOADSTATE : INPUT_SOFTRESET;
 			break;
 		case INPUT_LOADSTATE:
 			return next ? INPUT_QUIT : INPUT_SAVESTATE;

@@ -1,5 +1,7 @@
 /* Input bitmasks */
 //BEGINNING OF GENESIS PLUS PS3
+#define INPUT_SOFTRESET (0x0E00)
+#define INPUT_HARDRESET (0x0D00)
 #define INPUT_LOADSTATE (0x0C00)
 #define INPUT_SAVESTATE (0x0B00)
 #define INPUT_QUIT      (0x0A00)
