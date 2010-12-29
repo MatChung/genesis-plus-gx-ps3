@@ -1595,53 +1595,70 @@ static void ctrlmenu_raz(void)
   }
 
   /* update buttons navigation */
+
   if (input.dev[0] != NO_DEVICE)
     m->buttons[0].shift[3] = 2;
   else if (input.dev[4] != NO_DEVICE)
     m->buttons[0].shift[3] = 6;
+  else if (input.dev[5] != NO_DEVICE)
+    m->buttons[0].shift[3] = 7;
   else
     m->buttons[0].shift[3] = 0;
   if (input.dev[4] != NO_DEVICE)
     m->buttons[1].shift[3] = 5;
+  else if (input.dev[5] != NO_DEVICE)
+    m->buttons[1].shift[3] = 6;
   else if (input.dev[0] != NO_DEVICE)
     m->buttons[1].shift[3] = 1;
   else
     m->buttons[1].shift[3] = 0;
+
   if (input.dev[1] != NO_DEVICE)
     m->buttons[2].shift[1] = 1;
   else if (input.dev[4] != NO_DEVICE)
     m->buttons[2].shift[1] = 4;
+  else if (input.dev[5] != NO_DEVICE)
+    m->buttons[2].shift[1] = 5;
   else
     m->buttons[2].shift[1] = 0;
+
+  if (input.dev[4] != NO_DEVICE)
+    m->buttons[5].shift[1] = 1;
+  else if (input.dev[5] != NO_DEVICE)
+    m->buttons[5].shift[1] = 2;
+  else
+    m->buttons[5].shift[1] = 0;
+
   if (input.dev[3] != NO_DEVICE)
     m->buttons[6].shift[0] = 1;
   else if (input.dev[0] != NO_DEVICE)
     m->buttons[6].shift[0] = 4;
   else
     m->buttons[6].shift[0] = 0;
-  if (input.dev[4] != NO_DEVICE)
-    m->buttons[5].shift[1] = 1;
-  else
-    m->buttons[5].shift[1] = 0;
 
   if (input.dev[5] != NO_DEVICE)
-  {
     m->buttons[6].shift[1] = 1;
-    if (input.dev[6] != NO_DEVICE)
-    {
-      m->buttons[7].shift[1] = 1;
-      if (input.dev[7] != NO_DEVICE) m->buttons[8].shift[1] = 1;
-      else m->buttons[8].shift[1] = 0;
-    }
-    else
-    {
-      m->buttons[7].shift[1] = 0;
-    }
-  }
   else
-  {
     m->buttons[6].shift[1] = 0;
-  }
+
+  if (input.dev[6] != NO_DEVICE)
+    m->buttons[7].shift[1] = 1;
+  else
+    m->buttons[7].shift[1] = 0;
+
+  if (input.dev[7] != NO_DEVICE)
+    m->buttons[8].shift[1] = 1;
+  else
+    m->buttons[8].shift[1] = 0;
+
+  if (input.dev[4] != NO_DEVICE)
+    m->buttons[7].shift[0] = 1;
+  else if (input.dev[3] != NO_DEVICE)
+    m->buttons[7].shift[0] = 2;
+  else if (input.dev[0] != NO_DEVICE)
+    m->buttons[7].shift[0] = 5;
+  else
+    m->buttons[7].shift[0] = 0;
 }
 
 static void ctrlmenu(void)
@@ -1766,7 +1783,6 @@ static void ctrlmenu(void)
       switch (m->selected)
       {
         case 0:   /* update port 1 system */
-          if (cart.jcart) break;
           if (input.system[0] == SYSTEM_MOUSE)
             input.system[0] +=3; /* lightguns are never used on Port 1 */
           else
@@ -1781,7 +1797,7 @@ static void ctrlmenu(void)
             input.system[1] = SYSTEM_GAMEPAD;
           }
           io_init();
-          io_reset();
+          input_reset();
           old_system[0] = input.system[0];
           old_system[1] = input.system[1];
 
@@ -1831,7 +1847,7 @@ static void ctrlmenu(void)
             input.system[0] = SYSTEM_GAMEPAD;
           }
           io_init();
-          io_reset();
+          input_reset();
           old_system[0] = input.system[0];
           old_system[1] = input.system[1];
 

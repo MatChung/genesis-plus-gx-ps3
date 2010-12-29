@@ -22,8 +22,12 @@
  ****************************************************************************************/
 
 #include "shared.h"
+//BEGINNING OF GENESIS PS3
+//#include "Fir_Resampler.h"
+//#include "eq.h"
 #include "sound/Fir_Resampler.h"
 #include "sound/eq.h"
+//END OF GENESIS PS3
 
 /* Global variables */
 t_bitmap bitmap;
@@ -148,10 +152,12 @@ int audio_update (void)
 
     /* update sound buffer */
 #ifndef NGC
+//BEGINNING OF GENESIS PS3
     //snd.buffer[0][i] = r;
     //snd.buffer[1][i] = l;
     *sb++ = r;
     *sb++ = l;
+//END OF GENESIS PS3
 #else
     *sb++ = r;
     *sb++ = l;
@@ -405,8 +411,8 @@ void system_frame (int do_skip)
     /* update VCounter */
     v_counter = line;
 
-    /* update 6-Buttons or Menacer */
-    input_update();
+    /* update 6-Buttons & Lightguns */
+    input_refresh();
 
     /* update VDP DMA */
     if (dma_length) vdp_update_dma();
