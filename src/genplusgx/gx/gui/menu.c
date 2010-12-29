@@ -1158,8 +1158,8 @@ static void systemmenu ()
           hctab = (reg[12] & 1) ? cycle2hc40 : cycle2hc32;
 
           /* reinitialize overscan area */
-          bitmap.viewport.x = config.overscan ? 14 : 0;
-          bitmap.viewport.y = config.overscan ? (((reg[1] & 8) ? 0 : 8) + (vdp_pal ? 24 : 0)) : 0;
+          bitmap.viewport.x = (config.overscan & 2) ? ((reg[12] & 1) ? 16 : 12) : 0;
+          bitmap.viewport.y = (config.overscan & 1) ? (((reg[1] & 8) ? 0 : 8) + (vdp_pal ? 24 : 0)) : 0;
         }
         break;
 
