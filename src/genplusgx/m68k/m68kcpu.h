@@ -919,13 +919,19 @@ typedef struct
 #include "../shared.h"
 
 extern m68ki_cpu_core m68ki_cpu;
-//extern sint           m68ki_remaining_cycles;
+#if 0
+extern sint           m68ki_remaining_cycles;
+#endif
+#if M68K_EMULATE_TRACE
 extern uint           m68ki_tracing;
+#endif
 extern const uint8    m68ki_shift_8_table[];
 extern const uint16   m68ki_shift_16_table[];
 extern const uint     m68ki_shift_32_table[];
 extern uint16         m68ki_exception_cycle_table[][256];
+#if M68K_EMULATE_FC
 extern uint           m68ki_address_space;
+#endif
 extern const uint8    m68ki_ea_idx_cycle_table[];
 
 extern uint           m68ki_aerr_address;
@@ -1126,7 +1132,6 @@ INLINE uint m68ki_read_8_fc(uint address, uint fc)
   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
 
   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
-
   if (temp->read8) return (*temp->read8)(ADDRESS_68K(address));
   else return READ_BYTE(temp->base, (address) & 0xffff);
 }
@@ -1154,6 +1159,7 @@ INLINE uint m68ki_read_32_fc(uint address, uint fc)
 INLINE void m68ki_write_8_fc(uint address, uint fc, uint value)
 {
   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
+
   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
   if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);
   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
@@ -1163,6 +1169,7 @@ INLINE void m68ki_write_16_fc(uint address, uint fc, uint value)
 {
   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
   m68ki_check_address_error_010_less(address, MODE_WRITE, fc); /* auto-disable (see m68kcpu.h) */
+
   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
@@ -1172,9 +1179,11 @@ INLINE void m68ki_write_32_fc(uint address, uint fc, uint value)
 {
   m68ki_set_fc(fc); /* auto-disable (see m68kcpu.h) */
   m68ki_check_address_error_010_less(address, MODE_WRITE, fc); /* auto-disable (see m68kcpu.h) */
+
   _m68k_memory_map *temp = &m68k_memory_map[((address)>>16)&0xff];
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value>>16);
   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value >> 16;
+
   temp = &m68k_memory_map[((address + 2)>>16)&0xff];
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
   else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
@@ -1614,7 +1623,7 @@ INLINE void m68ki_stack_frame_0001(uint pc, uint sr, uint vector)
  */
 INLINE void m68ki_stack_frame_0010(uint sr, uint vector)
 {
-  m68ki_push_32(REG_PPC);
+  m68ki_push_32(REG_PC-2);
   m68ki_push_16(0x2000 | (vector<<2));
   m68ki_push_32(REG_PC);
   m68ki_push_16(sr);
@@ -1877,7 +1886,7 @@ INLINE void m68ki_exception_privilege_violation(void)
   }
   #endif /* M68K_EMULATE_ADDRESS_ERROR */
 
-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_PRIVILEGE_VIOLATION);
+  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_PRIVILEGE_VIOLATION);
   m68ki_jump_vector(EXCEPTION_PRIVILEGE_VIOLATION);
 
   /* Use up some clock cycles and undo the instruction's cycles */
@@ -1890,12 +1899,12 @@ INLINE void m68ki_exception_1010(void)
   uint sr;
 #if M68K_LOG_1010_1111 == OPT_ON
   M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1010 instruction %04x (%s)\n",
-           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
-           m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
+           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
+           m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
 #endif
 
   sr = m68ki_init_exception();
-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1010);
+  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_1010);
   m68ki_jump_vector(EXCEPTION_1010);
 
   /* Use up some clock cycles and undo the instruction's cycles */
@@ -1909,12 +1918,12 @@ INLINE void m68ki_exception_1111(void)
 
 #if M68K_LOG_1010_1111 == OPT_ON
   M68K_DO_LOG_EMU((M68K_LOG_FILEHANDLE "%s at %08x: called 1111 instruction %04x (%s)\n",
-           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
-           m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
+           m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
+           m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
 #endif
 
   sr = m68ki_init_exception();
-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1111);
+  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_1111);
   m68ki_jump_vector(EXCEPTION_1111);
 
   /* Use up some clock cycles and undo the instruction's cycles */
@@ -1927,8 +1936,8 @@ INLINE void m68ki_exception_illegal(void)
   uint sr;
 
   M68K_DO_LOG((M68K_LOG_FILEHANDLE "%s at %08x: illegal instruction %04x (%s)\n",
-         m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PPC), REG_IR,
-         m68ki_disassemble_quick(ADDRESS_68K(REG_PPC))));
+         m68ki_cpu_names[CPU_TYPE], ADDRESS_68K(REG_PC-2), REG_IR,
+         m68ki_disassemble_quick(ADDRESS_68K(REG_PC-2))));
 
   sr = m68ki_init_exception();
 
@@ -1939,7 +1948,7 @@ INLINE void m68ki_exception_illegal(void)
   }
   #endif /* M68K_EMULATE_ADDRESS_ERROR */
 
-  m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_ILLEGAL_INSTRUCTION);
+  m68ki_stack_frame_0000(REG_PC-2, sr, EXCEPTION_ILLEGAL_INSTRUCTION);
   m68ki_jump_vector(EXCEPTION_ILLEGAL_INSTRUCTION);
 
   /* Use up some clock cycles and undo the instruction's cycles */
