@@ -463,6 +463,7 @@ void system_frame (int do_skip)
           bitmap.viewport.oh = bitmap.viewport.h;
           bitmap.viewport.changed |= 1;
         }
+
         if (bitmap.viewport.w != bitmap.viewport.ow)
         {
           bitmap.viewport.ow = bitmap.viewport.w;
