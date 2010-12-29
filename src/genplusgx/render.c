@@ -1081,13 +1081,8 @@ static void render_bg_vs(int line, int width)
   if(shift)
   {
     dst   = (uint32 *)&buf[0x10 + shift];
-#ifdef LSB_FIRST
-    v_line = (reg[12] & 1) ? ((line + ((vs[0] >> 16) & 0x3FF)) & pf_row_mask) : line;
-#else
-    v_line = (reg[12] & 1) ? ((line + (vs[0] & 0x3FF)) & pf_row_mask) : line;
-#endif
-    nt = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
-    v_line = (v_line & 7) << 3;
+    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
+    v_line = (line & 7) << 3;
 
     atbuf = nt[(index-1) & pf_col_mask];
     DRAW_COLUMN(atbuf, v_line)
@@ -1148,14 +1143,8 @@ static void render_bg_vs(int line, int width)
     if(shift)
     {
       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
-
-#ifdef LSB_FIRST
-      v_line = (reg[12] & 1) ? ((line + (vs[start] & 0x3FF)) & pf_row_mask) : line;
-#else
-      v_line = (reg[12] & 1) ? ((line + ((vs[start] >> 16) & 0x3FF)) & pf_row_mask) : line;
-#endif
-      nt = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
-      v_line = (v_line & 7) << 3;
+      nt = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
+      v_line = (line & 7) << 3;
 
       /* Window bug */
       if (start) atbuf = nt[index & pf_col_mask];
@@ -1352,13 +1341,8 @@ static void render_bg_im2_vs(int line, int width, int odd)
   if(shift)
   {
     dst   = (uint32 *)&buf[0x10 + shift];
-#ifdef LSB_FIRST
-    v_line = (line + (reg[12] & 1) ? ((vs[0] >> 17) & 0x3FF) : 0) & pf_row_mask;
-#else
-    v_line = (line + (reg[12] & 1) ? ((vs[0] >> 1) & 0x3FF) : 0) & pf_row_mask;
-#endif
-    nt = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
-    v_line = (((v_line & 7) << 1) | odd) << 3;
+    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
+    v_line = (((line & 7) << 1) | odd) << 3;
 
     atbuf = nt[(index-1) & pf_col_mask];
     DRAW_COLUMN_IM2(atbuf, v_line)
@@ -1417,13 +1401,8 @@ static void render_bg_im2_vs(int line, int width, int odd)
     if(shift)
     {
       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
-#ifdef LSB_FIRST
-      v_line = (line + (reg[12] & 1) ? ((vs[start] >> 1) & 0x3FF) : 0) & pf_row_mask;
-#else
-      v_line = (line + (reg[12] & 1) ? ((vs[start] >> 17) & 0x3FF) : 0) & pf_row_mask;
-#endif
-      nt      = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
-      v_line  = (((v_line & 7) << 1) | odd) << 3;
+      nt      = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
+      v_line  = (((line & 7) << 1) | odd) << 3;
 
       /* Window bug */
       if (start) atbuf = nt[index & pf_col_mask];
@@ -1490,8 +1469,9 @@ static void render_obj(int line, uint8 *buf, uint8 *table)
   int height;
   int v_line;
   int column;
+  int max = bitmap.viewport.w;
   int left = 0x80;
-  int right = 0x80 + bitmap.viewport.w;
+  int right = 0x80 + max;
 
   uint8 *s, *lb;
   uint16 name, index;
@@ -1506,7 +1486,9 @@ static void render_obj(int line, uint8 *buf, uint8 *table)
 
     /* sprite masking (requires at least one sprite with xpos > 0) */
     if (xpos)
+    {
       spr_over = 1;
+    }
     else if (spr_over)
     {
       spr_over = 0;
@@ -1539,9 +1521,9 @@ static void render_obj(int line, uint8 *buf, uint8 *table)
 
       /* number of tiles to draw */
       /* adjusted for sprite limit */
-      if (pixelcount > bitmap.viewport.w)
+      if (pixelcount > max)
       {
-        width -= (pixelcount - bitmap.viewport.w);
+        width -= (pixelcount - max);
       }
 
       width >>= 3;
@@ -1555,7 +1537,7 @@ static void render_obj(int line, uint8 *buf, uint8 *table)
     }
 
     /* sprite limit (256 or 320 pixels) */
-    if (pixelcount >= bitmap.viewport.w)
+    if (pixelcount >= max)
     {
       spr_over = 1;
       return;
@@ -1580,8 +1562,9 @@ static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
   int height;
   int v_line;
   int column;
+  int max = bitmap.viewport.w;
   int left = 0x80;
-  int right = 0x80 + bitmap.viewport.w;
+  int right = 0x80 + max;
 
   uint8 *s, *lb;
   uint16 name, index;
@@ -1597,7 +1580,9 @@ static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
 
     /* sprite masking (requires at least one sprite with xpos > 0) */
     if (xpos)
+    {
       spr_over = 1;
+    }
     else if(spr_over)
     {
       spr_over = 0;
@@ -1630,8 +1615,8 @@ static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
 
       /* number of tiles to draw */
       /* adjusted for sprite limit */
-      if (pixelcount > bitmap.viewport.w)
-        width -= (pixelcount - bitmap.viewport.w);
+      if (pixelcount > max)
+        width -= (pixelcount - max);
       width >>= 3;
 
       for(column = 0; column < width; column += 1, lb+=8)
@@ -1646,7 +1631,7 @@ static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
     }
 
     /* sprite limit (256 or 320 pixels) */
-    if (pixelcount >= bitmap.viewport.w)
+    if (pixelcount >= max)
     {
       spr_over = 1;
       return;
@@ -1736,25 +1721,24 @@ void render_shutdown(void)
 /* Line render function                                                     */
 /*--------------------------------------------------------------------------*/
 
-void render_line(int line, int overscan)
+void render_line(int line)
 {
-  int width    = bitmap.viewport.w;
-  int x_offset = bitmap.viewport.x;
-
   /* display OFF */
   if (reg[0] & 0x01)
     return;
 
+  uint8 *lb     = tmp_buf;
+  int width     = bitmap.viewport.w;
+  int x_offset  = bitmap.viewport.x;
+
   /* background color (blanked display or vertical borders) */
-  if (!(reg[1] & 0x40) || overscan)
+  if (!(reg[1] & 0x40) || (status & 8))
   {
     width += 2 * x_offset;
-    memset(&tmp_buf[0x20 - x_offset], 0x40, width);
+    memset(&lb[0x20 - x_offset], 0x40, width);
   }
   else
   {
-    uint8 *lb = tmp_buf;
-
     /* update pattern generator */
     if (bg_list_index)
     {
@@ -1810,7 +1794,11 @@ void render_line(int line, int overscan)
       }
     }
 
-    /* borders */
+    /* left-most column blanking */
+    if(reg[0] & 0x20)
+      memset(&lb[0x20], 0x40, 0x08);
+
+    /* horizontal borders */
     if (x_offset)
     {
         memset(&lb[0x20 - x_offset], 0x40, x_offset);
@@ -1877,7 +1865,7 @@ void window_clip(void)
   int hf = (reg[17] >> 7) & 1;
 
   /* Display size  */
-  int sw =  bitmap.viewport.w >> 4;
+  int sw = (reg[12] & 1) ? 20 : 16;
 
   /* Clear clipping data */
   memset(&clip, 0, sizeof(clip));
