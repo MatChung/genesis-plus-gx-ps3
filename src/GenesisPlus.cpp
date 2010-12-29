@@ -331,7 +331,7 @@ void reloadrom(int size, char *name)
 	if(hotswap)
 	{
 		cart_hw_init();
-		cart_hw_reset();
+		cart_hw_reset(1);
 	}
 
 	/* initialize audio back-end */
