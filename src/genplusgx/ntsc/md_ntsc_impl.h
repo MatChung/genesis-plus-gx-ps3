@@ -437,3 +437,4 @@ static void correct_errors( md_ntsc_rgb_t color, md_ntsc_rgb_t* out );
   #endif
 
 #endif
+

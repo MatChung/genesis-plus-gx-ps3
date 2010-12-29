@@ -42,9 +42,9 @@ static EQSTATE eq;
 void audio_set_equalizer(void)
 {
   init_3band_state(&eq,config.low_freq,config.high_freq,snd.sample_rate);
-  eq.lg = (double)(config.lg);
-  eq.mg = (double)(config.mg);
-  eq.hg = (double)(config.hg);
+  eq.lg = (double)(config.lg) / 100.0;
+  eq.mg = (double)(config.mg) / 100.0;
+  eq.hg = (double)(config.hg) / 100.0;
 }
 
 /****************************************************************
@@ -160,7 +160,7 @@ int audio_update (void)
   rrp = rr;
 
   /* keep remaining samples for next frame */
-  memcpy(snd.fm.buffer, fm, (snd.fm.pos - snd.fm.buffer) << 1);
+  memcpy(snd.fm.buffer, fm, (snd.fm.pos - snd.fm.buffer) << 2);
   memcpy(snd.psg.buffer, psg, (snd.psg.pos - snd.psg.buffer) << 1);
 
 #ifdef LOGSOUND
@@ -197,12 +197,20 @@ int audio_init (int samplerate, float framerate)
 #endif
 
   /* SN76489 stream buffers */
+#ifndef NGC
   snd.psg.buffer = (int16 *) malloc(snd.buffer_size * sizeof(int16));
+#else
+  snd.psg.buffer = (int16 *) memalign(32, snd.buffer_size * sizeof(int16));
+#endif
   if (!snd.psg.buffer)
     return (-1);
 
   /* YM2612 stream buffers */
+#ifndef NGC
   snd.fm.buffer = (int32 *) malloc(snd.buffer_size * sizeof(int32) * 2);
+#else
+  snd.fm.buffer = (int32 *) memalign(32,snd.buffer_size * sizeof(int32) * 2);
+#endif
   if (!snd.fm.buffer)
     return (-1);
 
@@ -285,7 +293,7 @@ void system_init (void)
   /* Cartridge hardware */
   cart_hw_init();
 
-  /* Sound Chips hardware */
+  /* Sound hardware */
   sound_init();
 }
 
@@ -302,10 +310,10 @@ void system_reset (void)
   vdp_reset();
   render_reset();
 
-  /* Sound chips */
+  /* Sound hardware */
   sound_reset();
 
-  /* Audio System */
+  /* Audio system */
   audio_reset();
 }
 
@@ -332,7 +340,6 @@ int system_frame (int do_skip)
 
   /* update display settings */
   int line;
-  int reset = resetline;
   int vdp_height  = bitmap.viewport.h;
   int end_line    = vdp_height + bitmap.viewport.y;
   int start_line  = lines_per_frame - bitmap.viewport.y;
@@ -377,16 +384,6 @@ int system_frame (int do_skip)
 
     /* 68k line cycle count */
     hint_68k = mcycles_68k;
-
-    /* Soft Reset line */
-    if (line == reset)
-    {
-      /* Pro Action Replay (switch at "Trainer" position) */
-      if (config.lock_on == TYPE_AR)
-        datel_reset(0);
-
-      gen_reset(0);
-    }
 
     /* update VDP DMA */
     if (dma_length)

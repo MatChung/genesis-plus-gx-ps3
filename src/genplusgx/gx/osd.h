@@ -17,13 +17,13 @@
 
 #ifdef HW_RVL
 #include <di/di.h>
+#include "vi_encoder.h"
 #endif
 
 #include "gx_input.h"
 #include "gx_audio.h"
 #include "gx_video.h"
 #include "config.h"
-#include "file_mem.h"
 
 #define DEFAULT_PATH  "/genplus"
 #define GG_ROM        "/genplus/ggenie.bin"

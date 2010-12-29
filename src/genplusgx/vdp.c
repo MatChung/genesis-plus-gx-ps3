@@ -66,8 +66,8 @@ uint8 bg_pattern_cache[0x80000];  /* Cached and flipped patterns */
 uint8 playfield_shift;            /* Width of planes A, B (in bits) */
 uint8 playfield_col_mask;         /* Vertical scroll mask */
 uint16 playfield_row_mask;        /* Horizontal scroll mask */
-uint16 hc_latch;                  /* latched HCounter (INT2) */
 uint16 v_counter;                 /* VDP scanline counter */
+uint32 hvc_latch;                 /* latched HVCounter (INT2) */
 uint32 dma_length;                /* Current DMA remaining bytes */
 int32 fifo_write_cnt;             /* VDP writes fifo count */
 uint32 fifo_lastwrite;            /* last VDP write cycle */
@@ -127,12 +127,12 @@ static const uint32 dma_rates[16] = {
 /*--------------------------------------------------------------------------*/
 /* Functions prototype                                                      */
 /*--------------------------------------------------------------------------*/
-static inline void fifo_update();
-static inline void data_w(unsigned int data);
-static inline void reg_w(unsigned int r, unsigned int d);
-static inline void dma_copy(void);
-static inline void dma_vbus (void);
-static inline void dma_fill(unsigned int data);
+static void fifo_update();
+static void data_w(unsigned int data);
+static void reg_w(unsigned int r, unsigned int d);
+static void dma_copy(void);
+static void dma_vbus (void);
+static void dma_fill(unsigned int data);
 
 /*--------------------------------------------------------------------------*/
 /* Init, reset, shutdown functions                                          */
@@ -161,7 +161,7 @@ void vdp_reset(void)
   hint_pending    = 0;
   vint_pending    = 0;
   irq_status      = 0;
-  hc_latch        = 0;
+  hvc_latch       = 0;
   v_counter       = 0;
   dmafill         = 0;
   dma_length      = 0;
@@ -172,7 +172,7 @@ void vdp_reset(void)
   interlaced      = 0;
   fifo_write_cnt  = 0;
   fifo_lastwrite  = 0;
-  fifo_latency    = 192;  /* default FIFO timings */
+  fifo_latency    = 190;  /* default FIFO timings */
 
   status  = vdp_pal | 0x0200;  /* FIFO empty */
 
@@ -248,7 +248,7 @@ void vdp_restore(uint8 *vdp_regs)
   bitmap.viewport.changed = 1;
 
   /* restore FIFO timings */
-  fifo_latency = (reg[12] & 1) ? 192 : 210;
+  fifo_latency = (reg[12] & 1) ? 190 : 214;
   if ((code & 0x0F) == 0x01) 
     fifo_latency = fifo_latency * 2;
 
@@ -387,22 +387,21 @@ void vdp_ctrl_w(unsigned int data)
   }
 
   /* 
-     FIFO emulation (Chaos Engine/Soldier of Fortune, Double Clutch) 
-     ---------------------------------------------------------------
-
-      HDISP is 2560 mcycles (same in both modes)
+     FIFO emulation (Chaos Engine/Soldier of Fortune, Double Clutch, Sol Deace) 
+     --------------------------------------------------------------------------
 
       CPU access per line is limited during active display:
-         H32: 16 access --> 2560/16 = 160 cycles between access
-         H40: 18 access --> 2560/18 = 142 cycles between access
+         H32: 16 access --> 3420/16 = ~214 Mcycles between access
+         H40: 18 access --> 3420/18 = ~190 Mcycles between access
 
-      FIFO access seems to require some additional cyles (VDP latency).
+      This is an approximation, on real hardware, the delay between access is
+	  more likely 16 pixels (128 or 160 Mcycles) with no access allowed during
+	  HBLANK (~860 Mcycles), H40 mode being probably a little more restricted.
 
-      Also note that VRAM access are byte wide, so one VRAM write (word)
-      takes twice CPU cycles.
+      Each VRAM access is byte wide, so one VRAM write (word) need twice cycles.
 
   */
-  fifo_latency = (reg[12] & 1) ? 192 : 210;
+  fifo_latency = (reg[12] & 1) ? 190 : 214;
   if ((code & 0x0F) == 0x01)
     fifo_latency = fifo_latency * 2;
 }
@@ -432,13 +431,13 @@ unsigned int vdp_ctrl_r(void)
   if ((status & 2) && !dma_length && (mcycles_68k >= dma_endCycles))
     status &= 0xFFFD;
 
-  uint32 temp = status;
+  unsigned int temp = status;
 
   /* display OFF: VBLANK flag is set */
   if (!(reg[1] & 0x40))
     temp |= 0x08; 
 
-  /* HBLANK flag (Sonic 3 and Sonic 2 "VS Modes", Lemmings 2, Mega Turrican, Gouketsuji Ichizoku) */
+  /* HBLANK flag (Sonic 3 and Sonic 2 "VS Modes", Lemmings 2, Mega Turrican, V.R Troopers, Gouketsuji Ichizoku, ...) */
   if ((mcycles_68k % MCYCLES_PER_LINE) < 588)
     temp |= 0x04;
 
@@ -456,10 +455,17 @@ unsigned int vdp_ctrl_r(void)
 
 unsigned int vdp_hvc_r(void)
 {
-  uint8 hc = (hc_latch & 0x100) ? (hc_latch & 0xFF) : hctab[mcycles_68k%MCYCLES_PER_LINE]; 
+  /* HVC is frozen (Lightgun games + Sunset Riders) */
+  if (hvc_latch)
+    return (hvc_latch & 0xffff);
+
+  /* Horizontal Counter (Striker, Mickey Mania, Skitchin, Road Rash I,II,III, ...) */
+  uint8 hc = hctab[mcycles_68k%MCYCLES_PER_LINE];
+
+  /* Vertical Counter */
   uint8 vc = vctab[v_counter];
 
-  /* interlace mode 2 */
+  /* interlace mode 2 (Sonic the Hedgehog 2, Combat Cars) */
   if (im2_flag)
     vc = (vc << 1) | ((vc >> 7) & 1);
 
@@ -551,6 +557,12 @@ unsigned int vdp_data_r(void)
       error("[%d(%d)][%d(%d)] VSRAM 0x%x read -> 0x%x (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE, addr, temp, m68k_get_reg (NULL, M68K_REG_PC));
 #endif
       break;
+	  
+#ifdef LOGVDP
+    default:
+	  error("[%d(%d)][%d(%d)] Unknown (%d) 0x%x read (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE, code, addr, m68k_get_reg (NULL, M68K_REG_PC));
+      break;
+#endif
   }
 
   /* Increment address register */
@@ -613,12 +625,12 @@ int vdp_int_ack_callback(int int_level)
 /*--------------------------------------------------------------------------*/
 /* FIFO emulation                                                  */
 /*--------------------------------------------------------------------------*/
-static inline void fifo_update()
+static void fifo_update()
 {
   if (fifo_write_cnt > 0)
   {
     /* update FIFO reads */
-    uint32 fifo_read = ((mcycles_68k - fifo_lastwrite) / fifo_latency);
+    int fifo_read = ((mcycles_68k - fifo_lastwrite) / fifo_latency);
     if (fifo_read > 0)
     {
       fifo_write_cnt -= fifo_read;
@@ -646,16 +658,14 @@ static inline void fifo_update()
 /*--------------------------------------------------------------------------*/
 /* Memory access functions                                                  */
 /*--------------------------------------------------------------------------*/
-static inline void data_w(unsigned int data)
+static void data_w(unsigned int data)
 {
   switch (code & 0x0F)
   {
     case 0x01:  /* VRAM */
-
 #ifdef LOGVDP
       error("[%d(%d)][%d(%d)] VRAM 0x%x write -> 0x%x (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE, addr, data, m68k_get_reg (NULL, M68K_REG_PC));
 #endif
-
       /* Byte-swap data if A0 is set */
       if (addr & 1)
         data = ((data >> 8) | (data << 8)) & 0xFFFF;
@@ -721,19 +731,25 @@ static inline void data_w(unsigned int data)
 #endif
       *(uint16 *) &vsram[(addr & 0x7E)] = data;
       break;
+	  
+#ifdef LOGVDP
+    default:
+      error("[%d(%d)][%d(%d)] Unknown (%d) 0x%x write -> 0x%x (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE, code, addr, data, m68k_get_reg (NULL, M68K_REG_PC));
+      break;
+#endif
   }
 
   /* Increment address register */
   addr += reg[15];
 }
 
-static inline void reg_w(unsigned int r, unsigned int d)
+static void reg_w(unsigned int r, unsigned int d)
 {
 #ifdef LOGVDP
   error("[%d(%d)][%d(%d)] VDP register %d write -> 0x%x (%x)\n", v_counter, mcycles_68k/MCYCLES_PER_LINE, mcycles_68k, mcycles_68k%MCYCLES_PER_LINE, r, d, m68k_get_reg (NULL, M68K_REG_PC));
 #endif
 
-  /* See if Mode 4 (SMS mode) is enabled 
+  /* Mode 4 (SMS mode) is enabled 
      According to official doc, VDP registers #11 to #23 can not be written unless bit2 in register #1 is set
      Fix Captain Planet & Avengers (Alt version), Bass Master Classic Pro Edition (they incidentally activate Mode 4) 
   */
@@ -768,6 +784,16 @@ static inline void reg_w(unsigned int r, unsigned int d)
         for (i = 1; i < 0x40; i += 1)
           color_update (i, *(uint16 *) & cram[i << 1]);
       }
+
+      /* HVC latch bit */
+      if (r & 0x02)
+      {
+        if (reg[0] & 2) /* latch current HVC */
+          hvc_latch = 0x10000 | (vctab[v_counter] << 8) | hctab[mcycles_68k%MCYCLES_PER_LINE];
+        else            /* free-running HVC */
+          hvc_latch = 0;
+      }
+
       break;
 
     case 1: /* CTRL #2 */
@@ -813,13 +839,13 @@ static inline void reg_w(unsigned int r, unsigned int d)
         }
       }
 
-      /* Display status modified during Horizontal Blanking (Legend of Galahad, Lemmings 2,         */
-      /* Nigel Mansell's World Championship Racing, Deadly Moves, Power Athlete, ...)               */
-      /*                                                                                            */
-      /* Note that this is not entirely correct since we are cheating with the HBLANK period limits */
-      /* and still redrawing the whole line. This is done because some game (PAL version of Nigel   */
-      /* Mansell's World Championship Racing actually) appear to disable display outside HBLANK. On */
-      /* real hardware, the raster line would appear partially blanked.                             */
+      /* Display status modified during HBLANK (Legend of Galahad, Lemmings 2, Formula 1 Championship,  */
+      /* Nigel Mansell's World Championship Racing,  ...)                                               */
+      /*                                                                                                */
+      /* Note that this is not entirely correct since we are cheating with the HBLANK period limits and */
+      /* still redrawing the whole line. This is done because some games (forexample, the PAL version   */
+      /* of Nigel Mansell's World Championship Racing) appear to disable display outside HBLANK.        */
+      /* On  real hardware, the raster line would appear partially blanked.                             */
       if ((r & 0x40) && !(status & 8))
       {
         if (mcycles_68k <= (hint_68k + 860))
@@ -863,11 +889,7 @@ static inline void reg_w(unsigned int r, unsigned int d)
 
     case 5: /* SATB */
       reg[5] = d;
-      if (reg[12] & 1)
-        satb = (d << 9) & 0xFC00;
-      else
-        satb = (d << 9) & 0xFE00;
-
+      satb = (d << 9) & sat_base_mask;
       break;
 
     case 7:
@@ -922,7 +944,7 @@ static inline void reg_w(unsigned int r, unsigned int d)
             bitmap.viewport.x = 16;
 
           /* Update fifo timings */
-          fifo_latency = ((code & 0x0F) == 0x01) ? 384 : 192;
+          fifo_latency = 190;
         }
         else
         {
@@ -941,8 +963,11 @@ static inline void reg_w(unsigned int r, unsigned int d)
             bitmap.viewport.x = 12;
 
           /* Update fifo timings */
-          fifo_latency = ((code & 0x0F) == 0x01) ? 420 : 210;
+          fifo_latency = 214;
         }
+		
+	    if ((code & 0x0F) == 0x01)
+		  fifo_latency *= 2;
 
         /* Update viewport */
         bitmap.viewport.changed = 1;
@@ -996,11 +1021,11 @@ static inline void reg_w(unsigned int r, unsigned int d)
     - see how source addr is affected
       (can it make high source byte inc?)
 */
-static inline void dma_copy(void)
+static void dma_copy(void)
 {
   int name;
-  uint32 length = (reg[20] << 8 | reg[19]) & 0xFFFF;
-  uint32 source = (reg[22] << 8 | reg[21]) & 0xFFFF;
+  unsigned int length = (reg[20] << 8 | reg[19]) & 0xFFFF;
+  unsigned int source = (reg[22] << 8 | reg[21]) & 0xFFFF;
 
   if (!length)
     length = 0x10000;
@@ -1026,12 +1051,12 @@ static inline void dma_copy(void)
 }
 
 /* 68K Copy to VRAM, VSRAM or CRAM */
-static inline void dma_vbus (void)
+static void dma_vbus (void)
 {
-  uint32 source = ((reg[23] & 0x7F) << 17 | reg[22] << 9 | reg[21] << 1) & 0xFFFFFE;
-  uint32 base   = source;
-  uint32 length = (reg[20] << 8 | reg[19]) & 0xFFFF;
-  uint32 temp;
+  unsigned int source = ((reg[23] & 0x7F) << 17 | reg[22] << 9 | reg[21] << 1) & 0xFFFFFE;
+  unsigned int base   = source;
+  unsigned int length = (reg[20] << 8 | reg[19]) & 0xFFFF;
+  uint16 temp;
   
   if (!length)
     length = 0x10000;
@@ -1099,10 +1124,10 @@ static inline void dma_vbus (void)
 }
 
 /* VRAM FILL */
-static inline void dma_fill(unsigned int data)
+static void dma_fill(unsigned int data)
 {
   int name;
-  uint32 length = (reg[20] << 8 | reg[19]) & 0xFFFF;
+  unsigned int length = (reg[20] << 8 | reg[19]) & 0xFFFF;
 
   if (!length)
     length = 0x10000;

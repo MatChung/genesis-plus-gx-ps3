@@ -161,3 +161,4 @@ void md_ntsc_blit( md_ntsc_t const* ntsc, MD_NTSC_IN_T const* table, unsigned ch
   MD_NTSC_RGB_OUT( 7, *line_out++, MD_NTSC_OUT_DEPTH );
 }
 #endif
+

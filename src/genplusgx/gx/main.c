@@ -28,9 +28,14 @@
 #include "history.h"
 #include "aram.h"
 #include "dvd.h"
+#include "file_slot.h"
+
+#ifdef HW_RVL
+#include "usb2storage.h"
+#include "mload.h"
+#endif
 
 #include <fat.h>
-#include <ogc/cast.h>
 
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
@@ -39,14 +44,55 @@
 u32 Shutdown = 0;
 
 #ifdef HW_RVL
-
-/* Power Button callback */
+/****************************************************************************
+ * Power Button callback 
+ ***************************************************************************/
 static void Power_Off(void)
 {
   Shutdown = 1;
   ConfigRequested = 1;
 }
 
+/****************************************************************************
+ * IOS support
+ ***************************************************************************/
+static bool FindIOS(u32 ios)
+{
+	s32 ret;
+	u32 n;
+	
+  u64 *titles = NULL;
+	u32 num_titles=0;
+	
+	ret = ES_GetNumTitles(&num_titles);
+	if (ret < 0)
+		return false;
+	
+	if(num_titles < 1) 
+		return false;
+	
+	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
+	if (!titles)
+		return false;
+	
+	ret = ES_GetTitles(titles, num_titles);
+	if (ret < 0)
+	{
+		free(titles);
+		return false;
+	}
+	
+	for(n=0; n < num_titles; n++)
+	{
+		if((titles[n] & 0xFFFFFFFF)==ios) 
+		{
+			free(titles); 
+			return true;
+		}
+	}
+  free(titles); 
+	return false;
+}
 #endif
 
 /***************************************************************************
@@ -106,6 +152,54 @@ static void init_machine(void)
   bitmap.data = texturemem;
 }
 
+static void run_emulation(void)
+{
+  /* main emulation loop */
+  while (1)
+  {
+    /* Main Menu request */
+    if (ConfigRequested)
+    {
+      /* stop video & audio */
+      gx_audio_Stop();
+      gx_video_Stop();
+
+      /* show menu */
+      MainMenu ();
+      ConfigRequested = 0;
+
+      /* start video & audio */
+      gx_audio_Start();
+      gx_video_Start();
+      frameticker = 1;
+    }
+
+    /* automatic frame skipping */
+    if (frameticker > 1)
+    {
+      /* skip frame */
+      frameticker = 0;
+      system_frame(1);
+    }
+    else
+    {
+      /* render frame */
+      frameticker = 0;
+      system_frame(0);
+
+      /* update video */
+      gx_video_Update();
+    }
+
+    /* update audio */
+    gx_audio_Update();
+
+    /* wait for next frame */
+    while (frameticker < 1)
+      usleep(1);
+  }
+}
+
 /**************************************************
   Load a new rom and performs some initialization
 ***************************************************/
@@ -113,7 +207,8 @@ void reloadrom (int size, char *name)
 {
   /* cartridge hot-swap support */
   uint8 hotswap = 0;
-  if (cart.romsize) hotswap = config.hot_swap;
+  if (cart.romsize)
+    hotswap = config.hot_swap;
 
   /* Load ROM */
   cart.romsize = size;
@@ -149,7 +244,8 @@ void reloadrom (int size, char *name)
 void shutdown(void)
 {
   /* system shutdown */
-  memfile_autosave(-1,config.state_auto);
+  if (config.s_auto & 2)
+    slot_autosave(config.s_default,config.s_device);
   system_shutdown();
   audio_shutdown();
   free(cart.rom);
@@ -157,6 +253,7 @@ void shutdown(void)
   gx_video_Shutdown();
 #ifdef HW_RVL
   DI_Close();
+  mload_close();
 #endif
 }
 
@@ -170,14 +267,29 @@ u32 frameticker = 0;
 int main (int argc, char *argv[])
 {
 #ifdef HW_RVL
-  /* initialize DVDX */
+	/* try to load IOS 202 */
+	if(IOS_GetVersion() != 202 && FindIOS(202))
+		IOS_ReloadIOS(202);
+	
+	if(IOS_GetVersion() == 202)
+	{
+		/* disable DVDX stub */
+        DI_LoadDVDX(false);
+		
+		/* load EHCI module & enable USB2 driver */
+		if(mload_init() >= 0 && load_ehci_module())
+			USB2Enable(true);
+	}
+
+  /* initialize DVD driver */
   DI_Init();
 #endif
 
-  /* initialize hardware */
+  /* initialize video engine */
   gx_video_Init();
-  gx_input_Init();
+
 #ifdef HW_DOL
+  /* initialize DVD driver */
   DVD_Init ();
   dvd_drive_detect();
 #endif
@@ -185,7 +297,6 @@ int main (int argc, char *argv[])
   /* initialize FAT devices */
   if (fatInitDefault())
   {
-    /* check for default directories */
     DIR_ITER *dir = NULL;
 
     /* base directory */
@@ -195,29 +306,26 @@ int main (int argc, char *argv[])
     if (dir == NULL) mkdir(pathname,S_IRWXU);
     else dirclose(dir);
 
-    /* SRAM & Savestate files directory */ 
+    /* default SRAM & Savestate files directory */ 
     sprintf (pathname, "%s/saves",DEFAULT_PATH);
     dir = diropen(pathname);
     if (dir == NULL) mkdir(pathname,S_IRWXU);
     else dirclose(dir);
 
-    /* Snapshot files directory */ 
+    /* default Snapshot files directory */ 
     sprintf (pathname, "%s/snaps",DEFAULT_PATH);
-    dir = diropen(pathname);
-    if (dir == NULL) mkdir(pathname,S_IRWXU);
-    else dirclose(dir);
-
-    /* Cheat files directory */ 
-    sprintf (pathname, "%s/cheats",DEFAULT_PATH);
     dir = diropen(pathname);
     if (dir == NULL) mkdir(pathname,S_IRWXU);
     else dirclose(dir);
   }
 
-  /* initialize sound engine */
+  /* initialize input engine */
+  gx_input_Init();
+
+  /* initialize sound engine (need libfat) */
   gx_audio_Init();
 
-  /* initialize core engine */
+  /* initialize genesis plus core */
   legal();
   config_default();
   history_default();

@@ -24,3 +24,4 @@ the pixel index if you use the high bits as flags, etc. */
 output_color = MD_NTSC_ADJ_IN( MD_NTSC_IN_T ) */
 
 #endif
+

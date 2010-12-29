@@ -1,7 +1,28 @@
+/***************************************************************************************
+ *  Genesis Plus
+ *  ROM Loading Support
+ *
+ *  Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003  Charles Mac Donald (original code)
+ *  Eke-Eke (2007,2008,2009), additional code & fixes for the GCN/Wii port
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ ****************************************************************************************/
 
+#include <ctype.h>
 #include "shared.h"
-
-static uint8 block[0x4000];
 
 /*** ROM Information ***/
 #define ROMCONSOLE    256
@@ -171,7 +192,6 @@ static uint16 GetRealChecksum (uint8 *rom, int length)
   return checksum;
 }
 
-
  /***************************************************************************
   * getrominfo
   *
@@ -227,6 +247,105 @@ static void getrominfo (char *romheader)
     for (j=0; j < 14; j++)
       if (romheader[ROMIOSUPPORT+i] == peripheralinfo[j].pID[0])
         rominfo.peripherals |= (1 << j);
+}
+
+ /***************************************************************************
+  * deinterleave_block
+  *
+  * Convert interleaved (.smd) ROM files.
+  ***************************************************************************/
+static void deinterleave_block(uint8 * src)
+{
+  int i;
+  uint8 block[0x4000];
+  memcpy (block, src, 0x4000);
+  for (i = 0; i < 0x2000; i += 1)
+  {
+      src[i * 2 + 0] = block[0x2000 + (i)];
+      src[i * 2 + 1] = block[0x0000 + (i)];
+  }
+}
+
+ /***************************************************************************
+  * load_rom
+  *
+  * Load a new ROM file.
+  ***************************************************************************/
+int load_rom(char *filename)
+{
+  int i, size, offset = 0;
+ 
+#ifdef NGC
+  size = cart.romsize;
+  sprintf(rom_filename,"%s",filename);
+  rom_filename[strlen(rom_filename) - 4] = 0;
+#else
+  uint8 *ptr;
+  ptr = load_archive(filename, &size);
+  if(!ptr) return (0);
+  memcpy(cart.rom, ptr + offset, size);
+  free(ptr);
+#endif
+
+  /* detect interleaved format (.SMD) */
+  if (strncmp((char *)(cart.rom + 0x100),"SEGA", 4) && ((size / 512) & 1))
+  {
+    size -= 512;
+    offset += 512;
+    for (i = 0; i < (size / 0x4000); i += 1)
+      deinterleave_block (cart.rom + offset + (i * 0x4000));
+    memcpy(cart.rom, cart.rom + offset, size);
+  }
+
+  /* max. 10 MBytes supported */
+  if (size > MAXROMSIZE) size = MAXROMSIZE;
+  cart.romsize = size;
+  
+  /* clear unused ROM space */
+  memset(cart.rom + size, 0xff, MAXROMSIZE - size);
+
+  /* get infos from ROM header */
+  getrominfo((char *)cart.rom);
+
+  /* get specific input devices */
+  input_autodetect();
+
+  /* get default region */
+  region_autodetect();
+
+#ifdef LSB_FIRST
+  /* Byteswap ROM */
+  uint8 temp;
+  for(i = 0; i < size; i += 2)
+  {
+    temp = cart.rom[i];
+    cart.rom[i] = cart.rom[i+1];
+    cart.rom[i+1] = temp;
+  }
+#endif
+
+  /* byteswapped RADICA dumps (from Haze) */
+  if (((strstr(rominfo.product,"-K0101") != NULL) && (rominfo.checksum == 0xf424)) ||
+      ((strstr(rominfo.product,"-K0109") != NULL) && (rominfo.checksum == 0x4f10)))
+  {
+    uint8 temp;
+    for(i = 0; i < size; i += 2)
+    {
+      temp = cart.rom[i];
+      cart.rom[i] = cart.rom[i+1];
+      cart.rom[i+1] = temp;
+    }
+  }
+
+  /* console hardware */
+  if (strstr(rominfo.consoletype, "SEGA PICO") != NULL)
+    system_hw = SYSTEM_PICO;
+  else if (strstr(rominfo.consoletype, "SEGA MEGADRIVE") != NULL)
+    system_hw = SYSTEM_MEGADRIVE;
+  else 
+    system_hw = SYSTEM_GENESIS;
+
+  return(1);
 }
 
 /****************************************************************************
@@ -370,96 +489,5 @@ char *get_peripheral(int index)
     return peripheralinfo[index].pName;
   return companyinfo[MAXCOMPANY - 1].company;
 }
-
-void deinterleave_block(uint8 *src)
-{
-    int i;
-    memcpy(block, src, 0x4000);
-    for(i = 0; i < 0x2000; i += 1)
-    {
-        src[i*2+0] = block[0x2000 + (i)];
-        src[i*2+1] = block[0x0000 + (i)];
-    }
-}
-
-int load_rom(char *filename)
-{
-    int size,i, offset = 0;
-    uint8 header[0x200];
-    uint8 *ptr;
-
-    ptr = load_archive(filename, &size);
-    if(!ptr) return (0);
-
-    if((size / 512) & 1)
-    {
-        int i;
-
-        size -= 512;
-        offset += 512;
-
-        memcpy(header, ptr, 512);
-
-        for(i = 0; i < (size / 0x4000); i += 1)
-        {
-            deinterleave_block(ptr + offset + (i * 0x4000));
-        }
-    }
-
-    memset(cart.rom, 0, 0x400000);
-    if(size > 0x400000) size = 0x400000;
-    memcpy(cart.rom, ptr + offset, size);
-
-    /* Free allocated file data */
-    free(ptr);
-
-  /* max. 10 MBytes supported */
-  if (size > MAXROMSIZE) size = MAXROMSIZE;
-  cart.romsize = size;
-  
-  /* clear unused ROM space */
-  memset(cart.rom + size, 0xff, MAXROMSIZE - size);
-
-  /* get infos from ROM header */
-  getrominfo((char *)cart.rom);
-
-  /* get default region */
-  region_autodetect();
-
-#ifdef LSB_FIRST
-  /* Byteswap ROM */
-  uint8 temp;
-  for(i = 0; i < size; i += 2)
-  {
-    temp = cart.rom[i];
-    cart.rom[i] = cart.rom[i+1];
-    cart.rom[i+1] = temp;
-  }
-#endif
-
-  /* byteswapped RADICA dumps (from Haze) */
-  if (((strstr(rominfo.product,"-K0101") != NULL) && (rominfo.checksum == 0xf424)) ||
-      ((strstr(rominfo.product,"-K0109") != NULL) && (rominfo.checksum == 0x4f10)))
-  {
-    uint8 temp;
-    for(i = 0; i < size; i += 2)
-    {
-      temp = cart.rom[i];
-      cart.rom[i] = cart.rom[i+1];
-      cart.rom[i+1] = temp;
-    }
-  }
-
-  /* console hardware */
-  if (strstr(rominfo.consoletype, "SEGA PICO") != NULL)
-    system_hw = SYSTEM_PICO;
-  else if (strstr(rominfo.consoletype, "SEGA MEGADRIVE") != NULL)
-    system_hw = SYSTEM_MEGADRIVE;
-  else 
-    system_hw = SYSTEM_GENESIS;
-
-    return (1);
-}
-
 
 

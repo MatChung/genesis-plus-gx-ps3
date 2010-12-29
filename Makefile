@@ -92,7 +92,6 @@ PPU_CPPFLAGS		+=	-DWORDS_BIGENDIAN  -D'VERSION="Genesis Plus PS3"' -DPS3_SDK_3_4
 
 PPU_ASFLAGS		+=
 
-PPU_LDFLAGS		=	-Wl
 
 # debugging
 #PPU_CFLAGS		+=	-DCELL_DEBUG -DPS3_DEBUG_IP=\"192.168.1.7\" -DPS3_DEBUG_PORT=9002
@@ -117,6 +116,7 @@ GCC_COMPILER		= 1
 PPU_CFLAGS		+= -funroll-loops
 PPU_CXXFLAGS		+= -funroll-loops
 PPU_LDFLAGS		+= -finline-limit=5000
+PPU_LDFLAGS		+= -Wl
 endif
 
 PPU_LDLIBS		+= 	-L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/opt -ldbgfont -lPSGL -lPSGLcgc -lcgc \

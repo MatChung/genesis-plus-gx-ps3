@@ -96,6 +96,30 @@ static butn_data button_player_none_data =
   {Ctrl_player_none_png,NULL}
 };
 
+static butn_data button_load_data =
+{
+  {NULL,NULL},
+  {Button_load_png,Button_load_over_png}
+};
+
+static butn_data button_save_data =
+{
+  {NULL,NULL},
+  {Button_save_png,Button_save_over_png}
+};
+
+static butn_data button_special_data =
+{
+  {NULL,NULL},
+  {Button_special_png,Button_special_over_png}
+};
+
+static butn_data button_delete_data =
+{
+  {NULL,NULL},
+  {Button_delete_png,Button_delete_over_png}
+};
+
 /*****************************************************************************/
 /*  Generic GUI items                                                         */
 /*****************************************************************************/
@@ -149,7 +173,19 @@ static gui_image bg_list[6] =
   {NULL,Banner_top_png,IMAGE_VISIBLE,0,0,640,108,255},
   {NULL,Banner_bottom_png,IMAGE_VISIBLE,0,380,640,100,255},
   {NULL,Main_logo_png,IMAGE_VISIBLE,466,40,152,44,255},
-  {NULL,Frame_s1_png,IMAGE_VISIBLE,8,70,372,336,128}
+  {NULL,Frame_s1_png,IMAGE_VISIBLE,8,70,372,336,64}
+};
+
+static gui_image bg_saves[8] =
+{
+  {NULL,NULL,0,0,0,0,0,255},
+  {NULL,Bg_main_png,IMAGE_VISIBLE,374,140,284,288,255},
+  {NULL,Bg_overlay_png,IMAGE_VISIBLE|IMAGE_REPEAT,0,0,640,480,255},
+  {NULL,Banner_top_png,IMAGE_VISIBLE|IMAGE_SLIDE_TOP,0,0,640,108,255},
+  {NULL,Banner_bottom_png,IMAGE_VISIBLE|IMAGE_SLIDE_BOTTOM,0,380,640,100,255},
+  {NULL,Main_logo_png,IMAGE_VISIBLE|IMAGE_SLIDE_TOP,466,40,152,44,255},
+  {NULL,Frame_s1_png,IMAGE_VISIBLE,8,70,372,336,64},
+  {NULL,Frame_s1_png,IMAGE_SLIDE_RIGHT,468,110,372,296,64}
 };
 
 /*****************************************************************************/
@@ -278,22 +314,36 @@ static gui_item items_prefs[7] =
   {NULL,NULL,"Confirm Box: OFF",  "Enable/disable user confirmation",     52,132,276,48}
 };
 
+/* Save Manager */
+static gui_item items_saves[9] =
+{
+  {NULL,NULL,"",""                   ,0,0,0,0},
+  {NULL,NULL,"",""                   ,0,0,0,0},
+  {NULL,NULL,"",""                   ,0,0,0,0},
+  {NULL,NULL,"",""                   ,0,0,0,0},
+  {NULL,NULL,"",""                   ,0,0,0,0},
+  {NULL,NULL,"","Load file"          ,0,0,0,0},
+  {NULL,NULL,"","Set as default file",0,0,0,0},
+  {NULL,NULL,"","Delete file"        ,0,0,0,0},
+  {NULL,NULL,"","Save file"          ,0,0,0,0}
+};
+
 /*****************************************************************************/
 /*  Menu Buttons description                                                 */
 /*****************************************************************************/
 
 /* Generic Buttons for list menu */
-static gui_butn arrow_up = {&arrow_up_data,BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
-static gui_butn arrow_down = {&arrow_down_data,BUTTON_VISIBLE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
+static gui_butn arrow_up = {&arrow_up_data,BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,76,360,32};
+static gui_butn arrow_down = {&arrow_down_data,BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,0,0,0},14,368,360,32};
 
 /* Generic list menu */
 static gui_butn buttons_list[4] =
 {
-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,132,276,48},
-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,188,276,48},
-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,244,276,48},
-  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},52,300,276,48}
- };
+  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,132,276,48},
+  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,188,276,48},
+  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,244,276,48},
+  {&button_text_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0},56,300,276,48}
+};
 
 /* Main menu */
 static gui_butn buttons_main[9] =
@@ -355,6 +405,20 @@ static gui_butn buttons_options[5] =
   {&button_icon_data,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_FADE|BUTTON_OVER_SFX|BUTTON_SELECT_SFX,{2,0,1,0},330,264,148,132}
 };
 
+/* Save Manager Menu */
+static gui_butn buttons_saves[9] =
+{
+  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{0,1,0,0}, 56,102,276,48},
+  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,158,276,48},
+  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,214,276,48},
+  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,1,0,0}, 56,270,276,48},
+  {&button_text_data   ,BUTTON_VISIBLE|BUTTON_ACTIVE|BUTTON_OVER_SFX,{1,0,0,0}, 56,326,276,48},
+  {&button_load_data   ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{0,1,0,0},530,130, 56,56},
+  {&button_special_data,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,1,0,0},530,196, 56,56},
+  {&button_delete_data ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,1,0,0},530,262, 56,56},
+  {&button_save_data   ,BUTTON_ACTIVE|BUTTON_SLIDE_RIGHT|BUTTON_OVER_SFX,{1,0,0,0},530,328, 56,56}
+};
+
 /*****************************************************************************/
 /*  Menu descriptions                                                        */
 /*****************************************************************************/
@@ -369,7 +433,8 @@ static gui_menu menu_main =
   buttons_main,
   bg_main,
   {NULL,NULL},
-  {NULL,NULL}
+  {NULL,NULL},
+  NULL
 };
 
 /* Main menu */
@@ -382,7 +447,8 @@ gui_menu menu_ctrls =
   buttons_ctrls,
   bg_ctrls,
   {&action_cancel, &action_select},
-  {NULL,NULL}
+  {NULL,NULL},
+  ctrlmenu_cb
 };
 
 /* Load Game menu */
@@ -399,7 +465,8 @@ static gui_menu menu_load =
   buttons_load,
   bg_misc,
   {&action_cancel, &action_select},
-  {NULL,NULL}
+  {NULL,NULL},
+  NULL
 };
 
 /* Options menu */
@@ -412,7 +479,8 @@ static gui_menu menu_options =
   buttons_options,
   bg_misc,
   {&action_cancel, &action_select},
-  {NULL,NULL}
+  {NULL,NULL},
+  NULL
 };
 
 /* System Options menu */
@@ -425,7 +493,8 @@ static gui_menu menu_system =
   buttons_list,
   bg_list,
   {&action_cancel, &action_select},
-  {&arrow_up,&arrow_down}
+  {&arrow_up,&arrow_down},
+  NULL
 };
 
 /* Video Options menu */
@@ -438,7 +507,8 @@ static gui_menu menu_video =
   buttons_list,
   bg_list,
   {&action_cancel, &action_select},
-  {&arrow_up,&arrow_down}
+  {&arrow_up,&arrow_down},
+  NULL
 };
 
 /* Sound Options menu */
@@ -451,7 +521,8 @@ static gui_menu menu_audio =
   buttons_list,
   bg_list,
   {&action_cancel, &action_select},
-  {&arrow_up,&arrow_down}
+  {&arrow_up,&arrow_down},
+  NULL
 };
 
 /* Sound Options menu */
@@ -637,22 +708,26 @@ static void prefmenu ()
 
     switch (ret)
     {
-      case 0:  /*** SRAM auto load/save ***/
-        config.sram_auto ++;
-        if (config.sram_auto > 2) config.sram_auto = -1;
-        if (config.sram_auto == 0) sprintf (items[0].text, "SRAM Auto: FAT");
-        else if (config.sram_auto == 1) sprintf (items[0].text, "SRAM Auto: MCARD A");
-        else if (config.sram_auto == 2) sprintf (items[0].text, "SRAM Auto: MCARD B");
-        else sprintf (items[0].text, "SRAM Auto: OFF");
+      case 0:  /*** Auto load/save ***/
+        config.s_auto = (config.s_auto + 1) % 4;
+        if (config.s_auto == 3)
+          sprintf (items[0].text, "Auto Saves: ALL");
+        else if (config.s_auto == 2)
+          sprintf (items[0].text, "Auto Saves: STATE ONLY");
+        else if (config.s_auto == 1)
+          sprintf (items[0].text, "Auto Saves: SRAM ONLY");
+        else
+          sprintf (items[0].text, "Auto Saves: NONE");
         break;
 
-      case 1:   /*** Savestate auto load/save ***/
-        config.state_auto ++;
-        if (config.state_auto > 2) config.state_auto = -1;
-        if (config.state_auto == 0) sprintf (items[1].text, "Savestate Auto: FAT");
-        else if (config.state_auto == 1) sprintf (items[1].text, "Savestate Auto: MCARD A");
-        else if (config.state_auto == 2) sprintf (items[1].text, "Savestate Auto: MCARD B");
-        else sprintf (items[1].text, "Savestate Auto: OFF");
+      case 1:   /*** Default saves device ***/
+        config.s_device = (config.s_device + 1) % 3;
+        if (config.s_device == 1)
+          sprintf (items[1].text, "Saves Device: MCARD A");
+        else if (config.s_device == 2)
+          sprintf (items[1].text, "Saves Device: MCARD B");
+        else
+          sprintf (items[1].text, "Saves Device: FAT");
         break;
 
       case 2:   /*** Sound effects volume ***/
@@ -670,7 +745,7 @@ static void prefmenu ()
         else config.bg_color ++;
         if (config.bg_color < 0) config.bg_color = BG_COLOR_MAX - 1;
         else if (config.bg_color >= BG_COLOR_MAX) config.bg_color = 0;
-        if (config.bg_color) sprintf (items[4].text, "BG Color: Type %d", config.bg_color);
+        if (config.bg_color) sprintf (items[4].text, "BG Color: TYPE %d", config.bg_color);
         else sprintf (items[4].text, "BG Color: DEFAULT");
         GUI_SetBgColor(bg_colors[config.bg_color]);
         break;
@@ -705,11 +780,15 @@ static int update_snd_items(void)
   int offset;
   float fm_volume = (float)config.fm_preamp/100.0;
   float psg_volume = (float)config.psg_preamp/100.0;
+  float rolloff = config.rolloff * 100.0;
+  float lg = (float)config.lg/100.0;
+  float mg = (float)config.mg/100.0;
+  float hg = config.hg * 100.0;
   
   if (config.hq_fm)
   {
     sprintf (items[0].text, "High-Quality FM: ON");
-    sprintf (items[1].text, "FM Roll-off: %1.3f",config.rolloff);
+    sprintf (items[1].text, "FM Roll-off: %1.2f %%",rolloff);
     strcpy  (items[1].comment, "Adjust FIR low-pass filtering");
     offset = 2;
   }
@@ -737,16 +816,7 @@ static int update_snd_items(void)
   if (config.filter == 2)
   {
     sprintf (items[offset+4].text, "Filtering: 3-BAND EQ");
-    sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
-    sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
-    sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
-    sprintf (items[offset+8].text, "Low Freq: %d", config.low_freq);
-    sprintf (items[offset+9].text, "High Freq: %d", config.high_freq);
-    strcpy  (items[offset+5].comment, "Adjust EQ Low Band Gain");
-    strcpy  (items[offset+6].comment, "Adjust EQ Mid Band Gain");
-    strcpy  (items[offset+7].comment, "Adjust EQ High Band Gain");
-    strcpy  (items[offset+8].comment, "Adjust EQ Lowest Frequency");
-    strcpy  (items[offset+9].comment, "Adjust EQ Highest Frequency");
+    sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
     m->max_items  = offset + 10;
   }
   else if (config.filter == 1)
@@ -762,8 +832,8 @@ static int update_snd_items(void)
     m->max_items  = offset + 5;
   }
 
-  sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
-  sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
+  sprintf (items[offset+6].text, "Middle Gain: %1.2f", mg);
+  sprintf (items[offset+7].text, "High Gain: %1.2f", hg);
   sprintf (items[offset+8].text, "Low Freq: %d", config.low_freq);
   sprintf (items[offset+9].text, "High Freq: %d", config.high_freq);
   strcpy  (items[offset+5].comment, "Adjust EQ Low Band Gain");
@@ -783,6 +853,10 @@ static void soundmenu ()
   gui_item *items = m->items;
   float fm_volume = (float)config.fm_preamp/100.0;
   float psg_volume = (float)config.psg_preamp/100.0;
+  float rolloff = config.rolloff * 100.0;
+  float lg = (float)config.lg/100.0;
+  float mg = (float)config.mg/100.0;
+  float hg = config.hg * 100.0;
   int offset = update_snd_items();
   GUI_InitMenu(m);
   GUI_SlideMenuTitle(m,strlen("Audio "));
@@ -796,8 +870,9 @@ static void soundmenu ()
     {
       if (ret == 1)
       {
-        GUI_OptionBox(m,0,"FM Roll-off",(void *)&config.rolloff,0.001,0.800,1.000,0);
-        sprintf (items[1].text, "FM Roll-off: %1.3f",config.rolloff);
+        GUI_OptionBox(m,0,"FM Roll-off",(void *)&rolloff,0.1,95.0,99.9,0);
+        sprintf (items[1].text, "FM Roll-off: %1.2f %%",rolloff);
+        config.rolloff = rolloff / 100.0;
         ret = 255;
         if (cart.romsize) 
         {
@@ -906,7 +981,7 @@ static void soundmenu ()
         if (config.filter == 2)
         {
           sprintf (items[offset+4].text, "Filtering: 3-BAND EQ");
-          sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
+          sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
           strcpy (items[offset+5].comment, "Adjust EQ Low Band Gain");
           m->max_items = offset + 10;
           audio_set_equalizer();
@@ -939,21 +1014,24 @@ static void soundmenu ()
         }
         else
         {
-          GUI_OptionBox(m,0,"Low Gain",(void *)&config.lg,0.01,0.0,2.0,0);
-          sprintf (items[offset+5].text, "Low Gain: %1.2f", config.lg);
+          GUI_OptionBox(m,0,"Low Gain",(void *)&lg,0.01,0.0,2.0,0);
+          sprintf (items[offset+5].text, "Low Gain: %1.2f", lg);
+          config.lg = (int)(lg * 100.0);
           audio_set_equalizer();
         }
         break;
 
       case 7:
-        GUI_OptionBox(m,0,"Middle Gain",(void *)&config.mg,0.01,0.0,2.0,0);
-        sprintf (items[offset+6].text, "Middle Gain: %1.2f", config.mg);
+        GUI_OptionBox(m,0,"Middle Gain",(void *)&mg,0.01,0.0,2.0,0);
+        sprintf (items[offset+6].text, "Middle Gain: %1.2f", mg);
+        config.mg = (int)(mg * 100.0);
         audio_set_equalizer();
         break;
 
       case 8:
-        GUI_OptionBox(m,0,"High Gain",(void *)&config.hg,0.01,0.0,2.0,0);
-        sprintf (items[offset+7].text, "High Gain: %1.2f", config.hg);
+        GUI_OptionBox(m,0,"High Gain",(void *)&hg,0.01,0.0,2.0,0);
+        sprintf (items[offset+7].text, "High Gain: %1.2f", hg);
+        config.hg = (int)(hg * 100.0);
         audio_set_equalizer();
         break;
 
@@ -997,7 +1075,7 @@ static void systemmenu ()
   else if (config.region_detect == 2)
     sprintf (items[0].text, "Console Region:  EUR");
   else if (config.region_detect == 3)
-    sprintf (items[0].text, "Console Region:  JAP");
+    sprintf (items[0].text, "Console Region:  JPN");
 
   sprintf (items[1].text, "System Lockups: %s", config.force_dtack ? "OFF" : "ON");
   sprintf (items[2].text, "68k Address Error: %s", config.addr_error ? "ON" : "OFF");
@@ -1008,7 +1086,7 @@ static void systemmenu ()
   else if (config.lock_on == TYPE_AR)
     sprintf (items[4].text, "Lock-On: ACTION REPLAY");
   else if (config.lock_on == TYPE_SK)
-    sprintf (items[4].text, "Lock-On: SONIC & KNUCKLES");
+    sprintf (items[4].text, "Lock-On: SONIC&KNUCKLES");
   else
     sprintf (items[4].text, "Lock-On: OFF");
 
@@ -1046,8 +1124,8 @@ static void systemmenu ()
 
         if (cart.romsize)
         {
-          /* force region & cpu mode */
-          set_region();
+          /* reset console region */
+          region_autodetect();
 
           /* update framerate */
           if (vdp_pal)
@@ -1065,7 +1143,8 @@ static void systemmenu ()
           system_init();
 
           /* restore SRAM */
-          memfile_autoload(config.sram_auto,-1);
+          if (config.s_auto & 1)
+            slot_autoload(0,config.s_device);
 
           /* restore YM2612 context */
           if (temp)
@@ -1103,7 +1182,8 @@ static void systemmenu ()
         {
           system_init();
           system_reset();
-          memfile_autoload(config.sram_auto,-1);
+          if (config.s_auto & 1)
+            slot_autoload(0,config.s_device);
         }
         break;
 
@@ -1116,15 +1196,15 @@ static void systemmenu ()
         else if (config.lock_on == TYPE_AR)
           sprintf (items[4].text, "Lock-On: ACTION REPLAY");
         else if (config.lock_on == TYPE_SK)
-          sprintf (items[4].text, "Lock-On: SONIC & KNUCKLES");
+          sprintf (items[4].text, "Lock-On: SONIC&KNUCKLES");
         else
           sprintf (items[4].text, "Lock-On: OFF");
         if (cart.romsize) 
         {
-          system_reset(); /* clear any patches first */
           system_init();
           system_reset();
-          memfile_autoload(config.sram_auto,-1);
+          if (config.s_auto & 1)
+            slot_autoload(0,config.s_device);
         }
         break;
 
@@ -1451,6 +1531,25 @@ static void videomenu ()
 /****************************************************************************
  * Controllers Settings menu
  ****************************************************************************/
+static int player = 0;
+static void ctrlmenu_cb(void)
+{
+  char msg[16];
+  gui_menu *m = &menu_ctrls;
+
+  /* draw device port number */
+  if (m->bg_images[7].state & IMAGE_VISIBLE)
+  {
+    if (config.input[player].device != -1)
+    {
+      sprintf(msg,"%d",config.input[player].port + 1);
+      if (m->selected == 11)
+        FONT_write(msg,16,m->items[11].x+m->items[11].w+4,m->items[11].y+m->items[11].h+4,640,(GXColor)DARK_GREY);
+      else
+        FONT_write(msg,14,m->items[11].x+m->items[11].w,m->items[11].y+m->items[11].h,640,(GXColor)DARK_GREY);
+    }
+  }
+}
 
 /* Set menu elements depending on current system configuration */
 static void ctrlmenu_raz(void)
@@ -1473,7 +1572,7 @@ static void ctrlmenu_raz(void)
       m->buttons[i+2].data  = &button_player_data;
       m->buttons[i+2].state |= BUTTON_ACTIVE;
       sprintf(m->items[i+2].text,"%d",max + 1);
-      if (cart.hw.jcart && (i > 4))
+      if (cart.jcart && (i > 4))
         sprintf(m->items[i+2].comment,"Configure Player %d (J-CART) settings", max + 1);
       else
         sprintf(m->items[i+2].comment,"Configure Player %d settings", max + 1);
@@ -1533,14 +1632,11 @@ static void ctrlmenu_raz(void)
 
 static void ctrlmenu(void)
 {
-  int player = 0;
   int old_player = -1;
   int i = 0;
   int update = 0;
-
   gui_item *items = NULL;
   u8 *special = NULL;
-  char msg[16];
   u32 exp;
 
   /* System devices */
@@ -1634,6 +1730,7 @@ static void ctrlmenu(void)
 #endif
 
   /* restore current menu elements */
+  player = 0;
   ctrlmenu_raz();
   memcpy(&m->items[0],&items_sys[0][input.system[0]],sizeof(gui_item));
   memcpy(&m->items[1],&items_sys[1][input.system[1]],sizeof(gui_item));
@@ -1647,19 +1744,6 @@ static void ctrlmenu(void)
     /* draw menu */
     GUI_DrawMenu(m);
 
-    /* draw device port number */
-    if (m->bg_images[7].state & IMAGE_VISIBLE)
-    {
-      if (config.input[player].device != -1)
-      {
-        sprintf(msg,"%d",config.input[player].port + 1);
-        if (m->selected == 11)
-          FONT_write(msg,16,m->items[11].x+m->items[11].w+4,m->items[11].y+m->items[11].h+4,640,(GXColor)DARK_GREY);
-        else
-          FONT_write(msg,14,m->items[11].x+m->items[11].w,m->items[11].y+m->items[11].h,640,(GXColor)DARK_GREY);
-      }
-    }
-
     /* update menu */
     update = GUI_UpdateMenu(m);
 
@@ -1668,7 +1752,7 @@ static void ctrlmenu(void)
       switch (m->selected)
       {
         case 0:   /* update port 1 system */
-          if (cart.hw.jcart) break;
+          if (cart.jcart) break;
           if (input.system[0] == SYSTEM_MOUSE)
             input.system[0] +=3; /* lightguns are never used on Port 1 */
           else
@@ -1682,8 +1766,6 @@ static void ctrlmenu(void)
             input.system[0] = NO_SYSTEM;
             input.system[1] = SYSTEM_GAMEPAD;
           }
-          old_system[0] = -1;
-          old_system[1] = -1;
           io_init();
           io_reset();
           old_system[0] = input.system[0];
@@ -1723,7 +1805,7 @@ static void ctrlmenu(void)
           break;
 
         case 1:   /* update port 2 system */
-          if (cart.hw.jcart) break;
+          if (cart.jcart) break;
           input.system[1] ++;
           if ((input.system[0] == SYSTEM_MOUSE) && (input.system[1] == SYSTEM_MOUSE))
             input.system[1] ++;
@@ -1734,8 +1816,6 @@ static void ctrlmenu(void)
             input.system[1] = NO_SYSTEM;
             input.system[0] = SYSTEM_GAMEPAD;
           }
-          old_system[0] = -1;
-          old_system[1] = -1;
           io_init();
           io_reset();
           old_system[0] = input.system[0];
@@ -1855,7 +1935,7 @@ static void ctrlmenu(void)
           GUI_DrawMenuFX(m, 20, 0);
 
           /* update title */
-          if (cart.hw.jcart && (player > 1))
+          if (cart.jcart && (player > 1))
             sprintf(m->title,"Controller Settings (Player %d) (J-CART)",player+1);
           else
             sprintf(m->title,"Controller Settings (Player %d)",player+1);
@@ -2042,6 +2122,7 @@ static void ctrlmenu(void)
       }
     }
 
+    /* Close Window */
     else if (update < 0)
     {
       if (m->bg_images[7].state & IMAGE_VISIBLE)
@@ -2076,37 +2157,36 @@ static void ctrlmenu(void)
         /* stay in menu */
         update = 0;
       }
-    }
-
-    /* check we have at least one connected input before leaving */
-    if (update < 0)
-    {
-      old_player = player;
-      player = 0;
-      for (i=0; i<MAX_DEVICES; i++)
+      else
       {
-        /* check inputs */
-        if (input.dev[i] != NO_DEVICE)
+        /* check we have at least one connected input before leaving */
+        old_player = player;
+        player = 0;
+        for (i=0; i<MAX_DEVICES; i++)
         {
-          if (config.input[player].device != -1)
-            break;
-          player++;
+          /* check inputs */
+          if (input.dev[i] != NO_DEVICE)
+          {
+            if (config.input[player].device != -1)
+              break;
+            player++;
+          }
         }
-      }
-      player = old_player;
+        player = old_player;
 
-      /* no input connected */
-      if (i == MAX_DEVICES) 
-      {
-        /* stay in menu */
-        GUI_WaitPrompt("Error","No input connected !");
-        update = 0;
+        /* no input connected */
+        if (i == MAX_DEVICES) 
+        {
+          /* stay in menu */
+          GUI_WaitPrompt("Error","No input connected !");
+          update = 0;
+        }
       }
     }
   }
 
   /* remove duplicate assigned inputs before leaving */
-  for (i=0; i<8; i++)
+  for (i=0; i<MAX_INPUTS; i++)
   {
     if ((i!=player) && (config.input[i].device == config.input[player].device) && (config.input[i].port == config.input[player].port))
     {
@@ -2495,9 +2575,9 @@ static void showrominfo ()
  * Main Menu
  *
  ****************************************************************************/
-static int rom_loaded = 0;
 void MainMenu (void)
 {
+  static int rom_loaded = 0;
   int ret, quit = 0;
 
   char *items[3] =
@@ -2512,7 +2592,8 @@ void MainMenu (void)
   };
 
   /* autosave SRAM */
-  memfile_autosave(config.sram_auto,-1);
+  if (config.s_auto & 1)
+    slot_autosave(0,config.s_device);
 
 #ifdef HW_RVL
   /* sutdown Wii */
@@ -2628,7 +2709,8 @@ void MainMenu (void)
         audio_init(snd.sample_rate,snd.frame_rate);
         system_init();
         system_reset();
-        memfile_autoload(config.sram_auto,-1);
+        if (config.s_auto & 1)
+          slot_autoload(0,config.s_device);
         quit = 1;
         break;
 

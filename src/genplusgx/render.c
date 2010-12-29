@@ -809,39 +809,36 @@ static void color_update_16(int index, uint16 data)
 
 static inline void remap_8(uint8 *src, uint8 *dst, uint8 *table, int length)
 {
-  int count;
-  for(count = 0; count < length; count += 1)
+  do
   {
     *dst++ = table[*src++];
   }
+  while (--length);
 }
 
 static inline void remap_16(uint8 *src, uint16 *dst, uint16 *table, int length)
 {
-  int count;
-  for(count = 0; count < length; count += 1)
+  do
   {
     *dst++ = table[*src++];
   }
+  while (--length);
 }
 
 static inline void remap_32(uint8 *src, uint32 *dst, uint32 *table, int length)
 {
-  int count;
-  for(count = 0; count < length; count += 1)
+  do
   {
     *dst++ = table[*src++];
   }
+  while (--length);
 }
 
 #else
 
-static inline void remap_texture(uint8 *src, uint16 *dst, uint32 tiles)
+static inline void remap_texture(uint8 *src, uint16 *dst, uint16 *table, int tiles)
 {
-  int count;
-  uint16 *table = pixel_16;
-
-  for(count = 0; count < tiles; count ++)
+  do
   {
     /* one tile is 4 pixels wide */
     *dst++ = table[*src++];
@@ -850,24 +847,25 @@ static inline void remap_texture(uint8 *src, uint16 *dst, uint32 tiles)
     *dst++ = table[*src++];
     dst += 12;
   }
+  while (--tiles);
 }
 #endif
 
 
-static inline void merge(uint8 *srca, uint8 *srcb, uint8 *dst, uint8 *table, uint32 width)
+static inline void merge(uint8 *srca, uint8 *srcb, uint8 *dst, uint8 *table, int width)
 {
-  int i;
-  for(i = 0; i < width; i += 1)
+  do
   {
     *dst++ = table[(*srcb++ << 8) | (*srca++)];
   }
+  while (--width);
 }
 
 /*--------------------------------------------------------------------------*/
 /* Helper functions (cache update, hscroll, window clip)                    */
 /*--------------------------------------------------------------------------*/
 
-static inline void update_bg_pattern_cache(uint32 index)
+static void update_bg_pattern_cache(int index)
 {
   int i;
   uint8 x, y, c;
@@ -880,7 +878,7 @@ static inline void update_bg_pattern_cache(uint32 index)
   uint8 shift_table[8] = {28, 24, 20, 16, 12, 8, 4, 0};
 #endif        
 
-  for(i = 0; i < index; i ++)
+  for(i = 0; i < index; i++)
   {
     name = bg_name_list[i];
     bg_name_list[i] = 0;
@@ -906,7 +904,7 @@ static inline void update_bg_pattern_cache(uint32 index)
   }
 }
 
-static inline uint32 get_hscroll(uint32 line)
+static inline uint32 get_hscroll(int line)
 {
   switch(reg[11] & 3)
   {
@@ -929,7 +927,7 @@ static inline uint32 get_hscroll(uint32 line)
 /* Layers render functions                                                  */
 /*--------------------------------------------------------------------------*/
 
-static void render_bg(uint32 line, uint32 width)
+static void render_bg(int line, int width)
 {
   uint32 column, atex, atbuf, *src, *dst;
 
@@ -1055,7 +1053,7 @@ static void render_bg(uint32 line, uint32 width)
   }
 }
 
-static void render_bg_vs(uint32 line, uint32 width)
+static void render_bg_vs(int line, int width)
 {
   uint32 column, atex, atbuf, *src, *dst;
   uint32 v_line, *nt;
@@ -1083,9 +1081,13 @@ static void render_bg_vs(uint32 line, uint32 width)
   if(shift)
   {
     dst   = (uint32 *)&buf[0x10 + shift];
-
-    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
-    v_line = (line & 7) << 3;
+#ifdef LSB_FIRST
+    v_line = (reg[12] & 1) ? ((line + ((vs[0] >> 16) & 0x3FF)) & pf_row_mask) : line;
+#else
+    v_line = (reg[12] & 1) ? ((line + (vs[0] & 0x3FF)) & pf_row_mask) : line;
+#endif
+    nt = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
+    v_line = (v_line & 7) << 3;
 
     atbuf = nt[(index-1) & pf_col_mask];
     DRAW_COLUMN(atbuf, v_line)
@@ -1147,8 +1149,13 @@ static void render_bg_vs(uint32 line, uint32 width)
     {
       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
 
-      nt = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
-      v_line = (line & 7) << 3;
+#ifdef LSB_FIRST
+      v_line = (reg[12] & 1) ? ((line + (vs[start] & 0x3FF)) & pf_row_mask) : line;
+#else
+      v_line = (reg[12] & 1) ? ((line + ((vs[start] >> 16) & 0x3FF)) & pf_row_mask) : line;
+#endif
+      nt = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
+      v_line = (v_line & 7) << 3;
 
       /* Window bug */
       if (start) atbuf = nt[index & pf_col_mask];
@@ -1194,7 +1201,7 @@ static void render_bg_vs(uint32 line, uint32 width)
   }
 }
 
-static void render_bg_im2(uint32 line, uint32 width, uint32 odd)
+static void render_bg_im2(int line, int width, int odd)
 {
   uint32 column, atex, atbuf, offs, *src, *dst;
 
@@ -1317,7 +1324,7 @@ static void render_bg_im2(uint32 line, uint32 width, uint32 odd)
   }
 }
 
-static void render_bg_im2_vs(uint32 line, uint32 width, uint32 odd)
+static void render_bg_im2_vs(int line, int width, int odd)
 {
   uint32 column, atex, atbuf, offs, *src, *dst;
   uint32 v_line, *nt;
@@ -1345,9 +1352,13 @@ static void render_bg_im2_vs(uint32 line, uint32 width, uint32 odd)
   if(shift)
   {
     dst   = (uint32 *)&buf[0x10 + shift];
-
-    nt = (uint32 *)&vram[ntbb + (((line >> 3) << pf_shift) & 0x1FC0)];
-    v_line = (((line & 7) << 1) | odd) << 3;
+#ifdef LSB_FIRST
+    v_line = (line + (reg[12] & 1) ? ((vs[0] >> 17) & 0x3FF) : 0) & pf_row_mask;
+#else
+    v_line = (line + (reg[12] & 1) ? ((vs[0] >> 1) & 0x3FF) : 0) & pf_row_mask;
+#endif
+    nt = (uint32 *)&vram[ntbb + (((v_line >> 3) << pf_shift) & 0x1FC0)];
+    v_line = (((v_line & 7) << 1) | odd) << 3;
 
     atbuf = nt[(index-1) & pf_col_mask];
     DRAW_COLUMN_IM2(atbuf, v_line)
@@ -1406,9 +1417,13 @@ static void render_bg_im2_vs(uint32 line, uint32 width, uint32 odd)
     if(shift)
     {
       dst = (uint32 *)&buf[0x10 + shift + (start<<4)];
-
-      nt      = (uint32 *)&vram[ntab + (((line >> 3) << pf_shift) & 0x1FC0)];
-      v_line  = (((line & 7) << 1) | odd) << 3;
+#ifdef LSB_FIRST
+      v_line = (line + (reg[12] & 1) ? ((vs[start] >> 1) & 0x3FF) : 0) & pf_row_mask;
+#else
+      v_line = (line + (reg[12] & 1) ? ((vs[start] >> 17) & 0x3FF) : 0) & pf_row_mask;
+#endif
+      nt      = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
+      v_line  = (((v_line & 7) << 1) | odd) << 3;
 
       /* Window bug */
       if (start) atbuf = nt[index & pf_col_mask];
@@ -1460,7 +1475,7 @@ static void render_bg_im2_vs(uint32 line, uint32 width, uint32 odd)
 
 static int spr_over = 0;
 
-static void render_obj(uint32 line, uint8 *buf, uint8 *table)
+static void render_obj(int line, uint8 *buf, uint8 *table)
 {
   uint16 ypos;
   uint16 attr;
@@ -1550,7 +1565,7 @@ static void render_obj(uint32 line, uint8 *buf, uint8 *table)
   spr_over = 0;
 }
 
-static void render_obj_im2(uint32 line, uint32 odd, uint8 *buf, uint8 *table)
+static void render_obj_im2(int line, int odd, uint8 *buf, uint8 *table)
 {
   uint16 ypos;
   uint16 attr;
@@ -1721,10 +1736,10 @@ void render_shutdown(void)
 /* Line render function                                                     */
 /*--------------------------------------------------------------------------*/
 
-void render_line(uint32 line, uint32 overscan)
+void render_line(int line, int overscan)
 {
-  uint32 width    = bitmap.viewport.w;
-  uint32 x_offset = bitmap.viewport.x;
+  int width    = bitmap.viewport.w;
+  int x_offset = bitmap.viewport.x;
 
   /* display OFF */
   if (reg[0] & 0x01)
@@ -1750,7 +1765,7 @@ void render_line(uint32 line, uint32 overscan)
     /* double-resolution mode */
     if(im2_flag)
     {
-      uint32 odd = odd_frame;
+      int odd = odd_frame;
 
       /* render BG layers */
       if(reg[11] & 4)
@@ -1808,14 +1823,14 @@ void render_line(uint32 line, uint32 overscan)
   remap_buffer(line,width);
 }
 
-void remap_buffer(uint32 line, uint32 width)
+void remap_buffer(int line, int width)
 {
   /* get line offset from framebuffer */
   line = (line + bitmap.viewport.y) % lines_per_frame;
 
   /* double resolution mode */
   if (config.render && interlaced)
-    line = (line * 2) + odd_frame;
+    line = (line << 1) + odd_frame;
 
   /* NTSC Filter */
   if (config.ntsc)
@@ -1828,13 +1843,12 @@ void remap_buffer(uint32 line, uint32 width)
   }
 
 #ifdef NGC
-  /* directly fill the RGB565 texture */
+  /* directly fill a RGB565 texture */
   /* one tile is 32 byte = 4x4 pixels */
   /* tiles are stored continuously in texture memory */
-  width = width >> 2;
-  int offset = ((width << 5) * (line >> 2)) + ((line & 3) * 8);
-  remap_texture(tmp_buf+0x20-bitmap.viewport.x, (uint16 *)(texturemem + offset), width);
-
+  width >>= 2;
+  uint16 *out = (uint16 *) (texturemem + (((width << 5) * (line >> 2)) + ((line & 3) << 3)));
+  remap_texture(tmp_buf+0x20-bitmap.viewport.x, out, pixel_16, width);
 #else
   void *out =((void *)&bitmap.data[(line * bitmap.pitch)]);
   switch(bitmap.depth)
@@ -1902,11 +1916,11 @@ void window_clip(void)
 /* Sprites Parsing function                                                 */
 /*--------------------------------------------------------------------------*/
 
-void parse_satb(uint32 line)
+void parse_satb(int line)
 {
   uint8 sizetab[] = {8, 16, 24, 32};
   uint32 link = 0;
-  uint32 count, ypos, size, height;
+  uint32 ypos, size, height;
 
   uint32 limit = (reg[12] & 1) ? 20 : 16;
   uint32 total = limit << 2;
@@ -1916,7 +1930,7 @@ void parse_satb(uint32 line)
 
   object_index_count = 0;
 
-  for(count = 0; count < total; count += 1)
+  do
   {
     ypos = (q[link] >> im2_flag) & 0x1FF;
     size = q[link + 1] >> 8;
@@ -1943,6 +1957,9 @@ void parse_satb(uint32 line)
     }
 
     link = (q[link + 1] & 0x7F) << 2;
-    if(link == 0) break;
+    if(link == 0)
+      break;
   }
+  while (--total);
 }
+

@@ -88,7 +88,7 @@ static void pad_config(int chan, int max_keys)
 {
   int i;
   u16 p,key;
-  char msg[30];
+  char msg[64];
 
   /* reset VSYNC callback */
   VIDEO_SetPostRetraceCallback(NULL);
@@ -171,7 +171,9 @@ static void pad_update(s8 chan, u8 i)
   else if ((p & PAD_TRIGGER_L) && (p & PAD_TRIGGER_Z))
   {
     /* Soft RESET */
-    set_softreset();
+    if (config.lock_on == TYPE_AR)
+      datel_reset(0);
+    gen_reset(0);
   }
 
   /* Retrieve current key mapping */
@@ -347,7 +349,7 @@ static s8 WPAD_StickY(WPADData *data, u8 right)
 static void wpad_config(u8 chan, u8 exp, u8 max_keys)
 {
   int i;
-  char msg[30];
+  char msg[64];
   u32 key,p = 255;
 
   /* remove inputs update callback */
@@ -455,9 +457,6 @@ static void wpad_config(u8 chan, u8 exp, u8 max_keys)
   VIDEO_Flush();
 }
 
-static float old_x = 0.0;
-static float old_y = 0.0;
-
 static void wpad_update(s8 chan, u8 i, u32 exp)
 {
   /* WPAD data */
@@ -479,7 +478,9 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
            ((p & WPAD_CLASSIC_BUTTON_PLUS) && (p & WPAD_CLASSIC_BUTTON_MINUS)))
   {
     /* Soft RESET */
-    set_softreset();
+    if (config.lock_on == TYPE_AR)
+      datel_reset(0);
+    gen_reset(0);
   }
 
   /* Retrieve current key mapping */
@@ -513,7 +514,7 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
   /* Emulated device specific */
   switch (input.dev[i])
   {
-    case  DEVICE_LIGHTGUN:
+    case DEVICE_LIGHTGUN:
     {
       /* Lightgun cursor position (x,y) */
       if (x || y)
@@ -551,10 +552,13 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
 
     case DEVICE_MOUSE:
     {
-      /* Mouse relative movement (-255,255) */
+      /* Mouse relative movement (9 bits signed value) */
+      input.analog[2][0] = 0;
+      input.analog[2][1] = 0;
+
+      /* Nunchuk/Classic controller analog stick */
       if (x || y)
       {
-        /* analog stick relative positions */
         input.analog[2][0] = (x * 2) / ANALOG_SENSITIVITY;
         input.analog[2][1] = -(y * 2) / ANALOG_SENSITIVITY;
       }
@@ -564,19 +568,10 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
       {
         struct ir_t ir;
         WPAD_IR(chan, &ir);
-        if (ir.valid)
+        if(ir.smooth_valid)
         {
-          /* calculate mouse values (FIXME) */
-          input.analog[2][0] = (ir.x - old_x);
-          input.analog[2][1] = (ir.y - old_y);
-          old_x = ir.x;
-          old_y = ir.y;
-          if (input.analog[2][0] > 255)
-            input.analog[2][0] = 255;
-          else if (input.analog[2][0] < -255)
-            input.analog[2][0] = -255;
-          if (input.analog[2][1] > 255) input.analog[2][1] = 255;
-          else if (input.analog[2][1] < -255) input.analog[2][1] = -255;
+          input.analog[2][0] = (int)((ir.sx - 512) / 2 / ANALOG_SENSITIVITY);
+          input.analog[2][1] = (int)((ir.sy - 384) * 2 / 3 / ANALOG_SENSITIVITY);
 
           /* use default trigger button */
           if (p & WPAD_BUTTON_B)
@@ -585,7 +580,7 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
       }
 
 #ifdef USB_MOUSE
-      /* USB mouse support (NOT WORKING) */
+      /* USB mouse support (FIXME) */
       if (MOUSE_IsConnected())
       {
         mouse_event event;
@@ -622,7 +617,7 @@ static void wpad_update(s8 chan, u8 i, u32 exp)
       if (system_hw != SYSTEM_PICO)
       {
         /* gamepad */
-        if ((p & wpad_dirmap[exp][PAD_UP])  || (y >  ANALOG_SENSITIVITY))
+        if ((p & wpad_dirmap[exp][PAD_UP])          || (y >  ANALOG_SENSITIVITY))
           input.pad[i] |= INPUT_UP;
         else if ((p & wpad_dirmap[exp][PAD_DOWN])   || (y < -ANALOG_SENSITIVITY))
           input.pad[i] |= INPUT_DOWN;
@@ -834,7 +829,9 @@ void gx_input_UpdateEmu(void)
   if (SYS_ResetButtonDown())
   {
     /* Soft RESET */
-    set_softreset();
+    if (config.lock_on == TYPE_AR)
+      datel_reset(0);
+    gen_reset(0);
   }
 #endif
 

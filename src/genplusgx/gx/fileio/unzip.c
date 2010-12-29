@@ -108,7 +108,7 @@ int UnZipBuffer (unsigned char *outbuffer, u64 discoffset, char *filename)
   int bufferoffset = 0;
   int have = 0;
   char readbuffer[2048];
-  char msg[128];
+  char msg[64];
   FILE *fatfile = NULL;
 
   /*** FAT file support ***/
@@ -122,15 +122,21 @@ int UnZipBuffer (unsigned char *outbuffer, u64 discoffset, char *filename)
   if (fatfile)
   {
     fseek(fatfile, 0, SEEK_SET);
-    fread(readbuffer, FATCHUNK,  1, fatfile);
+    fread(readbuffer, 2048,  1, fatfile);
   }
   else
   {
-    dvd_read (&readbuffer, DVDCHUNK, discoffset);
+    dvd_read (&readbuffer, 2048, discoffset);
   }
 
   /*** Copy PKZip header to local, used as info ***/
   memcpy (&pkzip, &readbuffer, sizeof (PKZIPHEADER));
+
+  if (FLIP32 (pkzip.uncompressedSize) > MAXROMSIZE)
+  {
+    GUI_WaitPrompt("Error","File size not supported !");
+    return 0;
+  }
 
   sprintf (msg, "Unzipping %d bytes ...", FLIP32 (pkzip.uncompressedSize));
   GUI_MsgBoxOpen("Information",msg,1);
@@ -190,12 +196,12 @@ int UnZipBuffer (unsigned char *outbuffer, u64 discoffset, char *filename)
     
     if (fatfile)
     {
-      fread(readbuffer, FATCHUNK, 1, fatfile);
+      fread(readbuffer, 2048, 1, fatfile);
     }
     else
     {
-      discoffset += DVDCHUNK;
-      dvd_read (&readbuffer, DVDCHUNK, discoffset);
+      discoffset += 2048;
+      dvd_read (&readbuffer, 2048, discoffset);
     }
   }
   while (res != Z_STREAM_END);
