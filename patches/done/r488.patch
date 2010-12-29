@@ -1,7 +1,7 @@
-Index: source/render.c
+Index: src/genplusgx/render.c
 ===================================================================
---- source/render.c	(revision 487)
-+++ source/render.c	(revision 488)
+--- src/genplusgx/render.c	(revision 487)
++++ src/genplusgx/render.c	(revision 488)
 @@ -1062,6 +1062,7 @@
  
    /* common data */
@@ -97,18 +97,18 @@ Index: source/render.c
        nt = (uint32 *)&vram[ntab + (((v_line >> 3) << pf_shift) & 0x1FC0)];
        v_line  = (((v_line & 7) << 1) | odd) << 3;
  
-Index: source/gx/utils/ehcmodule_elf.h
+Index: src/genplusgx/gx/utils/ehcmodule_elf.h
 ===================================================================
---- source/gx/utils/ehcmodule_elf.h	(revision 487)
-+++ source/gx/utils/ehcmodule_elf.h	(revision 488)
+--- src/genplusgx/gx/utils/ehcmodule_elf.h	(revision 487)
++++ src/genplusgx/gx/utils/ehcmodule_elf.h	(revision 488)
 @@ -1,3 +0,0 @@
 -extern const u8 ehcmodule_elf_end[];
 -extern const u8 ehcmodule_elf[];
 -extern const u32 ehcmodule_elf_size;
-Index: source/gx/utils/mload.h
+Index: src/genplusgx/gx/utils/mload.h
 ===================================================================
---- source/gx/utils/mload.h	(revision 487)
-+++ source/gx/utils/mload.h	(revision 488)
+--- src/genplusgx/gx/utils/mload.h	(revision 487)
++++ src/genplusgx/gx/utils/mload.h	(revision 488)
 @@ -1,33 +0,0 @@
 -/* mload.c (for PPC) (c) 2009, Hermes 
 -
@@ -143,14 +143,14 @@ Index: source/gx/utils/mload.h
 -#endif
 -
 -#endif
-Index: source/gx/utils/ehcmodule.elf.o
+Index: src/genplusgx/gx/utils/ehcmodule.elf.o
 ===================================================================
 Cannot display: file marked as a binary type.
 svn:mime-type = application/octet-stream
-Index: source/gx/utils/mload.c
+Index: src/genplusgx/gx/utils/mload.c
 ===================================================================
---- source/gx/utils/mload.c	(revision 487)
-+++ source/gx/utils/mload.c	(revision 488)
+--- src/genplusgx/gx/utils/mload.c	(revision 487)
++++ src/genplusgx/gx/utils/mload.c	(revision 488)
 @@ -1,281 +0,0 @@
 -/* mload.c (for PPC) (c) 2009, Hermes 
 -
