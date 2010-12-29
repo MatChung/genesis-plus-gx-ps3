@@ -31,7 +31,6 @@ t_snd snd;
 uint32 mcycles_vdp;
 uint32 mcycles_z80;
 uint32 mcycles_68k;
-uint32 hint_68k;
 uint8 system_hw;
 
 /****************************************************************
@@ -75,7 +74,7 @@ int audio_update (void)
   int16 *sb = (int16 *) soundbuffer[mixbuffer];
 //BEGINNING OF GENESIS PS3
 #else
-  int16 *sb = (int16 *) soundbuffer;
+	int16 *sb = (int16 *)soundbuffer;
 //END OF GENESIS PS3
 #endif
 
@@ -149,12 +148,10 @@ int audio_update (void)
 
     /* update sound buffer */
 #ifndef NGC
-//BEGINNING OF GENESIS PS3
     //snd.buffer[0][i] = r;
     //snd.buffer[1][i] = l;
     *sb++ = r;
     *sb++ = l;
-//END OF GENESIS PS3
 #else
     *sb++ = r;
     *sb++ = l;
@@ -350,7 +347,7 @@ void system_frame (int do_skip)
       bitmap.viewport.changed = 1;
     }
 
-    /* screen height */
+    /* active screen height */
     if (reg[1] & 8)
     { 
       bitmap.viewport.h = 240;
@@ -362,7 +359,7 @@ void system_frame (int do_skip)
       bitmap.viewport.y = (config.overscan & 1) ? (vdp_pal ? 32 : 8) : 0;
     }
 
-    /* screen width */
+    /* active screen width */
     if (reg[12] & 1)
     {
       bitmap.viewport.w = 320;
@@ -386,8 +383,7 @@ void system_frame (int do_skip)
 
   /* even/odd field flag (interlaced modes only) */
   odd_frame ^= 1;
-  if (interlaced)
-    status |= (odd_frame << 4);
+  if (interlaced) status |= (odd_frame << 4);
 
   /* reload HCounter */
   int h_counter = reg[10];
@@ -399,6 +395,10 @@ void system_frame (int do_skip)
   /* reset line cycle count */
   mcycles_vdp = 0;
 
+  /* parse sprites on line zero */
+  object_which = 1;
+  if (reg[1] & 0x40) parse_satb(0x80);
+
   /* process scanlines */
   for (line = 0; line < lines_per_frame; line ++)
   {
@@ -408,12 +408,8 @@ void system_frame (int do_skip)
     /* update 6-Buttons or Menacer */
     input_update();
 
-    /* 68k line cycle count */
-    hint_68k = mcycles_68k;
-
     /* update VDP DMA */
-    if (dma_length)
-      vdp_update_dma();
+    if (dma_length) vdp_update_dma();
 
     /* vertical blanking */
     if (status & 8)
@@ -425,8 +421,8 @@ void system_frame (int do_skip)
       /* clear pending Z80 interrupt */
       if (zirq)
       {
-        zirq = 0;
         z80_set_irq_line(0, CLEAR_LINE);
+        zirq = 0;
       }
     }
 
@@ -465,15 +461,15 @@ void system_frame (int do_skip)
         status |= 0x08;
 
         /* render overscan */
-        if (!do_skip && bitmap.viewport.y)
+        if (!do_skip && (line < end))
           render_line(line);
 
         /* update inputs (doing this here fix Warriors of Eternal Sun) */
         osd_input_Update();
 
         /* Z80 interrupt is 16ms period (one frame) and 64us length (one scanline) */
-        zirq = 1;
         z80_set_irq_line(0, ASSERT_LINE);
+        zirq = 1;
 
         /* delay between VINT flag & V Interrupt (Ex-Mutants, Tyrant) */
         m68k_run(mcycles_vdp + 588);
@@ -481,37 +477,38 @@ void system_frame (int do_skip)
 
         /* delay between VBLANK flag & V Interrupt (Dracula, OutRunners, VR Troopers) */
         m68k_run(mcycles_vdp + 788);
-        if (zstate == 1)
-          z80_run(mcycles_vdp + 788);
-        else
-          mcycles_z80 = mcycles_vdp + 788;
+        if (zstate == 1) z80_run(mcycles_vdp + 788);
+        else mcycles_z80 = mcycles_vdp + 788;
 
         /* V Interrupt */
         vint_pending = 0x20;
         if (reg[1] & 0x20)
           irq_status = (irq_status & ~0x40) | 0x36;
       }
-      else if (!do_skip) 
+      else
       {
-        /* sprites are processed during horizontal blanking */
-        if (reg[1] & 0x40)
-          parse_satb(0x80 + line);
+        /* swap sprite line buffers */
+        object_which ^= 1;
 
         /* render scanline */
-        render_line(line);
+        if (!do_skip)
+        {
+          render_line(line);
+
+          /* parse sprites on next line */
+          if ((reg[1] & 0x40) && (line < (bitmap.viewport.h - 1)))
+            parse_satb(0x81 + line);
+        }
       }
     }
 
     /* process line */
     m68k_run(mcycles_vdp + MCYCLES_PER_LINE);
-    if (zstate == 1)
-      z80_run(mcycles_vdp + MCYCLES_PER_LINE);
-    else 
-      mcycles_z80 = mcycles_vdp + MCYCLES_PER_LINE;
+    if (zstate == 1) z80_run(mcycles_vdp + MCYCLES_PER_LINE);
+    else mcycles_z80 = mcycles_vdp + MCYCLES_PER_LINE;
     
     /* SVP chip */
-    if (svp)
-      ssp1601_run(SVP_cycles);
+    if (svp) ssp1601_run(SVP_cycles);
 
     /* update line cycle count */
     mcycles_vdp += MCYCLES_PER_LINE;
