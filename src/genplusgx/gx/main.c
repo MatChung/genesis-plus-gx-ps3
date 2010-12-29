@@ -101,8 +101,8 @@ static bool FindIOS(u32 ios)
  ***************************************************************************/
 static void load_bios(void)
 {
-  /* reset BIOS found flag */
-  config.bios_enabled &= ~2;
+  /* reset BIOS flag */
+  config.tmss &= ~2;
 
   /* open BIOS file */
   FILE *fp = fopen(OS_ROM, "rb");
@@ -113,7 +113,7 @@ static void load_bios(void)
   fclose(fp);
 
   /* update BIOS flags */
-  config.bios_enabled |= 2;
+  config.tmss |= 2;
 }
 
 static void init_machine(void)
