@@ -86,12 +86,11 @@ PPU_SRCS := $(SRC_DIR)/GenesisPlus.cpp \
 	$(UTILS_DIR)/zlib/uncompr.c \
 	$(UTILS_DIR)/zlib/zutil.c 
 
-PPU_TARGET		=	genesisplus.elf
+PPU_TARGET		= genesisplus.elf
 
-PPU_CPPFLAGS		+=	-DWORDS_BIGENDIAN  -D'VERSION="Genesis Plus PS3"' -DPS3_SDK_3_41 -DPSGL
+PPU_CPPFLAGS		+= -DWORDS_BIGENDIAN  -D'VERSION="Genesis Plus PS3"' -DPS3_SDK_3_41 -DPSGL
 
 PPU_ASFLAGS		+=
-
 
 # debugging
 #PPU_CFLAGS		+=	-DCELL_DEBUG -DPS3_DEBUG_IP=\"192.168.1.7\" -DPS3_DEBUG_PORT=9002
