@@ -1,7 +1,7 @@
-Index: source/z80/z80.c
+Index: src/genplusgx/z80/z80.c
 ===================================================================
---- source/z80/z80.c	(revision 484)
-+++ source/z80/z80.c	(revision 485)
+--- src/genplusgx/z80/z80.c	(revision 484)
++++ src/genplusgx/z80/z80.c	(revision 485)
 @@ -3381,9 +3381,6 @@
    IFF1 = IFF2 = 0;
    HALT = 0;
