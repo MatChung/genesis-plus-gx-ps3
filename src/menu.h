@@ -124,8 +124,8 @@ char* do_pathmenu(uint16_t is_for_shader_or_dir_selection, const char * pathname
 #define INPUT_C         (0x00000040)
 #define INPUT_B         (0x00000020)
 #define INPUT_A         (0x00000010)
-#define INPUT_LEFT      (0x00000008)
-#define INPUT_RIGHT     (0x00000004)
+#define INPUT_LEFT      (0x00000004)
+#define INPUT_RIGHT     (0x00000008)
 #define INPUT_DOWN      (0x00000002)
 #define INPUT_UP        (0x00000001)
 
