@@ -112,15 +112,13 @@ PPU_SRCS		+=	$(CELL_FRAMEWORK_DIR)/network/network.cpp \
 PPU_CXXFLAGS		+=	-I. -Isrc/genplusgx/sound -Isrc/genplusgx/cart_hw -Isrc/genplusgx/cart_hw/svp -Isrc/genplusgx/ntsc -Isrc/genplusgx/z80 -Isrc/genplusgx/m68k -Isrc -Iutils/zlib -Isrc/cellframework/threads -Isrc/cellframework/input -Isrc/conf
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
-SNC_COMPILER		= 1
 PPU_CFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
-			-Xunroll=1 -Xautovecreg=1
+			-Xunroll=1 -Xautovecreg=1 -DSNC_COMPILER
 PPU_CXXFLAGS		+= -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 \
-			-Xunroll=1 -Xautovecreg=1
+			-Xunroll=1 -Xautovecreg=1 -DSNC_COMPILER
 else
-GCC_COMPILER		= 1
-PPU_CFLAGS		+= -funroll-loops
-PPU_CXXFLAGS		+= -funroll-loops
+PPU_CFLAGS		+= -funroll-loops -DGCC_COMPILER
+PPU_CXXFLAGS		+= -funroll-loops -DGCC_COMPILER
 PPU_LDFLAGS		+= -finline-limit=5000
 PPU_LDFLAGS		+= -Wl
 endif

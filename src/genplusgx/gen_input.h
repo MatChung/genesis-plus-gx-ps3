@@ -76,7 +76,7 @@ extern void input_refresh(void);
 extern void input_autodetect(void);
 
 /* Peripherals specific */
-#ifndef PS3_SDK_3_41
+#ifdef GCC_COMPILER
 extern void mouse_write(unsigned int data);
 extern unsigned int mouse_read(void);
 extern unsigned int menacer_read (void);
