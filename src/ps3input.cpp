@@ -4,58 +4,58 @@ char * Input_PrintMappedButton(int mappedbutton)
 {
 	switch(mappedbutton)
 	{
-		case INPUT_A:
+		case BTN_A:
 			return "Button A";
 			break;
-		case INPUT_B:
+		case BTN_B:
 			return "Button B";
 			break;
-		case INPUT_C:
+		case BTN_C:
 			return "Button C";
 			break;
-		case INPUT_X:
+		case BTN_X:
 			return "Button X";
 			break;
-		case INPUT_Y:
+		case BTN_Y:
 			return "Button Y";
 			break;
-		case INPUT_Z:
+		case BTN_Z:
 			return "Button Z";
 			break;
-		case INPUT_START:
+		case BTN_START:
 			return "Button Start";
 			break;
-		case INPUT_MODE:
+		case BTN_MODE:
 			return "Button Mode";
 			break;
-		case INPUT_LEFT:
+		case BTN_LEFT:
 			return "D-Pad Left";
 			break;
-		case INPUT_RIGHT:
+		case BTN_RIGHT:
 			return "D-Pad Right";
 			break;
-		case INPUT_UP:
+		case BTN_UP:
 			return "D-Pad Up";
 			break;
-		case INPUT_DOWN:
+		case BTN_DOWN:
 			return "D-Pad Down";
 			break;
-		case INPUT_NONE:
+		case BTN_NONE:
 			return "None";
 			break;
-		case INPUT_QUIT:
+		case BTN_EXITTOMENU:
 			return "Exit to menu";
 			break;
-		case INPUT_SAVESTATE:
+		case BTN_QUICKSAVE:
 			return "Save State";
 			break;
-		case INPUT_LOADSTATE:
+		case BTN_QUICKLOAD:
 			return "Load State";
 			break;
-		case INPUT_SOFTRESET:
+		case BTN_SOFTRESET:
 			return "Software Reset";
 			break;
-		case INPUT_HARDRESET:
+		case BTN_HARDRESET:
 			return "Reset";
 			break;
 		default:
@@ -71,62 +71,62 @@ int Input_GetAdjacentButtonmap(int buttonmap, bool next)
 {
 	switch(buttonmap)
 	{
-		case INPUT_UP:
-			return next ? INPUT_DOWN : INPUT_NONE;
+		case BTN_UP:
+			return next ? BTN_DOWN : BTN_NONE;
 			break;
-		case INPUT_DOWN:
-			return next ? INPUT_LEFT : INPUT_UP;
+		case BTN_DOWN:
+			return next ? BTN_LEFT : BTN_UP;
 			break;
-		case INPUT_LEFT:
-			return next ? INPUT_RIGHT : INPUT_DOWN;
+		case BTN_LEFT:
+			return next ? BTN_RIGHT : BTN_DOWN;
 			break;
-		case INPUT_RIGHT:
-			return next ? INPUT_A : INPUT_LEFT;
+		case BTN_RIGHT:
+			return next ? BTN_A : BTN_LEFT;
 			break;
-		case INPUT_A:
-			return next ? INPUT_B : INPUT_RIGHT;
+		case BTN_A:
+			return next ? BTN_B : BTN_RIGHT;
 			break;
-		case INPUT_B:
-			return next ? INPUT_C : INPUT_A;
+		case BTN_B:
+			return next ? BTN_C : BTN_A;
 			break;
-		case INPUT_C:
-			return next ? INPUT_X : INPUT_B;
+		case BTN_C:
+			return next ? BTN_X : BTN_B;
 			break;
-		case INPUT_X:
-			return next ? INPUT_Y : INPUT_C;
+		case BTN_X:
+			return next ? BTN_Y : BTN_C;
 			break;
-		case INPUT_Y:
-			return next ? INPUT_Z : INPUT_X;
+		case BTN_Y:
+			return next ? BTN_Z : BTN_X;
 			break;
-		case INPUT_Z:
-			return next ? INPUT_START : INPUT_Y;
+		case BTN_Z:
+			return next ? BTN_START : BTN_Y;
 			break;
-		case INPUT_START:
-			return next ? INPUT_MODE : INPUT_Z;
+		case BTN_START:
+			return next ? BTN_MODE : BTN_Z;
 			break;
-		case INPUT_MODE:
-			return next ? INPUT_HARDRESET : INPUT_START;
+		case BTN_MODE:
+			return next ? BTN_HARDRESET : BTN_START;
 			break;
-		case INPUT_HARDRESET:
-			return next ? INPUT_SOFTRESET : INPUT_MODE;
+		case BTN_HARDRESET:
+			return next ? BTN_SOFTRESET : BTN_MODE;
 			break;
-		case INPUT_SOFTRESET:
-			return next ? INPUT_SAVESTATE : INPUT_HARDRESET;
+		case BTN_SOFTRESET:
+			return next ? BTN_QUICKSAVE : BTN_HARDRESET;
 			break;
-		case INPUT_SAVESTATE:
-			return next ? INPUT_LOADSTATE : INPUT_SOFTRESET;
+		case BTN_QUICKSAVE:
+			return next ? BTN_QUICKLOAD : BTN_SOFTRESET;
 			break;
-		case INPUT_LOADSTATE:
-			return next ? INPUT_QUIT : INPUT_SAVESTATE;
+		case BTN_QUICKLOAD:
+			return next ? BTN_EXITTOMENU : BTN_QUICKSAVE;
 			break;
-		case INPUT_QUIT:
-			return next ? INPUT_NONE : INPUT_LOADSTATE;
+		case BTN_EXITTOMENU:
+			return next ? BTN_NONE : BTN_QUICKLOAD;
 			break;
-		case INPUT_NONE:
-			return next ? INPUT_UP : INPUT_QUIT;
+		case BTN_NONE:
+			return next ? BTN_UP : BTN_EXITTOMENU;
 			break;
 		default:
-			return INPUT_NONE;
+			return BTN_NONE;
 			break;
 	}
 }
@@ -141,8 +141,8 @@ void Input_MapButton(int* buttonmap, bool next, int defaultbutton)
 	{
 		*buttonmap = defaultbutton;
 	}
-	if(*buttonmap == (INPUT_LEFT | INPUT_RIGHT | INPUT_DOWN | INPUT_UP | INPUT_A | INPUT_B | INPUT_C | \
-	INPUT_X | INPUT_Y | INPUT_Z | INPUT_START | INPUT_MODE))
+	if(*buttonmap == (BTN_LEFT | BTN_RIGHT | BTN_DOWN | BTN_UP | BTN_A | BTN_B | BTN_C | \
+	BTN_X | BTN_Y | BTN_Z | BTN_START | BTN_MODE))
 	{
 	}
 }

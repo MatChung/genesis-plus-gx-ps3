@@ -412,11 +412,11 @@ void SaveState()
 
 int special_button_mappings(int controllerno, int specialbuttonmap)
 {
-	if((specialbuttonmap != INPUT_QUIT) &&
-	(specialbuttonmap != INPUT_SAVESTATE) &&
-	(specialbuttonmap != INPUT_LOADSTATE) &&
-	(specialbuttonmap != INPUT_SOFTRESET) &&
-	(specialbuttonmap != INPUT_HARDRESET))
+	if((specialbuttonmap != BTN_EXITTOMENU) &&
+	(specialbuttonmap != BTN_QUICKSAVE) &&
+	(specialbuttonmap != BTN_QUICKLOAD) &&
+	(specialbuttonmap != BTN_SOFTRESET) &&
+	(specialbuttonmap != BTN_HARDRESET))
 	{
 		input.pad[controllerno] |= specialbuttonmap;
 	}
@@ -424,20 +424,20 @@ int special_button_mappings(int controllerno, int specialbuttonmap)
 	{
 		switch(specialbuttonmap)
 		{
-			case INPUT_SOFTRESET:
+			case BTN_SOFTRESET:
 				gen_softreset(0);
 				break;
-			case INPUT_HARDRESET:
+			case BTN_HARDRESET:
 				system_reset();
 				break;
-			case INPUT_QUIT:
+			case BTN_EXITTOMENU:
 				Emulator_StopROMRunning();
 				Emulator_SwitchMode(MODE_MENU);
 				break;
-			case INPUT_SAVESTATE:
+			case BTN_QUICKSAVE:
 				SaveState();
 				break;
-			case INPUT_LOADSTATE:
+			case BTN_QUICKLOAD:
 				LoadState();
 				break;
 			default:
@@ -704,39 +704,39 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			currentconfig->SetBool("PS3ButtonMappings::AnalogR_Right_Type",Settings.AnalogR_Right_Type);
 			break;
 		case MAP_BUTTONS_OPTION_GETTER:
-			Settings.DPad_Up		= currentconfig->GetInt("PS3ButtonMappings::DPad_Up",INPUT_UP);
-			Settings.DPad_Down		= currentconfig->GetInt("PS3ButtonMappings::DPad_Down",INPUT_DOWN);
-			Settings.DPad_Left		= currentconfig->GetInt("PS3ButtonMappings::DPad_Left",INPUT_LEFT);
-			Settings.DPad_Right		= currentconfig->GetInt("PS3ButtonMappings::DPad_Right",INPUT_RIGHT);
-			Settings.ButtonCircle		= currentconfig->GetInt("PS3ButtonMappings::ButtonCircle",INPUT_C);
-			Settings.ButtonCross		= currentconfig->GetInt("PS3ButtonMappings::ButtonCross",INPUT_B);
-			Settings.ButtonTriangle		= currentconfig->GetInt("PS3ButtonMappings::ButtonTriangle",INPUT_X);
-			Settings.ButtonSquare		= currentconfig->GetInt("PS3ButtonMappings::ButtonSquare",INPUT_A);
-			Settings.ButtonSelect		= currentconfig->GetInt("PS3ButtonMappings::ButtonSelect",INPUT_MODE);
-			Settings.ButtonStart		= currentconfig->GetInt("PS3ButtonMappings::ButtonStart",INPUT_START);
-			Settings.ButtonL1		= currentconfig->GetInt("PS3ButtonMappings::ButtonL1",INPUT_Y);
-			Settings.ButtonR1		= currentconfig->GetInt("PS3ButtonMappings::ButtonR1",INPUT_Z);
-			Settings.ButtonL2		= currentconfig->GetInt("PS3ButtonMappings::ButtonL2",INPUT_NONE);
-			Settings.ButtonR2		= currentconfig->GetInt("PS3ButtonMappings::ButtonR2",INPUT_NONE);
-			Settings.ButtonL2_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonL3",INPUT_NONE);
-			Settings.ButtonL2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR3",INPUT_LOADSTATE);
-			Settings.ButtonR3		= currentconfig->GetInt("PS3ButtonMappings::ButtonR3",INPUT_NONE);
-			Settings.ButtonL3		= currentconfig->GetInt("PS3ButtonMappings::ButtonL3",INPUT_NONE);
-			Settings.ButtonL2_ButtonR2	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR2",INPUT_NONE);
-			Settings.ButtonL2_AnalogR_Right = currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Right",INPUT_NONE);
-			Settings.ButtonL2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Left",INPUT_NONE);
-			Settings.ButtonL2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Up",INPUT_NONE);
-			Settings.ButtonL2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Down",INPUT_NONE);
-			Settings.ButtonR2_AnalogR_Right	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Right",INPUT_NONE);
-			Settings.ButtonR2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Left",INPUT_NONE);
-			Settings.ButtonR2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Up",INPUT_NONE);
-			Settings.ButtonR2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Down",INPUT_NONE);
-			Settings.ButtonR2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_ButtonR3",INPUT_SAVESTATE);
-			Settings.ButtonR3_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR3_ButtonL3",INPUT_QUIT);
-			Settings.AnalogR_Up		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Up",INPUT_NONE);
-			Settings.AnalogR_Down		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Down",INPUT_NONE);
-			Settings.AnalogR_Left		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Left",INPUT_NONE);
-			Settings.AnalogR_Right		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Right",INPUT_NONE);
+			Settings.DPad_Up		= currentconfig->GetInt("PS3ButtonMappings::DPad_Up",BTN_UP);
+			Settings.DPad_Down		= currentconfig->GetInt("PS3ButtonMappings::DPad_Down",BTN_DOWN);
+			Settings.DPad_Left		= currentconfig->GetInt("PS3ButtonMappings::DPad_Left",BTN_LEFT);
+			Settings.DPad_Right		= currentconfig->GetInt("PS3ButtonMappings::DPad_Right",BTN_RIGHT);
+			Settings.ButtonCircle		= currentconfig->GetInt("PS3ButtonMappings::ButtonCircle",BTN_C);
+			Settings.ButtonCross		= currentconfig->GetInt("PS3ButtonMappings::ButtonCross",BTN_B);
+			Settings.ButtonTriangle		= currentconfig->GetInt("PS3ButtonMappings::ButtonTriangle",BTN_X);
+			Settings.ButtonSquare		= currentconfig->GetInt("PS3ButtonMappings::ButtonSquare",BTN_A);
+			Settings.ButtonSelect		= currentconfig->GetInt("PS3ButtonMappings::ButtonSelect",BTN_MODE);
+			Settings.ButtonStart		= currentconfig->GetInt("PS3ButtonMappings::ButtonStart",BTN_START);
+			Settings.ButtonL1		= currentconfig->GetInt("PS3ButtonMappings::ButtonL1",BTN_Y);
+			Settings.ButtonR1		= currentconfig->GetInt("PS3ButtonMappings::ButtonR1",BTN_Z);
+			Settings.ButtonL2		= currentconfig->GetInt("PS3ButtonMappings::ButtonL2",BTN_NONE);
+			Settings.ButtonR2		= currentconfig->GetInt("PS3ButtonMappings::ButtonR2",BTN_NONE);
+			Settings.ButtonL2_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonL3",BTN_NONE);
+			Settings.ButtonL2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR3",BTN_QUICKLOAD);
+			Settings.ButtonR3		= currentconfig->GetInt("PS3ButtonMappings::ButtonR3",BTN_NONE);
+			Settings.ButtonL3		= currentconfig->GetInt("PS3ButtonMappings::ButtonL3",BTN_NONE);
+			Settings.ButtonL2_ButtonR2	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_ButtonR2",BTN_NONE);
+			Settings.ButtonL2_AnalogR_Right = currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Right",BTN_NONE);
+			Settings.ButtonL2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Left",BTN_NONE);
+			Settings.ButtonL2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Up",BTN_NONE);
+			Settings.ButtonL2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonL2_AnalogR_Down",BTN_NONE);
+			Settings.ButtonR2_AnalogR_Right	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Right",BTN_NONE);
+			Settings.ButtonR2_AnalogR_Left	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Left",BTN_NONE);
+			Settings.ButtonR2_AnalogR_Up	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Up",BTN_NONE);
+			Settings.ButtonR2_AnalogR_Down	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_AnalogR_Down",BTN_NONE);
+			Settings.ButtonR2_ButtonR3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR2_ButtonR3",BTN_QUICKSAVE);
+			Settings.ButtonR3_ButtonL3	= currentconfig->GetInt("PS3ButtonMappings::ButtonR3_ButtonL3",BTN_EXITTOMENU);
+			Settings.AnalogR_Up		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Up",BTN_NONE);
+			Settings.AnalogR_Down		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Down",BTN_NONE);
+			Settings.AnalogR_Left		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Left",BTN_NONE);
+			Settings.AnalogR_Right		= currentconfig->GetInt("PS3ButtonMappings::AnalogR_Right",BTN_NONE);
 
 			Settings.AnalogR_Up_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Up_Type",false);
 			Settings.AnalogR_Down_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Down_Type",false);
@@ -744,39 +744,39 @@ void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)
 			Settings.AnalogR_Right_Type	= currentconfig->GetBool("PS3ButtonMappings::AnalogR_Right_Type",false);
 			break;
 		case MAP_BUTTONS_OPTION_DEFAULT:
-			Input_MapButton(&Settings.DPad_Up,true,INPUT_UP);
-			Input_MapButton(&Settings.DPad_Down,true,INPUT_DOWN);
-			Input_MapButton(&Settings.DPad_Left,true,INPUT_LEFT);
-			Input_MapButton(&Settings.DPad_Right,true,INPUT_RIGHT);
-			Input_MapButton(&Settings.ButtonCircle,true,INPUT_C);
-			Input_MapButton(&Settings.ButtonCross,true,INPUT_B);
-			Input_MapButton(&Settings.ButtonTriangle,true,INPUT_X);
-			Input_MapButton(&Settings.ButtonSquare,true,INPUT_A);
-			Input_MapButton(&Settings.ButtonSelect,true,INPUT_MODE);
-			Input_MapButton(&Settings.ButtonStart,true,INPUT_START);
-			Input_MapButton(&Settings.ButtonL1,true,INPUT_Y);
-			Input_MapButton(&Settings.ButtonR1,true,INPUT_Z);
-			Input_MapButton(&Settings.ButtonL2,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonR2,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_ButtonL3,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_ButtonR3,true,INPUT_LOADSTATE);
-			Input_MapButton(&Settings.ButtonR3,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL3,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_ButtonR2,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,INPUT_NONE);
-			Input_MapButton(&Settings.ButtonR2_ButtonR3,true,INPUT_SAVESTATE);
-			Input_MapButton(&Settings.ButtonR3_ButtonL3,true,INPUT_QUIT);
-			Input_MapButton(&Settings.AnalogR_Up,true,INPUT_NONE);
-			Input_MapButton(&Settings.AnalogR_Down,true,INPUT_NONE);
-			Input_MapButton(&Settings.AnalogR_Left,true,INPUT_NONE);
-			Input_MapButton(&Settings.AnalogR_Right,true,INPUT_NONE);
+			Input_MapButton(&Settings.DPad_Up,true,BTN_UP);
+			Input_MapButton(&Settings.DPad_Down,true,BTN_DOWN);
+			Input_MapButton(&Settings.DPad_Left,true,BTN_LEFT);
+			Input_MapButton(&Settings.DPad_Right,true,BTN_RIGHT);
+			Input_MapButton(&Settings.ButtonCircle,true,BTN_C);
+			Input_MapButton(&Settings.ButtonCross,true,BTN_B);
+			Input_MapButton(&Settings.ButtonTriangle,true,BTN_X);
+			Input_MapButton(&Settings.ButtonSquare,true,BTN_A);
+			Input_MapButton(&Settings.ButtonSelect,true,BTN_MODE);
+			Input_MapButton(&Settings.ButtonStart,true,BTN_START);
+			Input_MapButton(&Settings.ButtonL1,true,BTN_Y);
+			Input_MapButton(&Settings.ButtonR1,true,BTN_Z);
+			Input_MapButton(&Settings.ButtonL2,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonR2,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_ButtonL3,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_ButtonR3,true,BTN_QUICKLOAD);
+			Input_MapButton(&Settings.ButtonR3,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL3,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_ButtonR2,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,BTN_NONE);
+			Input_MapButton(&Settings.ButtonR2_ButtonR3,true,BTN_QUICKSAVE);
+			Input_MapButton(&Settings.ButtonR3_ButtonL3,true,BTN_EXITTOMENU);
+			Input_MapButton(&Settings.AnalogR_Up,true,BTN_NONE);
+			Input_MapButton(&Settings.AnalogR_Down,true,BTN_NONE);
+			Input_MapButton(&Settings.AnalogR_Left,true,BTN_NONE);
+			Input_MapButton(&Settings.AnalogR_Right,true,BTN_NONE);
 			Settings.AnalogR_Up_Type		= false;
 			Settings.AnalogR_Down_Type		= false;
 			Settings.AnalogR_Left_Type		= false;

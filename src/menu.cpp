@@ -539,7 +539,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.DPad_Up,true,INPUT_UP);
+							Input_MapButton(&Settings.DPad_Up,true,BTN_UP);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_DOWN:
@@ -561,7 +561,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.DPad_Down,true,INPUT_DOWN);
+							Input_MapButton(&Settings.DPad_Down,true,BTN_DOWN);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_LEFT:
@@ -583,7 +583,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.DPad_Left,true,INPUT_LEFT);
+							Input_MapButton(&Settings.DPad_Left,true,BTN_LEFT);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_RIGHT:
@@ -605,7 +605,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.DPad_Right,true,INPUT_RIGHT);
+							Input_MapButton(&Settings.DPad_Right,true,BTN_RIGHT);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_CIRCLE:
@@ -627,7 +627,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonCircle,true,INPUT_C);
+							Input_MapButton(&Settings.ButtonCircle,true,BTN_C);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_CROSS:
@@ -649,7 +649,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonCross,true,INPUT_B);
+							Input_MapButton(&Settings.ButtonCross,true,BTN_B);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_TRIANGLE:
@@ -671,7 +671,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonTriangle,true,INPUT_X);
+							Input_MapButton(&Settings.ButtonTriangle,true,BTN_X);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_SQUARE:
@@ -693,7 +693,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonSquare,true,INPUT_A);
+							Input_MapButton(&Settings.ButtonSquare,true,BTN_A);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_SELECT:
@@ -715,7 +715,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonSelect,true,INPUT_MODE);
+							Input_MapButton(&Settings.ButtonSelect,true,BTN_MODE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_START:
@@ -737,7 +737,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonStart,true,INPUT_START);
+							Input_MapButton(&Settings.ButtonStart,true,BTN_START);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L1:
@@ -759,7 +759,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL1,true,INPUT_Y);
+							Input_MapButton(&Settings.ButtonL1,true,BTN_Y);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2:
@@ -781,7 +781,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2,true,BTN_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R2:
@@ -803,7 +803,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR2,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonR2,true,BTN_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L3:
@@ -825,7 +825,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL3,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL3,true,BTN_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R3:
@@ -847,7 +847,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR3,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonR3,true,BTN_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R1:
@@ -869,7 +869,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR1,true,INPUT_Z);
+							Input_MapButton(&Settings.ButtonR1,true,BTN_Z);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
@@ -891,7 +891,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_ButtonL3,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_ButtonL3,true,BTN_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_R2:
@@ -913,7 +913,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_ButtonR2,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_ButtonR2,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
@@ -935,7 +935,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_ButtonR3,true,INPUT_LOADSTATE);
+							Input_MapButton(&Settings.ButtonL2_ButtonR3,true,BTN_QUICKLOAD);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
@@ -957,7 +957,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR2_ButtonR3,true,INPUT_SAVESTATE);
+							Input_MapButton(&Settings.ButtonR2_ButtonR3,true,BTN_QUICKSAVE);
 						}
 							break;
 						case SETTING_CONTROLS_ANALOG_R_UP:
@@ -979,7 +979,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.AnalogR_Up,true,INPUT_NONE);
+							Input_MapButton(&Settings.AnalogR_Up,true,BTN_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1005,7 +1005,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.AnalogR_Down,true,INPUT_NONE);
+							Input_MapButton(&Settings.AnalogR_Down,true,BTN_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1031,7 +1031,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.AnalogR_Left,true,INPUT_NONE);
+							Input_MapButton(&Settings.AnalogR_Left,true,BTN_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1057,7 +1057,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.AnalogR_Right,true,INPUT_NONE);
+							Input_MapButton(&Settings.AnalogR_Right,true,BTN_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1083,7 +1083,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
@@ -1105,7 +1105,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
@@ -1127,7 +1127,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
@@ -1149,7 +1149,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
@@ -1171,7 +1171,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
@@ -1193,7 +1193,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR2_AnalogR_Left,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Left,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
@@ -1215,7 +1215,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
@@ -1237,7 +1237,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,INPUT_NONE);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,BTN_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
@@ -1259,7 +1259,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Input_MapButton(&Settings.ButtonR3_ButtonL3,true,INPUT_QUIT);
+							Input_MapButton(&Settings.ButtonR3_ButtonL3,true,BTN_EXITTOMENU);
 						}
 						break;
 						case SETTING_CONTROLS_DEFAULT_ALL:
@@ -1287,91 +1287,91 @@ void do_controls_settings()
 if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) < NUM_ENTRY_PER_SETTINGS_PAGE)
 {
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_UP ? YELLOW : WHITE,	"D-Pad Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Up == INPUT_UP ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Up == BTN_UP ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Up));
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_DOWN ? YELLOW : WHITE,	"D-Pad Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Down == INPUT_DOWN ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Down == BTN_DOWN ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_LEFT ? YELLOW : WHITE,	"D-Pad Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Left == INPUT_LEFT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Left == BTN_LEFT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_RIGHT ? YELLOW : WHITE,	"D-Pad Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Right == INPUT_RIGHT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Right == BTN_RIGHT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_CIRCLE ? YELLOW : WHITE,	"Circle button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCircle == INPUT_C ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCircle));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCircle == BTN_C ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCircle));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_CROSS ? YELLOW : WHITE,	"Cross button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCross == INPUT_B ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCross));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCross == BTN_B ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCross));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_TRIANGLE ? YELLOW : WHITE,	"Triangle button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonTriangle == INPUT_X ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonTriangle));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonTriangle == BTN_X ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonTriangle));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_SQUARE ? YELLOW : WHITE,	"Square button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSquare == INPUT_A ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSquare));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSquare == BTN_A ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSquare));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_SELECT ? YELLOW : WHITE,	"Select button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSelect == INPUT_MODE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSelect));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSelect == BTN_MODE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSelect));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_START ? YELLOW : WHITE,	"Start button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonStart == INPUT_START ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonStart));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonStart == BTN_START ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonStart));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L1 ? YELLOW : WHITE,	"L1 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL1 == INPUT_Y ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL1));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL1 == BTN_Y ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL1));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R1 ? YELLOW : WHITE,	"R1 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR1 == INPUT_Z ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR1));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR1 == BTN_Z ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR1));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2 ? YELLOW : WHITE,	"L2 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2 ? YELLOW : WHITE,	"R2 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L3 ? YELLOW : WHITE,	"L3 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL3 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R3 ? YELLOW : WHITE,	"R3 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_L3 ? YELLOW : WHITE,	"Button combo: L2 & L3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonL3 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_R2 ? YELLOW : WHITE,	"Button combo: L2 & R2");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR2 == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR2));
 	Graphics->FlushDbgFont();
 
 }
@@ -1383,77 +1383,77 @@ if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) >= NUM_ENTRY_P
 	yPos = 0.09;
 
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: L2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == INPUT_LOADSTATE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == BTN_QUICKLOAD ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Button combo: L2 & RStick Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Right == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT ? YELLOW : WHITE,	"Button combo: L2 & RStick Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Left == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP ? YELLOW : WHITE,	"Button combo: L2 & RStick Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Up == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN ? YELLOW : WHITE,	"Button combo: L2 & RStick Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Down == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Button combo: R2 & RStick Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Right == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT ? YELLOW : WHITE,	"Button combo: R2 & RStick Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Left == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP ? YELLOW : WHITE,	"Button combo: R2 & RStick Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Up == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN ? YELLOW : WHITE,	"Button combo: R2 & RStick Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Down == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: R2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == INPUT_SAVESTATE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == BTN_QUICKSAVE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R3_BUTTON_L3 ? YELLOW : WHITE,	"Button combo: R3 & L3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == INPUT_QUIT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3_ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == BTN_EXITTOMENU ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3_ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_UP ? YELLOW : WHITE,	"Right Stick - Up %s", Settings.AnalogR_Up_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Up == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_DOWN ? YELLOW : WHITE,	"Right Stick - Down %s", Settings.AnalogR_Down_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Down == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_LEFT ? YELLOW : WHITE,	"Right Stick - Left %s", Settings.AnalogR_Left_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Left == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Right Stick - Right %s", Settings.AnalogR_Right_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Right == BTN_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
