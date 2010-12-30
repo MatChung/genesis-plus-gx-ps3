@@ -20,11 +20,10 @@
 #undef uint16
 #undef uint32
 
-typedef unsigned char uint8;
-typedef unsigned short int uint16;
-typedef unsigned long int uint32;
-
-typedef signed char int8;
-typedef signed short int int16;
-typedef signed long int int32;
+#define uint8 unsigned char
+#define uint16 unsigned short
+#define uint32 unsigned int
+#define int8 signed char
+#define int16 signed short
+#define int32 signed long int
 
