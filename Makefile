@@ -1,5 +1,5 @@
 # specify build tools
-CELL_BUILD_TOOLS	=	SNC
+CELL_BUILD_TOOLS	=	GCC
 #explicitly set some cell sdk defaults
 CELL_SDK		?=	/usr/local/cell
 # CELL_GPU_TYPE (currently RSX is only one option)  
@@ -87,9 +87,15 @@ PPU_SRCS := $(SRC_DIR)/GenesisPlus.cpp \
 	$(UTILS_DIR)/zlib/uncompr.c \
 	$(UTILS_DIR)/zlib/zutil.c 
 
+
+# define for PS3 SDK 3.41, comment this for 1.92
+PPU_CFLAGS		+= -DPS3_SDK_3_41
+PPU_CXXFLAGS		+= -DPS3_SDK_3_41
+
 PPU_TARGET		= genesisplus.elf
 
-PPU_CPPFLAGS		+= -DWORDS_BIGENDIAN  -D'VERSION="Genesis Plus PS3"' -DPS3_SDK_3_41 -DPSGL
+# PPU_CPPFLAGS - is this used anywhere?
+PPU_CPPFLAGS		+= -DWORDS_BIGENDIAN  -D'VERSION="Genesis Plus PS3"' -DPSGL
 
 PPU_ASFLAGS		+=
 
