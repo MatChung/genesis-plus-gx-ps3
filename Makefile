@@ -1,5 +1,5 @@
 # specify build tools
-CELL_BUILD_TOOLS	=	GCC
+CELL_BUILD_TOOLS	=	SNC
 #explicitly set some cell sdk defaults
 CELL_SDK		?=	/usr/local/cell
 # CELL_GPU_TYPE (currently RSX is only one option)  
@@ -25,6 +25,7 @@ CELL_FRAMEWORK_DIR	= ./src/cellframework
 
 PPU_SRCS := $(SRC_DIR)/GenesisPlus.cpp \
 	$(SRC_DIR)/ps3video.cpp \
+	$(SRC_DIR)/ps3input.cpp \
 	$(SRC_DIR)/menu.cpp \
 	$(CELL_FRAMEWORK_DIR)/input/cellInput.cpp \
 	$(CELL_FRAMEWORK_DIR)/graphics/PSGLGraphics.cpp \

@@ -1,3 +1,4 @@
+#include <string.h>
 /* Input bitmasks */
 //BEGINNING OF GENESIS PLUS PS3
 #define INPUT_SOFTRESET (0x0E00)
@@ -19,3 +20,7 @@
 #define INPUT_LEFT      (0x0004)
 #define INPUT_DOWN      (0x0002)
 #define INPUT_UP        (0x0001)
+
+char * Input_PrintMappedButton(int mappedbutton);
+int Input_GetAdjacentButtonmap(int buttonmap, bool next);
+void Input_MapButton(int* buttonmap, bool next, int defaultbutton);

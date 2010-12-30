@@ -142,12 +142,12 @@ void config_default()
 	config.overscan = 0;
 
 	/* controllers options */
-	input.system[0]       = SYSTEM_GAMEPAD;
-	input.system[1]       = SYSTEM_GAMEPAD;
 	config.gun_cursor[0]  = 1;
 	config.gun_cursor[1]  = 1;
 	config.invert_mouse   = 0;
+	config.s_device = 0;
 
+	
 	for (i=0;i<MAX_INPUTS;i++)
 	{
 		if(Settings.SixButtonPad)
@@ -158,20 +158,14 @@ void config_default()
 		{
 			config.input[i].padtype = DEVICE_3BUTTON;
 		}
+		config.input[i].device	= -1;
+		config.input[i].port	= i%4;
 	}
+
+	input.system[0]       = SYSTEM_GAMEPAD;
+	input.system[1]       = SYSTEM_GAMEPAD;
 }
 
-static void set_controller(int controllerno)
-{
-	if(Settings.SixButtonPad)
-	{
-		config.input[controllerno].padtype = DEVICE_6BUTTON;
-	}
-	else
-	{
-		config.input[controllerno].padtype = DEVICE_3BUTTON;
-	}
-}
 
 /***************************************************************************
  * Genesis Plus Virtual Machine
@@ -455,11 +449,14 @@ int special_button_mappings(int controllerno, int specialbuttonmap)
 int ps3_update_input(void)
 {
 	uint32_t buttons;
-	int i;
+	uint8_t pads_connected = CellInput->NumberPadsConnected();
 
-	for(i=0;i<2;i++)
+	for(uint8_t i=0;i < pads_connected; ++i)
 	{
-		CellInput->UpdateDevice(i);
+		if(CellInput->UpdateDevice(i) != CELL_PAD_OK)
+		{
+			continue;
+		}
 
 		/* clear key status */
     		input.pad[i] = 0;
@@ -660,8 +657,6 @@ void Emulator_SwitchMode(Emulator_Modes m)
 
 void Emulator_SetControllerMode()
 {
-	set_controller(0);
-	set_controller(1);
 }
 
 void Emulator_Implementation_ButtonMappingSettings(bool map_button_option_enum)

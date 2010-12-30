@@ -470,135 +470,6 @@ void do_pathChoice()
 	RenderBrowser(tmpBrowser);
 }
 
-char * Menu_PrintMappedButton(int mappedbutton)
-{
-	switch(mappedbutton)
-	{
-		case INPUT_A:
-			return "Button A";
-			break;
-		case INPUT_B:
-			return "Button B";
-			break;
-		case INPUT_C:
-			return "Button C";
-			break;
-		case INPUT_X:
-			return "Button X";
-			break;
-		case INPUT_Y:
-			return "Button Y";
-			break;
-		case INPUT_Z:
-			return "Button Z";
-			break;
-		case INPUT_START:
-			return "Button Start";
-			break;
-		case INPUT_MODE:
-			return "Button Mode";
-			break;
-		case INPUT_LEFT:
-			return "D-Pad Left";
-			break;
-		case INPUT_RIGHT:
-			return "D-Pad Right";
-			break;
-		case INPUT_UP:
-			return "D-Pad Up";
-			break;
-		case INPUT_DOWN:
-			return "D-Pad Down";
-			break;
-		case INPUT_NONE:
-			return "None";
-			break;
-		case INPUT_QUIT:
-			return "Exit to menu";
-			break;
-		case INPUT_SAVESTATE:
-			return "Save State";
-			break;
-		case INPUT_LOADSTATE:
-			return "Load State";
-			break;
-		case INPUT_SOFTRESET:
-			return "Software Reset";
-			break;
-		case INPUT_HARDRESET:
-			return "Reset";
-			break;
-		default:
-			return "Unknown";
-			break;
-
-	}
-}
-
-//bool next: true is next, false is previous
-int Menu_GetAdjacentButtonmap(int buttonmap, bool next)
-{
-	switch(buttonmap)
-	{
-		case INPUT_UP:
-			return next ? INPUT_DOWN : INPUT_NONE;
-			break;
-		case INPUT_DOWN:
-			return next ? INPUT_LEFT : INPUT_UP;
-			break;
-		case INPUT_LEFT:
-			return next ? INPUT_RIGHT : INPUT_DOWN;
-			break;
-		case INPUT_RIGHT:
-			return next ? INPUT_A : INPUT_LEFT;
-			break;
-		case INPUT_A:
-			return next ? INPUT_B : INPUT_RIGHT;
-			break;
-		case INPUT_B:
-			return next ? INPUT_C : INPUT_A;
-			break;
-		case INPUT_C:
-			return next ? INPUT_X : INPUT_B;
-			break;
-		case INPUT_X:
-			return next ? INPUT_Y : INPUT_C;
-			break;
-		case INPUT_Y:
-			return next ? INPUT_Z : INPUT_X;
-			break;
-		case INPUT_Z:
-			return next ? INPUT_START : INPUT_Y;
-			break;
-		case INPUT_START:
-			return next ? INPUT_MODE : INPUT_Z;
-			break;
-		case INPUT_MODE:
-			return next ? INPUT_HARDRESET : INPUT_START;
-			break;
-		case INPUT_HARDRESET:
-			return next ? INPUT_SOFTRESET : INPUT_MODE;
-			break;
-		case INPUT_SOFTRESET:
-			return next ? INPUT_SAVESTATE : INPUT_HARDRESET;
-			break;
-		case INPUT_SAVESTATE:
-			return next ? INPUT_LOADSTATE : INPUT_SOFTRESET;
-			break;
-		case INPUT_LOADSTATE:
-			return next ? INPUT_QUIT : INPUT_SAVESTATE;
-			break;
-		case INPUT_QUIT:
-			return next ? INPUT_NONE : INPUT_LOADSTATE;
-			break;
-		case INPUT_NONE:
-			return next ? INPUT_UP : INPUT_QUIT;
-			break;
-		default:
-			return INPUT_NONE;
-			break;
-	}
-}
 
 void do_controls_settings()
 {
@@ -652,7 +523,7 @@ void do_controls_settings()
 						case SETTING_CONTROLS_DPAD_UP:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.DPad_Up = Menu_GetAdjacentButtonmap(Settings.DPad_Up, false);
+							Input_MapButton(&Settings.DPad_Up,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -660,7 +531,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.DPad_Up = Menu_GetAdjacentButtonmap(Settings.DPad_Up, true);
+							Input_MapButton(&Settings.DPad_Up,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -668,13 +539,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.DPad_Up = INPUT_UP;
+							Input_MapButton(&Settings.DPad_Up,true,INPUT_UP);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_DOWN:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.DPad_Down = Menu_GetAdjacentButtonmap(Settings.DPad_Down, false);
+							Input_MapButton(&Settings.DPad_Down,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -682,7 +553,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.DPad_Down = Menu_GetAdjacentButtonmap(Settings.DPad_Down, true);
+							Input_MapButton(&Settings.DPad_Down,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -690,13 +561,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.DPad_Down = INPUT_DOWN;
+							Input_MapButton(&Settings.DPad_Down,true,INPUT_DOWN);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_LEFT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.DPad_Left = Menu_GetAdjacentButtonmap(Settings.DPad_Left, false);
+							Input_MapButton(&Settings.DPad_Left,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -704,7 +575,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.DPad_Left = Menu_GetAdjacentButtonmap(Settings.DPad_Left, true);
+							Input_MapButton(&Settings.DPad_Left,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -712,13 +583,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.DPad_Left = INPUT_LEFT;
+							Input_MapButton(&Settings.DPad_Left,true,INPUT_LEFT);
 						}
 							break;
 						case SETTING_CONTROLS_DPAD_RIGHT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.DPad_Right = Menu_GetAdjacentButtonmap(Settings.DPad_Right, false);
+							Input_MapButton(&Settings.DPad_Right,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -726,7 +597,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.DPad_Right = Menu_GetAdjacentButtonmap(Settings.DPad_Right, true);
+							Input_MapButton(&Settings.DPad_Right,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -734,13 +605,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.DPad_Right = INPUT_RIGHT;
+							Input_MapButton(&Settings.DPad_Right,true,INPUT_RIGHT);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_CIRCLE:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonCircle = Menu_GetAdjacentButtonmap(Settings.ButtonCircle, false);
+							Input_MapButton(&Settings.ButtonCircle,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -748,7 +619,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonCircle = Menu_GetAdjacentButtonmap(Settings.ButtonCircle, true);
+							Input_MapButton(&Settings.ButtonCircle,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -756,13 +627,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonCircle = INPUT_C;
+							Input_MapButton(&Settings.ButtonCircle,true,INPUT_C);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_CROSS:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonCross = Menu_GetAdjacentButtonmap(Settings.ButtonCross, false);
+							Input_MapButton(&Settings.ButtonCross,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -770,7 +641,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonCross = Menu_GetAdjacentButtonmap(Settings.ButtonCross, true);
+							Input_MapButton(&Settings.ButtonCross,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -778,13 +649,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonCross = INPUT_B;
+							Input_MapButton(&Settings.ButtonCross,true,INPUT_B);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_TRIANGLE:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonTriangle = Menu_GetAdjacentButtonmap(Settings.ButtonTriangle, false);
+							Input_MapButton(&Settings.ButtonTriangle,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -792,7 +663,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonTriangle = Menu_GetAdjacentButtonmap(Settings.ButtonTriangle, true);
+							Input_MapButton(&Settings.ButtonTriangle,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -800,13 +671,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonTriangle = INPUT_X;
+							Input_MapButton(&Settings.ButtonTriangle,true,INPUT_X);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_SQUARE:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonSquare = Menu_GetAdjacentButtonmap(Settings.ButtonSquare, false);
+							Input_MapButton(&Settings.ButtonSquare,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -814,7 +685,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonSquare = Menu_GetAdjacentButtonmap(Settings.ButtonSquare, true);
+							Input_MapButton(&Settings.ButtonSquare,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -822,13 +693,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonSquare = INPUT_A;
+							Input_MapButton(&Settings.ButtonSquare,true,INPUT_A);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_SELECT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonSelect = Menu_GetAdjacentButtonmap(Settings.ButtonSelect, false);
+							Input_MapButton(&Settings.ButtonSelect,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -836,7 +707,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonSelect = Menu_GetAdjacentButtonmap(Settings.ButtonSelect, true);
+							Input_MapButton(&Settings.ButtonSelect,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -844,13 +715,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonSelect = INPUT_MODE;
+							Input_MapButton(&Settings.ButtonSelect,true,INPUT_MODE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_START:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonStart = Menu_GetAdjacentButtonmap(Settings.ButtonStart, false);
+							Input_MapButton(&Settings.ButtonStart,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -858,7 +729,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonStart = Menu_GetAdjacentButtonmap(Settings.ButtonStart, true);
+							Input_MapButton(&Settings.ButtonStart,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -866,13 +737,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonStart = INPUT_START;
+							Input_MapButton(&Settings.ButtonStart,true,INPUT_START);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L1:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL1 = Menu_GetAdjacentButtonmap(Settings.ButtonL1, false);
+							Input_MapButton(&Settings.ButtonL1,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -880,7 +751,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL1 = Menu_GetAdjacentButtonmap(Settings.ButtonL1, true);
+							Input_MapButton(&Settings.ButtonL1,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -888,13 +759,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL1 = INPUT_Y;
+							Input_MapButton(&Settings.ButtonL1,true,INPUT_Y);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2 = Menu_GetAdjacentButtonmap(Settings.ButtonL2, false);
+							Input_MapButton(&Settings.ButtonL2,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -902,7 +773,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2 = Menu_GetAdjacentButtonmap(Settings.ButtonL2, true);
+							Input_MapButton(&Settings.ButtonL2,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -910,13 +781,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2,true,INPUT_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R2:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2 = Menu_GetAdjacentButtonmap(Settings.ButtonR2, false);
+							Input_MapButton(&Settings.ButtonR2,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -924,7 +795,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2 = Menu_GetAdjacentButtonmap(Settings.ButtonR2, true);
+							Input_MapButton(&Settings.ButtonR2,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -932,13 +803,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonR2,true,INPUT_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonL3, false);
+							Input_MapButton(&Settings.ButtonL3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -946,7 +817,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonL3, true);
+							Input_MapButton(&Settings.ButtonL3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -954,13 +825,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL3 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL3,true,INPUT_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonR3, false);
+							Input_MapButton(&Settings.ButtonR3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -968,7 +839,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonR3, true);
+							Input_MapButton(&Settings.ButtonR3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -976,13 +847,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR3 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonR3,true,INPUT_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_R1:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR1 = Menu_GetAdjacentButtonmap(Settings.ButtonR1, false);
+							Input_MapButton(&Settings.ButtonR1,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -990,7 +861,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR1 = Menu_GetAdjacentButtonmap(Settings.ButtonR1, true);
+							Input_MapButton(&Settings.ButtonR1,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -998,13 +869,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR1 = INPUT_Z;
+							Input_MapButton(&Settings.ButtonR1,true,INPUT_Z);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonL3, false);
+							Input_MapButton(&Settings.ButtonL2_ButtonL3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1012,7 +883,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonL3, true);
+							Input_MapButton(&Settings.ButtonL2_ButtonL3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1020,13 +891,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_ButtonL3 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_ButtonL3,true,INPUT_NONE);
 						}
 							break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_R2:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_ButtonR2 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonR2, false);
+							Input_MapButton(&Settings.ButtonL2_ButtonR2,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1034,7 +905,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_ButtonR2 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonR2, true);
+							Input_MapButton(&Settings.ButtonL2_ButtonR2,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1042,13 +913,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_ButtonR2 = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_ButtonR2,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonR3, false);
+							Input_MapButton(&Settings.ButtonL2_ButtonR3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1056,7 +927,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonL2_ButtonR3, true);
+							Input_MapButton(&Settings.ButtonL2_ButtonR3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1064,13 +935,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_ButtonR3 = INPUT_LOADSTATE;
+							Input_MapButton(&Settings.ButtonL2_ButtonR3,true,INPUT_LOADSTATE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2_ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonR2_ButtonR3, false);
+							Input_MapButton(&Settings.ButtonR2_ButtonR3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1078,7 +949,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2_ButtonR3 = Menu_GetAdjacentButtonmap(Settings.ButtonR2_ButtonR3, true);
+							Input_MapButton(&Settings.ButtonR2_ButtonR3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1086,13 +957,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_ButtonR3 = INPUT_SAVESTATE;
+							Input_MapButton(&Settings.ButtonR2_ButtonR3,true,INPUT_SAVESTATE);
 						}
 							break;
 						case SETTING_CONTROLS_ANALOG_R_UP:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.AnalogR_Up, false);
+							Input_MapButton(&Settings.AnalogR_Up,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1100,7 +971,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.AnalogR_Up, true);
+							Input_MapButton(&Settings.AnalogR_Up,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1108,7 +979,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.AnalogR_Up = INPUT_NONE;
+							Input_MapButton(&Settings.AnalogR_Up,true,INPUT_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1118,7 +989,7 @@ void do_controls_settings()
 						case SETTING_CONTROLS_ANALOG_R_DOWN:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.AnalogR_Down, false);
+							Input_MapButton(&Settings.AnalogR_Down,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1126,7 +997,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.AnalogR_Down, true);
+							Input_MapButton(&Settings.AnalogR_Down,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1134,7 +1005,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.AnalogR_Down = INPUT_NONE;
+							Input_MapButton(&Settings.AnalogR_Down,true,INPUT_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1144,7 +1015,7 @@ void do_controls_settings()
 						case SETTING_CONTROLS_ANALOG_R_LEFT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.AnalogR_Left, false);
+							Input_MapButton(&Settings.AnalogR_Left,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1152,7 +1023,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.AnalogR_Left, true);
+							Input_MapButton(&Settings.AnalogR_Left,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1160,7 +1031,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.AnalogR_Left = INPUT_NONE;
+							Input_MapButton(&Settings.AnalogR_Left,true,INPUT_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1170,7 +1041,7 @@ void do_controls_settings()
 						case SETTING_CONTROLS_ANALOG_R_RIGHT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.AnalogR_Right, false);
+							Input_MapButton(&Settings.AnalogR_Right,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1178,7 +1049,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.AnalogR_Right, true);
+							Input_MapButton(&Settings.AnalogR_Right,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1186,7 +1057,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.AnalogR_Right = INPUT_NONE;
+							Input_MapButton(&Settings.AnalogR_Right,true,INPUT_NONE);
 						}
 						if(CellInput->WasButtonPressed(0, CTRL_SELECT))
 						{
@@ -1196,7 +1067,7 @@ void do_controls_settings()
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Right, false);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1204,7 +1075,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Right, true);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1212,13 +1083,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_AnalogR_Right = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Left, false);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Left,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1226,7 +1097,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Left, true);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1234,13 +1105,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_AnalogR_Left = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Left,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Up, false);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Up,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1248,7 +1119,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Up, true);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1256,13 +1127,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_AnalogR_Up = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Up,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonL2_AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Down, false);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Down,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1270,7 +1141,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonL2_AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.ButtonL2_AnalogR_Down, true);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1278,13 +1149,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonL2_AnalogR_Down = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Down,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2_AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Right, false);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1292,7 +1163,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2_AnalogR_Right = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Right, true);
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1300,13 +1171,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_AnalogR_Right = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonL2_AnalogR_Right,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2_AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Left, false);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Left,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1314,7 +1185,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2_AnalogR_Left = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Left, true);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Left,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1322,13 +1193,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_AnalogR_Left = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Left,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2_AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Up, false);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Up,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1336,7 +1207,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2_AnalogR_Up = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Up, true);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1344,13 +1215,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_AnalogR_Up = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Up,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR2_AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Down, false);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Down,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1358,7 +1229,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR2_AnalogR_Down = Menu_GetAdjacentButtonmap(Settings.ButtonR2_AnalogR_Down, true);
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1366,13 +1237,13 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR2_AnalogR_Down = INPUT_NONE;
+							Input_MapButton(&Settings.ButtonR2_AnalogR_Down,true,INPUT_NONE);
 						}
 						break;
 						case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
 						if(CellInput->WasButtonHeld(0, CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0, CTRL_LSTICK))
 						{
-							Settings.ButtonR3_ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonR3_ButtonL3, false);
+							Input_MapButton(&Settings.ButtonR3_ButtonL3,false,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_LEFT) | CellInput->IsAnalogPressedLeft(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1380,7 +1251,7 @@ void do_controls_settings()
 						}
 						if(CellInput->WasButtonHeld(0, CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0, CTRL_LSTICK) | CellInput->WasButtonPressed(0, CTRL_CROSS))
 						{
-							Settings.ButtonR3_ButtonL3 = Menu_GetAdjacentButtonmap(Settings.ButtonR3_ButtonL3, true);
+							Input_MapButton(&Settings.ButtonR3_ButtonL3,true,NULL);
 							if(CellInput->IsButtonPressed(0,CTRL_RIGHT) | CellInput->IsAnalogPressedRight(0,CTRL_LSTICK))
 							{
 								sys_timer_usleep(SETTINGS_DELAY);
@@ -1388,7 +1259,7 @@ void do_controls_settings()
 						}
 						if(CellInput->IsButtonPressed(0, CTRL_START))
 						{
-							Settings.ButtonR3_ButtonL3 = INPUT_QUIT;
+							Input_MapButton(&Settings.ButtonR3_ButtonL3,true,INPUT_QUIT);
 						}
 						break;
 						case SETTING_CONTROLS_DEFAULT_ALL:
@@ -1416,91 +1287,91 @@ void do_controls_settings()
 if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) < NUM_ENTRY_PER_SETTINGS_PAGE)
 {
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_UP ? YELLOW : WHITE,	"D-Pad Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Up == INPUT_UP ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.DPad_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Up == INPUT_UP ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Up));
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_DOWN ? YELLOW : WHITE,	"D-Pad Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Down == INPUT_DOWN ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.DPad_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Down == INPUT_DOWN ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_LEFT ? YELLOW : WHITE,	"D-Pad Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Left == INPUT_LEFT ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.DPad_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Left == INPUT_LEFT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_DPAD_RIGHT ? YELLOW : WHITE,	"D-Pad Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Right == INPUT_RIGHT ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.DPad_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.DPad_Right == INPUT_RIGHT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.DPad_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_CIRCLE ? YELLOW : WHITE,	"Circle button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCircle == INPUT_C ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonCircle));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCircle == INPUT_C ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCircle));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_CROSS ? YELLOW : WHITE,	"Cross button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCross == INPUT_B ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonCross));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonCross == INPUT_B ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonCross));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_TRIANGLE ? YELLOW : WHITE,	"Triangle button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonTriangle == INPUT_X ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonTriangle));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonTriangle == INPUT_X ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonTriangle));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_SQUARE ? YELLOW : WHITE,	"Square button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSquare == INPUT_A ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonSquare));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSquare == INPUT_A ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSquare));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_SELECT ? YELLOW : WHITE,	"Select button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSelect == INPUT_MODE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonSelect));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonSelect == INPUT_MODE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonSelect));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_START ? YELLOW : WHITE,	"Start button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonStart == INPUT_START ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonStart));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonStart == INPUT_START ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonStart));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L1 ? YELLOW : WHITE,	"L1 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL1 == INPUT_Y ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL1));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL1 == INPUT_Y ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL1));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R1 ? YELLOW : WHITE,	"R1 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR1 == INPUT_Z ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR1));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR1 == INPUT_Z ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR1));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2 ? YELLOW : WHITE,	"L2 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2 ? YELLOW : WHITE,	"R2 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L3 ? YELLOW : WHITE,	"L3 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R3 ? YELLOW : WHITE,	"R3 button");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_L3 ? YELLOW : WHITE,	"Button combo: L2 & L3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonL3 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_R2 ? YELLOW : WHITE,	"Button combo: L2 & R2");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_ButtonR2));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR2 == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR2));
 	Graphics->FlushDbgFont();
 
 }
@@ -1512,77 +1383,77 @@ if((currently_selected_controller_setting-FIRST_CONTROLS_SETTING) >= NUM_ENTRY_P
 	yPos = 0.09;
 
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: L2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == INPUT_LOADSTATE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_ButtonR3 == INPUT_LOADSTATE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Button combo: L2 & RStick Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT ? YELLOW : WHITE,	"Button combo: L2 & RStick Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP ? YELLOW : WHITE,	"Button combo: L2 & RStick Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN ? YELLOW : WHITE,	"Button combo: L2 & RStick Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonL2_AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonL2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonL2_AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Button combo: R2 & RStick Right");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT ? YELLOW : WHITE,	"Button combo: R2 & RStick Left");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP ? YELLOW : WHITE,	"Button combo: R2 & RStick Up");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN ? YELLOW : WHITE,	"Button combo: R2 & RStick Down");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R2_BUTTON_R3 ? YELLOW : WHITE,	"Button combo: R2 & R3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == INPUT_SAVESTATE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR2_ButtonR3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR2_ButtonR3 == INPUT_SAVESTATE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR2_ButtonR3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPuts		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_BUTTON_R3_BUTTON_L3 ? YELLOW : WHITE,	"Button combo: R3 & L3");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == INPUT_QUIT ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.ButtonR3_ButtonL3));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.ButtonR3_ButtonL3 == INPUT_QUIT ? GREEN : ORANGE, Input_PrintMappedButton(Settings.ButtonR3_ButtonL3));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_UP ? YELLOW : WHITE,	"Right Stick - Up %s", Settings.AnalogR_Up_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.AnalogR_Up));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Up == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Up));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_DOWN ? YELLOW : WHITE,	"Right Stick - Down %s", Settings.AnalogR_Down_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.AnalogR_Down));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Down == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Down));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_LEFT ? YELLOW : WHITE,	"Right Stick - Left %s", Settings.AnalogR_Left_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.AnalogR_Left));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Left == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Left));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
 	cellDbgFontPrintf		(0.09f,	yPos,	Emulator_GetFontSize(),	currently_selected_controller_setting == SETTING_CONTROLS_ANALOG_R_RIGHT ? YELLOW : WHITE,	"Right Stick - Right %s", Settings.AnalogR_Right_Type ? "(IsPressed)" : "(WasPressed)");
-	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Menu_PrintMappedButton(Settings.AnalogR_Right));
+	cellDbgFontPuts		(0.5f,	yPos,	Emulator_GetFontSize(),	Settings.AnalogR_Right == INPUT_NONE ? GREEN : ORANGE, Input_PrintMappedButton(Settings.AnalogR_Right));
 	Graphics->FlushDbgFont();
 
 	yPos += ySpacing;
